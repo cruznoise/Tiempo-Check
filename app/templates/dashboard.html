@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard - ProcrastiGuard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="dashboard-container">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2>¡Hola,<br>Angel!</h2>
+      <p>Este es tu resumen personal</p>
+      <nav>
+      <ul>
+        <li>
+          <a href="{{ url_for('controlador.dashboard') }}">
+            <img src="{{ url_for('static', filename='icons/home.svg') }}" alt="Home">
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('admin_controller.vista_metas') }}">
+            <img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros">
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('admin_controller.vista_categorias') }}">
+            <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración">
+          </a>
+        </li>
+      </ul>
+
+      </nav>
+    </aside>
+
+    <!-- Contenido principal -->
+    <main class="content">
+      <header>
+        <h1>DASHBOARD</h1>
+        <p class="intro-text"> Este es un resumen personalizado de tu actividad digital. Aquí podrás identificar en qué sitios pasas más tiempo, 
+          cómo se distribuyen tus hábitos por categoría y cómo ha cambiado tu tiempo frente a la pantalla en los últimos días. </p>
+        <button id="modoToggle">🌙</button>
+
+        <label for="rango">Rango de tiempo:</label>
+        <select id="rango">
+          <option value="total">Total</option>
+          <option value="hoy">Hoy</option>
+          <option value="7dias">Últimos 7 días</option>
+          <option value="mes">Último mes</option>
+          <option value="entre">Entre fechas...</option>
+        </select>
+        <div id="fechas" style="display:none;">
+          <input type="date" id="desde">
+          <input type="date" id="hasta">
+          <button id="filtrar">Aplicar</button>
+        </div>
+      </header>
+
+      <!-- Módulo resumen -->
+      <section class="summary-bar">
+        <div class="summary-card">
+          <h4>Tiempo total</h4>
+          <p id="resumen-tiempo">...</p>
+        </div>
+        <div class="summary-card">
+          <h4>Día más activo</h4>
+          <p id="resumen-dia">...</p>
+        </div>
+        <div class="summary-card">
+          <h4>Sitio más visitado</h4>
+          <p id="resumen-sitio">...</p>
+        </div>
+        <div class="summary-card">
+          <h4>Categoría dominante</h4>
+          <p id="resumen-categoria">...</p>
+        </div>
+        <div class="summary-card">
+          <h4>Promedio diario</h4>
+          <p id="resumen-promedio">...</p>
+        </div>
+      </section>
+
+
+      <!-- Gráficas -->
+      <section class="graphs">
+        <div class="chart-box">
+          <h3>Tiempo por sitio web</h3>
+          <canvas id="grafica"></canvas>
+             <p class="chart-description">Estos son los sitios donde pasaste más tiempo en el periodo seleccionado. 
+            El análisis te puede ayudar a detectar hábitos repetitivos o páginas que demandan mucha atención. </p>
+        </div>
+
+        <div class="chart-box">
+          <h3>Distribución por categoría</h3>
+          <canvas id="graficaPastel"></canvas>
+            <p class="chart-description">Esta gráfica agrupa los sitios por categorías generales. Así puedes visualizar el equilibrio 
+            (o desequilibrio) entre actividades de ocio, redes, productividad, educación, etc. </p>
+        </div>
+
+        <div class="chart-box">
+          <h3>Distribución de uso por hora</h3>
+          <canvas id="graficaHorario"></canvas>
+            <p class="chart-description">
+          Aquí se representa el tiempo total que pasas frente a la pantalla según la hora del día. Este gráfico te ayuda a visualizar en qué momentos eres más propenso a usar el dispositivo, lo que puede ser útil para planificar tus hábitos.
+        </p>
+        </div>
+
+
+        <div class="chart-box">
+          <h3>Tiempo total en pantalla por día</h3>
+          <canvas id="graficaLinea"></canvas>
+            <p class="chart-description"> Aquí se muestra tu tiempo total frente a la pantalla por día. 
+            Identifica si tus hábitos están subiendo o bajando. Ideal para reconocer días con mayor distracción o foco. </p>
+        </div>
+
+
+      </section>
+
+
+    </main>
+  </div>
+
+  <!-- Scripts de gráficos -->
+  <script>
+    let datos = JSON.parse('{{ datos | tojson | safe }}');
+
+    const ctx = document.getElementById('grafica').getContext('2d');
+    let grafica = crearGrafica(datos);
+
+    function crearGrafica(datos) {
+      return new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: datos.map(d => d.dominio),
+          datasets: [{
+            label: 'Tiempo total (min)',
+            data: datos.map(d => d.total),
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              ticks: {
+                maxRotation: 90,
+                minRotation: 45,
+                autoSkip: false
+              }
+            },
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    document.getElementById('rango').addEventListener('change', () => {
+      const seleccion = document.getElementById('rango').value;
+      document.getElementById('fechas').style.display = (seleccion === 'entre') ? 'block' : 'none';
+
+      if (seleccion !== 'entre') {
+        window.location.href = `/dashboard?rango=${seleccion}`;
+      }
+    });
+
+    document.getElementById('filtrar').addEventListener('click', () => {
+      const desde = document.getElementById('desde').value;
+      const hasta = document.getElementById('hasta').value;
+      if (desde && hasta) {
+        window.location.href = `/dashboard?rango=entre&desde=${desde}&hasta=${hasta}`;
+      }
+    });
+  </script>
+  <script>
+    const usoHorario = JSON.parse('{{ uso_horario | tojson | safe }}');
+
+    const ctxHorario = document.getElementById('graficaHorario').getContext('2d');
+    new Chart(ctxHorario, {
+      type: 'line',
+      data: {
+        labels: usoHorario.map(e => `${e.hora}:00`),
+        datasets: [{
+          label: 'Minutos en pantalla por hora',
+          data: usoHorario.map(e => e.total),
+          backgroundColor: 'rgba(255, 159, 64, 0.2)',
+          borderColor: 'rgba(255, 159, 64, 1)',
+          tension: 0.2,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Minutos' }
+          },
+          x: {
+            title: { display: true, text: 'Hora del día' }
+          }
+        }
+      }
+    });
+  </script>
+
+
+  <script>
+    const categorias = JSON.parse('{{ categorias | tojson | safe }}');
+    const ctxCat = document.getElementById('graficaPastel').getContext('2d');
+
+    new Chart(ctxCat, {
+      type: 'pie',
+      data: {
+        labels: Object.keys(categorias),
+        datasets: [{
+          label: 'Tiempo por categoría (min)',
+          data: Object.values(categorias),
+          backgroundColor: [
+            '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true
+      }
+    });
+  </script>
+
+  <script>
+    const usoDiario = JSON.parse('{{ uso_diario | tojson | safe }}');
+    const ctxLinea = document.getElementById('graficaLinea').getContext('2d');
+    new Chart(ctxLinea, {
+      type: 'line',
+      data: {
+        labels: usoDiario.map(e => e.dia),
+        datasets: [{
+          label: 'Minutos por día',
+          data: usoDiario.map(e => e.total),
+          backgroundColor: 'rgba(54, 162, 235, 0.3)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          tension: 0.2
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  </script>
+
+<script>
+  // Llenar resumen de actividad
+  fetch('/resumen')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('resumen-tiempo').textContent = `${data.tiempo_total} minutos`;
+      document.getElementById('resumen-dia').textContent = `${data.dia_mas_activo} (${data.tiempo_dia_top} min)`;
+      document.getElementById('resumen-sitio').textContent = `${data.sitio_mas_visitado} (${data.tiempo_sitio_top} min)`;
+      document.getElementById('resumen-categoria').textContent = `${data.categoria_dominante} (${data.tiempo_categoria_top} min)`;
+      document.getElementById('resumen-promedio').textContent = `${data.promedio_diario} min/día`;
+    })
+    .catch(err => {
+      console.error("Error al cargar resumen:", err);
+    });
+</script>
+<script>
+  const btnModo = document.getElementById('modoToggle');
+  btnModo.addEventListener('click', () => {
+    document.body.classList.toggle('modo-oscuro');
+    btnModo.textContent = document.body.classList.contains('modo-oscuro') ? '☀️' : '🌙';
+  });
+</script>
+
+<!-- ALERTAS EMERGENTES LUGAR PROVISIONAL-->
+
+<!-- Modal de alerta por límite excedido -->
+<div id="alertaModal" class="modal-overlay hidden">
+  <div class="modal-contenido">
+    <h2>“TiempoCheck”</h2>
+    <p><span id="categoriaModal"></span> ¿Deseas continuar?</p>
+    <div class="botones">
+      <button onclick="cerrarModal()">Aceptar y cerrar</button>
+      <button onclick="ignorarAlerta()">Ignorar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function mostrarModal(mensaje) {
+  document.getElementById('categoriaModal').textContent = mensaje;
+  document.getElementById('alertaModal').classList.remove('hidden');
+}
+
+
+  function cerrarModal() {
+    document.getElementById('alertaModal').classList.add('hidden');
+  }
+
+  function ignorarAlerta() {
+    document.getElementById('alertaModal').classList.add('hidden');
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+  fetch('/admin/api/alerta_categoria', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ categoria_id: 3 })  // por ejemplo: redes sociales
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.alerta) {
+      mostrarModal(data.mensaje);
+    }
+  })
+  .catch(err => console.error("Error al verificar alerta:", err));
+});
+
+</script>
+
+
+</body>
+</html>

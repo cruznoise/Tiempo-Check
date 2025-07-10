@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TiempoCheck - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Iniciar Sesión</h2>
+        <div class="error" id="error-msg">Correo o contraseña incorrectos</div>
+        <form id="login-form">
+            <label for="correo">Correo</label>
+            <input type="text" id="correo" name="correo" required>
+            <label for="contraseña">Contraseña</label>
+            <input type="password" id="contraseña" name="contraseña" required>
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+    $('#login-form').on('submit', function(e) {
+      e.preventDefault();
+
+      $.ajax({
+        url: "/login",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+          correo: $('#correo').val(),
+          contraseña: $('#contraseña').val()
+        }),
+        success: function(res) {
+          if (res.success) {
+            window.location.href = "/dashboard";
+          } else {
+            $('#error').fadeIn();
+          }
+        },
+        error: function() {
+          $('#error').text("Error del servidor").fadeIn();
+        }
+      });
+    });
+    </script>
+</body>
+</html>
+

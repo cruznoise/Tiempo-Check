@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Administrar Categorías</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+<div class="dashboard-container">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>¡Hola,<br>Angel!</h2>
+    <p>Configuración de categorias y dominios</p>
+    <nav>
+      <ul>
+        <li><a href="{{ url_for('controlador.dashboard') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="Home"></a></li>
+        <li><a href="{{ url_for('admin_controller.vista_metas') }}"><img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros"></a></li>
+        <li><a href="{{ url_for('admin_controller.vista_categorias') }}"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="Configuración"></a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Contenido principal -->
+<main class="content">
+
+  <div class="dashboard-form-grid categorias-grid">
+
+    <!-- Columna izquierda: categorías -->
+    <section class="tile-box">
+      <h3>Agregar nueva categoría</h3>
+      <form action="{{ url_for('admin_controller.agregar_categoria') }}" method="POST" class="tile-form">
+        <input type="text" name="nombre" placeholder="Nombre de la categoría" required>
+        <button type="submit">Agregar</button>
+      </form>
+    </section>
+
+    <!-- Columna derecha: asociar dominio -->
+    <section class="tile-box">
+      <h3>Asociar dominio a categoría</h3>
+      <form action="{{ url_for('admin_controller.agregar_dominio') }}" method="POST" class="tile-form">
+        <input type="text" name="dominio" placeholder="ej. youtube.com" required>
+        <select name="categoria_id" required>
+          <option value="">Selecciona una categoría</option>
+          {% for cat in categorias %}
+            <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">Agregar</button>
+      </form>
+    </section>
+
+    <!-- Tabla de categorías registradas -->
+    <section class="tile-box">
+      <h3>Categorías registradas</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cat in categorias %}
+          <tr>
+            <td>{{ cat.id }}</td>
+            <td>
+              <form action="{{ url_for('admin_controller.editar_categoria', id=cat.id) }}" method="POST">
+                <input type="text" name="nuevo_nombre" value="{{ cat.nombre }}" required>
+                <button type="submit">💾</button>
+              </form>
+            </td>
+            <td>
+              <form action="{{ url_for('admin_controller.eliminar_categoria', id=cat.id) }}" method="POST">
+                <button type="submit" onclick="return confirm('¿Eliminar esta categoría?')">🗑️</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Tabla de dominios registrados -->
+    <section class="tile-box">
+      <h3>Dominios registrados</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Dominio</th>
+            <th>Categoría</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in dominios %}
+          <tr>
+            <td>{{ d.id }}</td>
+            
+            <!-- Solo input de dominio -->
+            <td>
+                <form action="{{ url_for('admin_controller.editar_dominio', id=d.id) }}" method="POST" style="display:inline;">
+                <input type="text" name="nuevo_dominio" value="{{ d.dominio }}" required>
+            </td>
+            
+            <!-- Aquí movemos el select -->
+            <td>
+                <select name="nueva_categoria_id" required>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.id }}" {% if cat.id == d.categoria_id %}selected{% endif %}>{{ cat.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            
+            <!-- Acciones -->
+            <td>
+                <button type="submit">💾</button>
+                </form>
+                <form action="{{ url_for('admin_controller.eliminar_dominio', id=d.id) }}" method="POST" style="display:inline;">
+                <button type="submit" onclick="return confirm('¿Eliminar este dominio?')">🗑️</button>
+                </form>
+            </td>
+            </tr>
+
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+  </div>
+
+</main>
+
+</div>
+</body>
+</html>

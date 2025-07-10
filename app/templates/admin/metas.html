@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Metas y Límites - ProcrastiGuard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+<div class="dashboard-container">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>¡Hola,<br>Angel!</h2>
+    <p>Panel de Metas y Limites</p>
+    <nav>
+      <ul>
+        <li><a href="{{ url_for('controlador.dashboard') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="Home"></a></li>
+        <li><a href="{{ url_for('admin_controller.vista_metas') }}"><img src="{{ url_for('static', filename='icons/trophy.png') }}" alt="Logros"></a></li>
+        <li><a href="{{ url_for('admin_controller.vista_categorias') }}"><img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración"></a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Contenido -->
+  <main class="content">
+    
+    <div class="seccion-metas">
+    <div class="grupo-metales">
+
+
+      <!-- Agregar nueva meta -->
+
+       <section class="tile-box">
+      <h3>Agregar una nueva meta diaria</h3>
+      <form class="tile-form" action="{{ url_for('admin_controller.agregar_meta') }}" method="POST">
+        <select name="usuario_id" required>
+          <option value="">Selecciona un usuario</option>
+          {% for u in usuarios %}
+          <option value="{{ u.id }}">{{ u.nombre }}</option>
+          {% endfor %}
+        </select>
+        <select name="categoria_id" required>
+          <option value="">Selecciona una categoría</option>
+          {% for c in categorias %}
+          <option value="{{ c.id }}">{{ c.nombre }}</option>
+          {% endfor %}
+        </select>
+        <input type="number" name="limite_minutos" placeholder="Límite (min)" required min="1">
+        <button type="submit">Aceptar</button>
+      </form>
+    </section>
+
+    <div class="dashboard-form-grid">
+      <!-- Metas existentes -->
+      <div class="dashboard-form-grid">
+      <section class="tile-box">
+        <h3>Metas establecidas</h3>
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Usuario</th><th>Categoría</th><th>Límite</th><th>Acciones</th></tr>
+          </thead>
+          <tbody>
+            {% for m in metas %}
+            <tr>
+              <td>{{ m.id }}</td>
+              <td>{{ m.usuario.nombre }}</td>
+              <td>{{ m.categoria.nombre }}</td>
+              <td>
+                <form action="{{ url_for('admin_controller.editar_meta', id=m.id) }}" method="POST">
+                  <input type="number" name="limite_minutos" value="{{ m.limite_minutos }}" required min="1">
+                  <button type="submit">💾</button>
+                </form>
+              </td>
+              <td>
+                <form action="{{ url_for('admin_controller.eliminar_meta', id=m.id) }}" method="POST">
+                  <button type="submit" onclick="return confirm('¿Eliminar meta?')">🗑️</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Estado de metas -->
+      <section class="tile-box">
+        <h3>Estado de metas hoy</h3>
+        <table>
+          <thead>
+            <tr><th>Categoría</th><th>Meta</th><th>Usado hoy</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            {% for meta in estado_metas %}
+            <tr>
+              <td>{{ meta.categoria }}</td>
+              <td>{{ meta.meta }}</td>
+              <td>{{ meta.usado }}</td>
+              <td>
+                {% if meta.cumplida %}
+                <span class="estado-verde">Cumplida ✅</span>
+                {% else %}
+                <span class="estado-naranja">Pendiente ⏳</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+      </div>
+      </div>
+</div>
+
+<div class="seccion-limites">
+        <div class="grupo-limites">
+      <!-- Agregar nuevo límite -->
+      <section class="tile-box">
+        <h3>Agregar un nuevo límite diario</h3>
+        <form class="tile-form" action="{{ url_for('admin_controller.agregar_limite') }}" method="POST">
+          <select name="usuario_id" required>
+            <option value="">Selecciona un usuario</option>
+            {% for u in usuarios %}
+            <option value="{{ u.id }}">{{ u.nombre }}</option>
+            {% endfor %}
+          </select>
+          <select name="categoria_id" required>
+            <option value="">Selecciona una categoría</option>
+            {% for c in categorias %}
+            <option value="{{ c.id }}">{{ c.nombre }}</option>
+            {% endfor %}
+          </select>
+          <input type="number" name="limite_minutos" placeholder="Límite (min)" required min="1">
+          <button type="submit">Aceptar</button>
+        </form>
+      </section>
+    
+      <!-- Límites existentes -->
+       <div class="dashboard-form-grid">
+      <section class="tile-box">
+        <h3>Límites establecidos</h3>
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Usuario</th><th>Categoría</th><th>Límite</th><th>Acciones</th></tr>
+          </thead>
+          <tbody>
+            {% for l in limites %}
+            <tr>
+              <td>{{ l.id }}</td>
+              <td>{{ l.usuario.nombre }}</td>
+              <td>{{ l.categoria.nombre }}</td>
+              <td>
+                <form action="{{ url_for('admin_controller.editar_limite', id=l.id) }}" method="POST">
+                  <input type="number" name="limite_minutos" value="{{ l.limite_minutos }}" required min="1">
+                  <button type="submit">💾</button>
+                </form>
+              </td>
+              <td>
+                <form action="{{ url_for('admin_controller.eliminar_limite', id=l.id) }}" method="POST">
+                  <button type="submit" onclick="return confirm('¿Eliminar límite?')">🗑️</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Estado de límites -->
+      <section class="tile-box">
+        <h3>Estado de límites hoy</h3>
+        <table>
+          <thead>
+            <tr><th>Categoría</th><th>Límite</th><th>Usado hoy</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            {% for limite in estado_limites %}
+            <tr>
+              <td>{{ limite.categoria }}</td>
+              <td>{{ limite.limite }}</td>
+              <td>{{ limite.usado }}</td>
+              <td>
+                {% if limite.excedido %}
+                <span class="estado-rojo">Excedido 🚨</span>
+                {% else %}
+                <span class="estado-verde">En rango ✅</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+      </div>
+    </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>
