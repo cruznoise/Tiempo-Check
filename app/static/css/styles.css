@@ -1,17 +1,103 @@
+
+/* === THEME VARIABLES === */
+.theme-dark-minimal {
+  --bg: #1e1e2f;
+  --text: #f5f5f5;
+  --card: #252540;
+  --accent: #e67e22;
+  --font: 'Segoe UI', sans-serif;
+  --shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.theme-claro-profesional {
+  --bg: #f5f6fa;
+  --text: #2c3e50;
+  --card: #ffffff;
+  --accent: #3498db;
+  --font: 'Segoe UI', sans-serif;
+  --shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.theme-color-vivid {
+  --bg: #0f111a;
+  --text: #ffffff;
+  --card: #1c1e2b;
+  --accent: #ff4ecd;
+  --font: 'Segoe UI', sans-serif;
+  --shadow: 0 0 10px rgba(255, 78, 205, 0.5);
+}
+
+.theme-soft-pastel {
+  --bg: #fbf8f3;
+  --text: #333;
+  --card: #ffffff;
+  --accent: #a8dadc;
+  --font: 'Quicksand', sans-serif;
+  --shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.theme-retro-terminal {
+  --bg: #0d1117;
+  --text: #33ff33;
+  --card: #141c20;
+  --accent: #ffaa00;
+  --font: 'Courier New', monospace;
+  --shadow: none;
+}
+
+
 /* --- Reset básico --- */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
+/*Modos*/
 
+.theme-dark-minimal {
+  --bg: #1e1e2f;
+  --text: #f5f5f5;
+  --card: #252540;
+  --accent: #e67e22;
+}
+
+.theme-claro-profesional {
+  --bg: var(--bg);
+  --text: var(--text);
+  --card: var(--text);
+  --accent: #3498db;
+}
+
+.theme-color-vivid {
+  --bg: #0f111a;
+  --text: var(--text);
+  --card: #1c1e2b;
+  --accent: #ff4ecd;
+}
+
+.theme-soft-pastel {
+  --bg: #fbf8f3;
+  --text: #333;
+  --card: var(--text);
+  --accent: #a8dadc;
+}
+
+.theme-retro-terminal {
+  --bg: #0d1117;
+  --text: #33ff33;
+  --card: #141c20;
+  --accent: #ffaa00;
+}
+
+/*cuerpo */
 body {
+  font-family: var(--font);
   font-family: 'Segoe UI', sans-serif;
-  background-color: #CAF0F8; /* Fondo claro */
-  color: #d8e7ff; /* Azul muy oscuro */
+  background-color: var(--bg);
+  color: var(--text); /* Azul muy oscuro */
   height: 100vh;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
 }
 
@@ -23,10 +109,10 @@ body {
 
 /* --- Sidebar --- */
 .sidebar {
-  background-color: #0077B6; /* Azul medio */
+  background-color: var(--card); /* Azul medio */
   width: 220px;
   padding: 20px;
-  display: flex;
+  display: flex-start;
   flex-direction: column;
   justify-content: flex-start;
   gap: 30px;
@@ -39,12 +125,12 @@ body {
   font-weight: bold;
   line-height: 1.2;
   margin-bottom: 10px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .sidebar p {
   font-size: 14px;
-  color: #ADE8F4;
+  color: var(--text);
 }
 
 .sidebar nav ul {
@@ -85,20 +171,20 @@ header {
 
 header h1 {
   font-size: 28px;
-  color: #023E8A;
+  color: var(--accent);
   flex-basis: 100%;
 }
 
 select, input[type="date"], button {
   padding: 6px 10px;
-  background-color: #0096C7;
+  background-color: var(--accent);
   color: #fff;
   border: none;
   border-radius: 6px;
 }
 
 button:hover {
-  background-color: #00B4D8;
+  background-color: var(--accent);
   cursor: pointer;
 }
 
@@ -125,7 +211,7 @@ canvas {
 .export-btn {
   display: inline-block;
   margin-top: 10px;
-  background-color: #023E8A;
+  background-color: var(--accent);
   color: white;
   padding: 8px 14px;
   border-radius: 8px;
@@ -135,7 +221,7 @@ canvas {
 }
 
 .export-btn:hover {
-  background-color: #0077B6;
+  background-color: var(--card);
 }
 
 .summary-bar {
@@ -145,7 +231,7 @@ canvas {
   gap: 1rem;
   margin: 2rem 0;
   padding: 1rem;
-  background-color: #0096C7;
+  background-color: var(--accent);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
@@ -161,13 +247,13 @@ canvas {
 .summary-card h4 {
   margin-bottom: 0.5rem;
   font-size: 1rem;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .summary-card p {
   font-size: 1.3rem;
   font-weight: bold;
-  color: #efefef;
+  color: var(--text);
 }
 
 body.modo-oscuro {
@@ -182,6 +268,7 @@ body.modo-oscuro .summary-card {
 
 @media (prefers-color-scheme: dark) {
   body {
+  font-family: var(--font);
     background-color: #1e1e1e;
     color: #f0f0f0;
   }
@@ -221,7 +308,7 @@ body.modo-oscuro .summary-card {
   }
   .botones button {
     background-color: white;
-    color: #1e293b;
+    color: var(--card);
     border: none;
     padding: 0.5rem 1.2rem;
     border-radius: 9999px;
@@ -239,6 +326,7 @@ body.modo-oscuro .summary-card {
 
   /* estilos de log in*/
   body {
+  font-family: var(--font);
             height: 100vh;
             display: flex;
             justify-content: center;
@@ -246,10 +334,10 @@ body.modo-oscuro .summary-card {
         }
 
         .login-container {
-            background-color: #1e293b;
+            background-color: var(--card);
             padding: 2rem;
             border-radius: 1rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--shadow);
             width: 100%;
             max-width: 400px;
         }
@@ -257,14 +345,14 @@ body.modo-oscuro .summary-card {
         .login-container h2 {
             text-align: center;
             margin-bottom: 1.5rem;
-            color: #ffffff;
+            color: var(--text);
         }
 
         label {
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 600;
-            color: #ffffff;
+            color: var(--text);
         }
 
         input[type="text"],
@@ -272,7 +360,7 @@ body.modo-oscuro .summary-card {
             width: 100%;
             padding: 0.75rem;
             margin-bottom: 1rem;
-            border: 1px solid #1e293b;
+            border: 1px solid var(--card);
             border-radius: 0.5rem;
             transition: border-color 0.3s;
         }
@@ -338,8 +426,8 @@ select {
   width: 100%;
   max-width: 120px;
   padding: 6px 10px;
-  background-color: #CAF0F8;
-  color: #14172d;
+  background-color: var(--accent);
+  color: var(--text);
   border: none;
   border-radius: 6px;
 }
@@ -348,7 +436,7 @@ select {
 form button {
   padding: 6px 10px;
   margin-left: 5px;
-  background-color: #4e79a7;
+  background-color: var(--accent);
   color: white;
   border: none;
   border-radius: 6px;
@@ -356,7 +444,7 @@ form button {
 }
 
 form button:hover {
-  background-color: #3a5d86;
+  background-color: var(--accent);
 }
 
 /* --- Formularios con buena separación --- */
@@ -413,10 +501,10 @@ form button:hover {
 .tile-box {
   align-items: center;  /* centra horizontalmente los elementos hijos */
   text-align: center;   /* centra texto dentro de los bloques */
-  background-color: #0096C7;
+  background-color: var(--accent);
   padding: 25px;
   border-radius: 15px;
-  box-shadow: 0 4px 10px rgba(30, 39, 70, 0.2);
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -428,7 +516,7 @@ form button:hover {
   text-align: center;
   font-size: 16px;
   font-weight: bold;
-  color: #ffffff;
+  color: var(--text);
 }
 
 /* --- Formulario horizontal --- */
@@ -445,7 +533,7 @@ form button:hover {
   padding: 8px 10px;
   border-radius: 8px;
   border: none;
-  background-color: #CAF0F8;
+  background-color: var(--accent);
   color: rgb(17, 26, 45);
   width: 160px;
   max-width: 100%;
@@ -453,7 +541,7 @@ form button:hover {
 
 .tile-form button {
   padding: 8px 14px;
-  background-color: #4e79a7;
+  background-color: var(--accent);
   color: white;
   border: none;
   border-radius: 8px;
@@ -463,7 +551,7 @@ form button:hover {
 }
 
 .tile-form button:hover {
-  background-color: #3a5d86;
+  background-color: var(--accent);
 }
 
 /* Scroll interno para tablas largas */
@@ -525,4 +613,97 @@ form button:hover {
 /* Mejorar contraste en filas */
 .tile-box table tbody tr:nth-child(even) {
   background-color: rgba(255, 255, 255, 0.03);
+}
+
+.tile-button {
+  background-color: var(--accent);
+  color: white;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.tile-button:hover {
+  background-color: var(--accent);
+}
+
+/*logros e insignias*/
+
+/* 🔷 Contenedor grid */
+.logros-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 20px;
+  padding-top: 10px;
+}
+
+/* 🔸 Estilo general de tarjeta */
+.insignia {
+  padding: 15px;
+  border-radius: 16px;
+  text-align: center;
+  border: 2px solid #ddd;
+  transition: 0.3s;
+  background: white;
+  box-shadow: 0 0 8px rgba(0,0,0,0.05);
+}
+
+.insignia img {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+/* 🔰 Niveles visuales */
+.insignia.primerizo {
+  border-color: #7ed6df;
+  background: #dff9fb;
+}
+.insignia.intermedio {
+  border-color: #f6e58d;
+  background: #fef9c7;
+}
+.insignia.productivo {
+  border-color: #badc58;
+  background: #eafadb;
+}
+.insignia.super_pro {
+  border-color: #eb4d4b;
+  background: #ffcccc;
+}
+
+/* 🚫 Logros bloqueados */
+.insignia.locked {
+  background: var(--card) !important;
+  border-color: #aaa !important;
+  color: #777 !important;
+  opacity: 0.6;
+  filter: grayscale(1);
+}
+
+.insignia.locked h3,
+.insignia.locked p {
+  color: #777 !important;
+}
+
+/* 📝 Tipografía */
+.insignia h3 {
+  font-size: 15px;
+  margin: 8px 0 4px;
+  color: #333;
+}
+
+.insignia p {
+  font-size: 13px;
+  color: #666;
+}
+
+#formRegistro {
+  margin-top: 1em;
+  transition: all 0.3s ease;
 }

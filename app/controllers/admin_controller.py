@@ -1,20 +1,34 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash, current_app, send_file
+from io import BytesIO
 from flask_login import login_required
 from flask_cors import cross_origin
-from datetime import date
+import csv
+import json
+from datetime import date, datetime, timedelta
 from sqlalchemy import text
-from app.db import db
+from app.db import db, get_db
 from app.models.models import Registro, DominioCategoria, Categoria, LimiteCategoria, MetaCategoria, Usuario
 from collections import defaultdict
+from datetime import datetime
+from app.utils import clasificar_dominio_automatico, desbloquear_logro, verificar_logros_dinamicos, actualizar_rachas, obtener_promedio_categoria, calcular_nivel_confianza, obtener_dias_uso, calcular_sugerencias_por_categoria
 
 
+bp = Blueprint('exportar', __name__, url_prefix='/admin/exportar')
 admin_controller = Blueprint('admin_controller', __name__, url_prefix='/admin')
+
 
 @admin_controller.route('/categorias', methods=['GET'])
 def vista_categorias():
     categorias = Categoria.query.all()
     dominios = DominioCategoria.query.all()
     return render_template('admin/categorias.html', categorias=categorias, dominios=dominios)
+
+@admin_controller.route('/configuracion')
+def vista_configuracion():
+    if 'usuario_id' not in session:
+        return redirect('/login')
+    return render_template('admin/configuracion.html')
+
 
 @admin_controller.route('/categorias', methods=['POST'])
 def agregar_categoria():
@@ -112,12 +126,21 @@ def vista_metas():
         nombre = next((c.nombre for c in categorias if c.id == m.categoria_id), 'Desconocida')
         usado = uso_actual.get(m.categoria_id, 0)
         cumplida = usado >= m.limite_minutos
+
+        # ACTUALIZA la meta en base de datos
+        m.cumplida = 1 if cumplida else 0
+
         estado_metas.append({
             'categoria': nombre,
             'meta': m.limite_minutos,
             'usado': usado,
             'cumplida': cumplida
         })
+
+    # Hacer commit una sola vez al final
+    db.session.commit()
+
+    verificar_logros_dinamicos(usuario_id)
 
     # Estado de límites
     estado_limites = []
@@ -155,13 +178,46 @@ def agregar_meta():
         nueva = MetaCategoria(
             usuario_id=int(usuario_id),
             categoria_id=int(categoria_id),
-            limite_minutos=int(limite_minutos)
+            limite_minutos=int(limite_minutos),
+            fecha=datetime.now(),
+            cumplida=0
         )
         db.session.add(nueva)
         db.session.commit()
-        flash('Meta agregada correctamente')
+        flash(' Meta agregada correctamente.')
+
+        #Desbloquear logro "Establecer tu primera meta (ID: 11)"
+        #desbloquear_logro(usuario_id, 11)
+        verificar_logros_dinamicos(usuario_id)
     
+    else:
+        flash(" Todos los campos son obligatorios.")
+
     return redirect(url_for('admin_controller.vista_metas'))
+
+#Endpoint de agregar metas sugeridas, no confundir con el de arriba que es el manual
+@admin_controller.route('/api/agregar_meta', methods=['POST'])
+def agregar_meta_api():
+    usuario_id = request.form.get('usuario_id')
+    categoria_id = request.form.get('categoria_id')
+    meta_minutos = request.form.get('meta_minutos')
+
+    if not (usuario_id and categoria_id and meta_minutos):
+        return jsonify({"error": "Faltan datos"}), 400
+
+    nueva = MetaCategoria(
+        usuario_id=int(usuario_id),
+        categoria_id=int(categoria_id),
+        limite_minutos=int(meta_minutos),
+        fecha=datetime.now(),
+        cumplida=0
+    )
+    db.session.add(nueva)
+    db.session.commit()
+
+    verificar_logros_dinamicos(usuario_id)
+    return jsonify({"ok": True})
+
 
 @admin_controller.route('/metas/eliminar/<int:id>', methods=['POST'])
 def eliminar_meta(id):
@@ -230,7 +286,7 @@ def vista_limites():
 @admin_controller.route('/agregar_limite', methods=['POST'])
 def agregar_limite():
     try:
-        usuario_id = request.form.get('usuario_id')  # <- CAMBIO AQUÍ
+        usuario_id = request.form.get('usuario_id')
         categoria_id = request.form['categoria_id']
         limite_minutos = int(request.form['limite_minutos'])
 
@@ -241,12 +297,66 @@ def agregar_limite():
         )
         db.session.add(nuevo)
         db.session.commit()
-        flash("✅ Límite agregado correctamente.")
+        flash("Límite agregado correctamente.")
+
+        #Desbloquear logro "Establece tu primer límite" (ID: 10)
+        #desbloquear_logro(usuario_id, 10)
+        verificar_logros_dinamicos(usuario_id)
+
+
     except Exception as e:
         print("Error al agregar límite:", e)
-        flash("❌ Error al agregar límite.")
+        flash("Error al agregar límite.")
 
     return redirect(url_for('admin_controller.vista_metas'))
+
+
+#ENDPOINT PARA AGREGAR LIMITES SUGERIDOS (EL DE ARRIBA ES MANUAL)
+
+@admin_controller.route('/api/agregar_limite', methods=['POST'])
+def agregar_limite_api():
+    usuario_id = request.form.get('usuario_id')
+    categoria_id = request.form.get('categoria_id')
+    limite_minutos = request.form.get('limite_minutos')
+
+    if not (usuario_id and categoria_id and limite_minutos):
+        return jsonify({"error": "Faltan datos"}), 400
+
+    try:
+
+        usuario_id = int(usuario_id)
+        categoria_id = int(categoria_id)
+        limite_minutos = int(limite_minutos)
+
+
+        existente = LimiteCategoria.query.filter_by(
+            usuario_id=usuario_id,
+            categoria_id=categoria_id
+        ).first()
+
+        if existente:
+            existente.limite_minutos = limite_minutos
+            db.session.commit()
+            mensaje = "Límite actualizado"
+        else:
+            nuevo = LimiteCategoria(
+                usuario_id=usuario_id,
+                categoria_id=categoria_id,
+                limite_minutos=limite_minutos
+            )
+            db.session.add(nuevo)
+            db.session.commit()
+            mensaje = "Límite agregado"
+
+        verificar_logros_dinamicos(usuario_id)
+
+        return jsonify({"ok": True, "mensaje": mensaje})
+
+    except Exception as e:
+        db.session.rollback() 
+        print(" ERROR en agregar_limite_api:", e)
+        return jsonify({"error": str(e)}), 500
+
 
 
 @admin_controller.route('/editar_limite/<int:id>', methods=['POST'])
@@ -257,12 +367,12 @@ def editar_limite(id):
         if limite:
             limite.limite_minutos = nuevo_limite
             db.session.commit()
-            flash("✏️ Límite actualizado.")
+            flash(" Límite actualizado.")
         else:
-            flash("❌ Límite no encontrado.")
+            flash(" Límite no encontrado.")
     except Exception as e:
         print("Error al editar límite:", e)
-        flash("❌ Error al editar límite.")
+        flash(" Error al editar límite.")
 
     return redirect(url_for('admin_controller.vista_metas'))
 @admin_controller.route('/eliminar_limite/<int:id>', methods=['POST'])
@@ -274,10 +384,10 @@ def eliminar_limite(id):
             db.session.commit()
             flash("🗑️ Límite eliminado.")
         else:
-            flash("❌ Límite no encontrado.")
+            flash(" Límite no encontrado.")
     except Exception as e:
         print("Error al eliminar límite:", e)
-        flash("❌ Error al eliminar límite.")
+        flash("Error al eliminar límite.")
 
     return redirect(url_for('admin_controller.vista_metas'))
 
@@ -292,9 +402,9 @@ def categorias_usuario():
 @admin_controller.route('/api/alerta_categoria', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST', 'OPTIONS'], allow_headers='Content-Type')
 def verificar_alerta_categoria():
-    print("⚠️ SESSION:", session)
+    print(" SESSION:", session)
     if 'usuario_id' not in session:
-        print("❌ No hay usuario en sesión")
+        print(" No hay usuario en sesión")
         return jsonify({'alerta': False})
 
 
@@ -327,20 +437,20 @@ def verificar_alerta_categoria():
         categoria_id=categoria_id
     ).first()
 
-    print("🧪 CATEGORIA:", categoria_id)
-    print("🧪 USUARIO:", usuario_id)
-    print("🧪 MINUTOS USADOS:", minutos_usados)
-    print("🧪 LIMITE:", limite.limite_minutos if limite else "no hay límite")
+    print(" CATEGORIA:", categoria_id)
+    print(" USUARIO:", usuario_id)
+    print(" MINUTOS USADOS:", minutos_usados)
+    print(" LIMITE:", limite.limite_minutos if limite else "no hay límite")
 
     if not limite:
         return jsonify({'alerta': False})
 
 
     if minutos_usados >= limite.limite_minutos:
-        return jsonify({'alerta': True, 'mensaje': f'🚨 Has excedido tu límite diario para {limite.categoria.nombre}.'})
+        return jsonify({'alerta': True, 'mensaje': f' Has excedido tu límite diario para {limite.categoria.nombre}.'})
 
     elif minutos_usados >= 0.8 * limite.limite_minutos:
-        return jsonify({'alerta': True, 'mensaje': f'⚠️ Estás cerca de tu límite diario para {limite.categoria.nombre}.'})
+        return jsonify({'alerta': True, 'mensaje': f' Estás cerca de tu límite diario para {limite.categoria.nombre}.'})
 
     return jsonify({'alerta': False})
 
@@ -401,7 +511,7 @@ def alerta_por_dominio():
             return jsonify({
                 "alerta": True,
                 "tipo": "exceso",
-                "mensaje": f"🚨 Has superado tu límite diario de {limite} minutos en {categoria_nombre}.",
+                "mensaje": f" Has superado tu límite diario de {limite} minutos en {categoria_nombre}.",
                 "categoria_nombre": categoria_nombre
             })
 
@@ -409,8 +519,227 @@ def alerta_por_dominio():
             return jsonify({
                 "alerta": True,
                 "tipo": "proximidad",
-                "mensaje": f"⚠️ Estás cerca de tu límite diario para {categoria_nombre}. Llevas {int(minutos_usados)} minutos.",
+                "mensaje": f"Estás cerca de tu límite diario para {categoria_nombre}. Llevas {int(minutos_usados)} minutos.",
                 "categoria_nombre": categoria_nombre
             })
 
     return jsonify({"alerta": False})
+
+
+from app.db import get_db
+
+@admin_controller.route('/exportar/datos', methods=['GET'])
+def exportar_datos():
+    if 'usuario_id' not in session:
+        return jsonify({"error": "No autenticado"}), 401
+
+    usuario_id = session['usuario_id']
+    formato = request.args.get('formato', 'csv')     # 'csv' o 'json'
+    rango = request.args.get('rango', 'todo')         # '3dias', '15dias', 'mes', '3meses', 'todo'
+
+    hoy = datetime.now().date()
+
+    if rango == '3dias':
+        fecha_min = hoy - timedelta(days=3)
+    elif rango == '15dias':
+        fecha_min = hoy - timedelta(days=15)
+    elif rango == 'mes':
+        fecha_min = hoy - timedelta(days=30)
+    elif rango == '3meses':
+        fecha_min = hoy - timedelta(days=90)
+    else:
+        fecha_min = None  # Todo el tiempo
+
+    query = Registro.query.filter_by(usuario_id=usuario_id)
+    if fecha_min:
+        query = query.filter(Registro.fecha >= fecha_min)
+
+    registros = query.order_by(Registro.fecha.desc()).all()
+
+    if formato == 'json':
+        datos = [
+            {
+                "fecha": str(r.fecha),
+                "dominio": r.dominio,
+                "tiempo_min": r.tiempo
+            }
+            for r in registros
+        ]
+        return jsonify({
+            "usuario_id": usuario_id,
+            "rango": rango,
+            "datos": datos
+        })
+
+    elif formato == 'csv':
+        # Crear contenido CSV como string
+            from io import StringIO
+            salida_texto = StringIO()
+            writer = csv.writer(salida_texto)
+            writer.writerow(['Fecha', 'Dominio', 'Tiempo (min)'])
+            for r in registros:
+                writer.writerow([r.fecha, r.dominio, r.tiempo])
+
+        # Convertir string a bytes
+            salida_bytes = BytesIO()
+            salida_bytes.write(salida_texto.getvalue().encode('utf-8'))
+            salida_bytes.seek(0)
+
+            nombre_archivo = f"registro_{rango}_{datetime.now().strftime('%Y%m%d')}.csv"
+            return send_file(
+            salida_bytes,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=nombre_archivo
+        )
+
+    else:
+        return jsonify({"error": "Formato no válido"}), 400
+
+@admin_controller.route('/api/logros')
+def obtener_logros_usuario():
+    if 'usuario_id' not in session:
+        print(" Sesión no activa para /admin/api/logros")
+        return jsonify([])
+
+    usuario_id = session['usuario_id']
+    conexion = get_db()  # si es SQLAlchemy
+    with conexion.cursor(dictionary=True) as cursor:
+        cursor.execute("""
+            SELECT l.id, l.nombre, l.descripcion, l.nivel, l.imagen_url,
+            (ul.id IS NOT NULL) AS desbloqueado
+
+            FROM logros l
+            LEFT JOIN usuario_logro ul ON l.id = ul.logro_id AND ul.usuario_id = %s
+        """, (usuario_id,))
+        logros = cursor.fetchall()
+
+    
+
+    return jsonify(logros)
+
+@admin_controller.route('/api/estado_rachas')
+def estado_rachas():
+    if 'usuario_id' not in session:
+        return jsonify({"error": "No autenticado"}), 401
+
+    usuario_id = session['usuario_id']
+    conexion = get_db()
+    with conexion.cursor(dictionary=True) as cursor:
+        cursor.execute("""
+            SELECT tipo, dias_consecutivos, activa FROM rachas_usuario
+            WHERE usuario_id = %s
+        """, (usuario_id,))
+        rachas = cursor.fetchall()
+
+    return jsonify({r['tipo']: {"activa": r['activa'], "dias": r['dias_consecutivos']} for r in rachas})
+
+@admin_controller.route('/guardar', methods=['POST'])
+@cross_origin(origins='*', methods=['POST'])
+def guardar_dominio():
+    try:
+        dominio = request.form.get('dominio')
+        tiempo = int(request.form.get('tiempo'))
+        usuario_id = request.form.get('usuario_id') or session.get('usuario_id')
+
+        if not dominio or not tiempo or not usuario_id:
+            return jsonify({"error": "Faltan datos"}), 400
+
+        conexion = get_db()
+        with conexion.cursor() as cursor:
+            # Verificar si el dominio ya tiene categoría
+            cursor.execute("SELECT categoria_id FROM dominio_categoria WHERE dominio = %s", (dominio,))
+            row = cursor.fetchone()
+
+            if row:
+                categoria_id = row[0]
+            else:
+                from app.utils import clasificar_dominio_automatico
+                categoria_id = clasificar_dominio_automatico(dominio)
+
+            # Insertar registro de tiempo
+            cursor.execute("""
+                INSERT INTO registro (usuario_id, dominio, tiempo, fecha)
+                VALUES (%s, %s, %s, NOW())
+            """, (usuario_id, dominio, tiempo))
+            conexion.commit()
+
+        print(f"[✔] Petición recibida del dominio: {dominio} con tiempo: {tiempo} para usuario: {usuario_id}")
+        return jsonify({"ok": True})
+    
+    except Exception as e:
+        print("Error en /guardar:", e)
+        return jsonify({"error": "Error al guardar"}), 500
+
+
+@admin_controller.route('/registro', methods=['POST'])
+def registro():
+    nombre = request.form['nombre']
+    correo = request.form['correo']
+    contraseña = request.form['contraseña']
+
+    if not nombre or not correo or not contraseña:
+        flash(" Todos los campos son obligatorios.")
+        return redirect(url_for('admin_controller.login'))
+
+    # Verificar si el correo ya existe
+    existente = db.session.execute(text("""
+        SELECT id FROM usuarios WHERE correo = :correo
+    """), {"correo": correo}).fetchone()
+
+    if existente:
+        flash("Ya existe un usuario con ese correo.")
+        return redirect("/login")
+
+    # Insertar nuevo usuario
+    db.session.execute(text("""
+        INSERT INTO usuarios (nombre, correo, contraseña)
+        VALUES (:nombre, :correo, :contraseña)
+    """), {"nombre": nombre, "correo": correo, "contraseña": contraseña})
+    db.session.commit()
+
+    flash(" Registro exitoso. Ahora inicia sesión.")
+    return redirect(url_for('admin_controller.login'))
+
+@admin_controller.route('/api/sugerencias', methods=['GET'])
+def sugerencias():
+
+    usuario_id = session.get('usuario_id')
+    if not usuario_id:
+        return jsonify({"error": "Usuario no autenticado"}), 401
+
+    dias_uso = obtener_dias_uso(usuario_id)
+    nivel_confianza = calcular_nivel_confianza(dias_uso)
+
+    if nivel_confianza == "insuficiente":
+        return jsonify({
+            "mensaje": "Aún no hay datos suficientes para sugerencias.",
+            "nivel_confianza": nivel_confianza
+        })
+
+    sugerencias_resultado = []
+    categorias = Categoria.query.all()
+
+    for cat in categorias:
+        promedio = obtener_promedio_categoria(usuario_id, cat.id)
+        if promedio == 0:
+            continue
+
+        sugerencia_meta, sugerencia_limite = calcular_sugerencias_por_categoria(cat, promedio)
+
+        sugerencias_resultado.append({
+            "categoria_id": cat.id,
+            "categoria_nombre": cat.nombre,
+            "sugerencia_meta": sugerencia_meta,
+            "sugerencia_limite": sugerencia_limite,
+            "nivel_confianza": nivel_confianza
+        })
+
+    LIMITE_DIARIO = 1440
+    total_sugerido = sum(s["sugerencia_meta"] for s in sugerencias_resultado)
+    if total_sugerido > LIMITE_DIARIO:
+        for s in sugerencias_resultado:
+            proporcion = s["sugerencia_meta"] / total_sugerido
+            s["sugerencia_meta"] = int(proporcion * LIMITE_DIARIO)
+
+    return jsonify(sugerencias_resultado)

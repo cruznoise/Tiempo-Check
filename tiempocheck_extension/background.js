@@ -31,7 +31,10 @@ function guardarTiempo(forzarEnvio = false) {
   if (!dominioActual || !inicioSesion) return;
 
   const ahora = Date.now();
-  const delta = Math.floor((ahora - inicioSesion) / 1000);
+  const MAX_TIEMPO_DELTA = 600; //ESTA
+  const deltaCrudo = Math.floor((ahora - inicioSesion) / 1000);
+  const delta = Math.min(deltaCrudo, MAX_TIEMPO_DELTA); //  Y ESTA TAMBIEN 
+
   if (!Number.isFinite(delta) || delta <= 0) return;
 
   // Validar que no se envíe con demasiada frecuencia
@@ -56,17 +59,21 @@ function guardarTiempo(forzarEnvio = false) {
     }
   });
 
-  fetch("http://localhost:5000/guardar", {
+  fetch("http://localhost:5000/admin/guardar", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    credentials: "include",
+    body: new URLSearchParams({
       dominio: dominioActual,
-      tiempo: delta
+      tiempo: delta,
     })
-  }).catch(err => console.error(`[Error al guardar ${dominioActual}]`, err));
+  });
 
-  // Reiniciar sesión solo si fue envío real
+  // AGREGA ESTA LINEA, DE tiempoAcumulado = 0
+  tiempoAcumulado = 0;
+
   inicioSesion = Date.now();
+
 }
 
 
@@ -131,7 +138,7 @@ async function verificarAlertas() {
   }
 }
 
-// 🛡️ Pedir permiso y lanzar cada 2 minutos
+// 🛡️ Pedir permiso y lanzar cada x minutos
 if (Notification.permission !== 'granted') {
   Notification.requestPermission();
 }

@@ -16,7 +16,8 @@
       <ul>
         <li><a href="{{ url_for('controlador.dashboard') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="Home"></a></li>
         <li><a href="{{ url_for('admin_controller.vista_metas') }}"><img src="{{ url_for('static', filename='icons/trophy.png') }}" alt="Logros"></a></li>
-        <li><a href="{{ url_for('admin_controller.vista_categorias') }}"><img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración"></a></li>
+        <li><a href="{{ url_for('admin_controller.vista_configuracion') }}"><img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración"></a></li>
+
       </ul>
     </nav>
   </aside>
@@ -26,6 +27,16 @@
     
     <div class="seccion-metas">
     <div class="grupo-metales">
+      
+
+      <section class="seccion-logros">
+        <div class="tile-box">
+          <h2>🏆 Logros desbloqueables</h2>
+          <div class="logros-grid" id="contenedor-logros">
+            <!-- Insignias cargadas dinámicamente -->
+          </div>
+        </div>
+      </section>
 
 
       <!-- Agregar nueva meta -->
@@ -48,9 +59,17 @@
         <input type="number" name="limite_minutos" placeholder="Límite (min)" required min="1">
         <button type="submit">Aceptar</button>
       </form>
-    </section>
+     </section>
+     
+     <!--Metas sugeridas-->
 
-    <div class="dashboard-form-grid">
+    <div class="tile-box seccion-sugerencias" id="sugerenciasMetas">
+      <h2> Sugerencias de metas para hoy</h2>
+       <div id="contenedor-sugerencias" data-usuario="{{ session['usuario_id'] }}"></div>
+    </div>
+
+     
+      <div class="dashboard-form-grid">
       <!-- Metas existentes -->
       <div class="dashboard-form-grid">
       <section class="tile-box">
@@ -97,9 +116,9 @@
               <td>{{ meta.usado }}</td>
               <td>
                 {% if meta.cumplida %}
-                <span class="estado-verde">Cumplida ✅</span>
+                <span class="estado-verde">Cumplida </span>
                 {% else %}
-                <span class="estado-naranja">Pendiente ⏳</span>
+                <span class="estado-naranja">Pendiente </span>
                 {% endif %}
               </td>
             </tr>
@@ -109,9 +128,9 @@
       </section>
       </div>
       </div>
-</div>
+     </div>
 
-<div class="seccion-limites">
+     <div class="seccion-limites">
         <div class="grupo-limites">
       <!-- Agregar nuevo límite -->
       <section class="tile-box">
@@ -180,9 +199,9 @@
               <td>{{ limite.usado }}</td>
               <td>
                 {% if limite.excedido %}
-                <span class="estado-rojo">Excedido 🚨</span>
+                <span class="estado-rojo">Excedido </span>
                 {% else %}
-                <span class="estado-verde">En rango ✅</span>
+                <span class="estado-verde">En rango </span>
                 {% endif %}
               </td>
             </tr>
@@ -195,5 +214,9 @@
     </div>
   </main>
 </div>
+
+
+<script src="{{ url_for('static', filename='js/metas.js') }}"> </script>
+<script src="{{ url_for('static', filename='js/temas.js') }}"></script>
 </body>
 </html>

@@ -1,14 +1,19 @@
-from flask import Flask, render_template, request, session, redirect, jsonify
+from flask import Flask, render_template, request, session, redirect, jsonify, Response
 from flask_cors import CORS
 from datetime import datetime
 from app.models.models import db, Usuario, Registro
 from app.controllers.app_base import guardar_tiempo, resumen, exportar_csv
 from app.controllers.app_base import controlador as app_base_controller
 from app.controllers.admin_controller import admin_controller
+from app.utils import generar_backup_completo, restaurar_backup_completo
+from app.db import close_db
+
+import json
 
 app = Flask(__name__)
 app.secret_key = 'tiempocheck_key'
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+
 
 
 # Configuración de base de datos
@@ -90,5 +95,59 @@ def logout():
     session.clear()
     return redirect('/login')
 
+#Backup de cuenta
+@app.route('/backup_completo')
+def backup_completo():
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    backup = generar_backup_completo(session['usuario_id'])  # <- asegúrate de importar esta
+    json_data = json.dumps(backup, indent=2)
+
+    return Response(
+        json_data,
+        mimetype='application/json',
+        headers={'Content-Disposition': 'attachment;filename=backup_completo.json'}
+    )
+
+
+@app.route('/restaurar_backup', methods=['POST'])
+def restaurar_backup():
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    archivo = request.files.get('backup')
+    if not archivo:
+        return jsonify({'error': 'Archivo no encontrado'}), 400
+
+    try:
+        contenido = json.load(archivo)
+        restaurar_backup_completo(contenido, session['usuario_id'])
+        return jsonify({'mensaje': 'Backup restaurado exitosamente ✅'})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al restaurar backup: {str(e)}'}), 500
+
+
+@app.route('/reseteo_total', methods=['POST'])
+def reseteo_total():
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    try:
+        from app.utils import resetear_datos_usuario
+        resetear_datos_usuario(session['usuario_id'])
+        return jsonify({'mensaje': 'Cuenta reiniciada correctamente ✅'})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al resetear la cuenta: {str(e)}'}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True)
+
+@app.teardown_appcontext
+def cerrar_conexion(error):
+    close_db(error)

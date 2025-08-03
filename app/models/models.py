@@ -1,5 +1,5 @@
-
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 
 from app.db import db  
 
@@ -36,6 +36,8 @@ class MetaCategoria(db.Model):
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.id'), nullable=False)
     limite_minutos = db.Column(db.Integer, nullable=False)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    cumplida = db.Column(db.Boolean, default=False) 
 
     usuario = db.relationship('Usuario')
     categoria = db.relationship('Categoria')
@@ -49,3 +51,18 @@ class LimiteCategoria(db.Model):
 
     usuario = db.relationship('Usuario')
     categoria = db.relationship('Categoria')
+
+class UsuarioLogro(db.Model):
+    __tablename__ = 'usuario_logro'
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    logro_id = db.Column(db.Integer, nullable=False)
+
+    usuario = db.relationship('Usuario')
+
+    def to_dict(self):
+        return {
+            "usuario_id": self.usuario_id,
+            "logro_id": self.logro_id
+        }

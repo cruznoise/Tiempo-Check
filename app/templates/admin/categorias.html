@@ -16,6 +16,7 @@
       <ul>
         <li><a href="{{ url_for('controlador.dashboard') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="Home"></a></li>
         <li><a href="{{ url_for('admin_controller.vista_metas') }}"><img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros"></a></li>
+        <li><a href="{{ url_for('admin_controller.vista_configuracion') }}"><img src="{{ url_for('static', filename='icons/regresar.png') }}" alt="Configuración"></a></li>
         <li><a href="{{ url_for('admin_controller.vista_categorias') }}"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="Configuración"></a></li>
       </ul>
     </nav>
@@ -134,5 +135,7 @@
 </main>
 
 </div>
+<script src="{{ url_for('static', filename='js/temas.js') }}"></script>
+
 </body>
 </html>

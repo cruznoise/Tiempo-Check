@@ -4,12 +4,19 @@ from datetime import datetime, timedelta, date
 from collections import defaultdict
 from app.models import db, Usuario, Registro, Categoria, DominioCategoria
 from app.models.models import LimiteCategoria, Registro, DominioCategoria
+from app.db import close_db
+
+
+
 
 admin_base = Blueprint('admin_base', __name__)
 
 
 controlador = Blueprint('controlador', __name__)
 def guardar_tiempo(request, usuario_id):
+    from sqlalchemy import and_, func
+    from datetime import datetime
+
     data = request.get_json()
     dominio = data.get('dominio')
     tiempo = data.get('tiempo')
@@ -22,14 +29,13 @@ def guardar_tiempo(request, usuario_id):
     if not dominio or tiempo is None:
         return jsonify({'error': 'Faltan datos'}), 400
 
-    hoy = datetime.now().date()
+    ahora = datetime.now()
 
-    registro = Registro.query.filter_by(
-        dominio=dominio,
-        fecha=hoy,
-        usuario_id=usuario_id
+    registro = Registro.query.filter(
+        Registro.dominio == dominio,
+        Registro.usuario_id == usuario_id,
+        func.date(Registro.fecha) == ahora.date()
     ).first()
-
 
     if registro:
         registro.tiempo += tiempo
@@ -37,13 +43,14 @@ def guardar_tiempo(request, usuario_id):
         registro = Registro(
             dominio=dominio,
             tiempo=tiempo,
-            fecha=hoy,
+            fecha=ahora,
             usuario_id=usuario_id
         )
         db.session.add(registro)
 
     db.session.commit()
     return jsonify({'mensaje': 'Tiempo actualizado'}), 200
+
 
 @controlador.route('/dashboard')
 def dashboard():
@@ -153,7 +160,7 @@ def dashboard():
                 'cumplida': cumplida
             })
 
-            return render_template(
+        return render_template(
             'dashboard.html',
             datos=datos,
             categorias=por_categoria,

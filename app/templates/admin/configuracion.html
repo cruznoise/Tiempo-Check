@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Configuración de la Cuenta</title>
+  <link rel="stylesheet"href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div class="dashboard-container">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar">
+    <h2>¡Hola, Ángel!</h2>
+    <p>Configuración de categorías y dominios</p>
+    <nav>
+      <ul>
+        <li><a href="{{ url_for('controlador.dashboard') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="Home"></a></li>
+        <li><a href="{{ url_for('admin_controller.vista_metas') }}"><img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros"></a></li>
+        <li><a href="{{ url_for('admin_controller.vista_configuracion') }}"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="Configuración"></a></li>
+      </ul>
+    </nav>
+    </aside>
+
+  <!-- Contenido principal -->
+<main class="content">
+  <div class="tile-box" style="max-width: 500px; padding: 30px; text-align: center;">
+    <h2 style="margin-bottom: 30px;">Configuración de la cuenta</h2>
+
+    <!-- Botón a categorias.html -->
+    <button onclick="window.location.href='/admin/categorias'" class="tile-button">
+      🗂️ Administrar dominios y categorías
+    </button>
+
+    <!-- Exportar datos -->
+    <div style="margin-top: 30px;">
+      <label for="rango" style="font-weight: bold;">Rango de tiempo para exportar:</label>
+      <select id="rango" style="margin: 10px 0; padding: 6px 12px; border-radius: 8px;">
+        <option value="3dias">Últimos 3 días</option>
+        <option value="15dias">Últimos 15 días</option>
+        <option value="mes">Último mes</option>
+        <option value="3meses">Últimos 3 meses</option>
+        <option value="todo" selected>Todo el tiempo</option>
+      </select>
+
+      <div style="margin-top: 15px;">
+        <button id="bck_btn" class="tile-button">Descargar Backup Completo</button>
+        <button id="exportarCSV" class="tile-button">📄 Exportar CSV</button>
+        <button id="exportarJSON" class="tile-button" style="margin-left: 10px;">🧾 Exportar JSON</button>
+      </div>
+    </div>
+    <!-- Subir backup-->
+     <div style="margin-top: 30px;">
+      <label style="max-width: 500px; padding: 30px; text-align: center;"> Restaurar cuenta (.JSON)</label>
+      <form id="form-restaurar" enctype="multipart/form-data">
+        <input type="file" id="archivo-backup" name="backup" accept=".json" required>
+        <button type="submit">🔁 Restaurar Backup</button>
+      </form>
+
+     </div>
+
+     <!-- Reseteo de cuenta-->
+    <div style="margin-top: 30px;">
+      <label style="max-width: 500px; padding: 30px; text-align: center;"> Reiniciar cuenta</label>
+      <button id="btn-reseteo-total" class="btn-danger">Reiniciar Cuenta desde Cero</button>
+    </div>
+
+  </div>
+
+</main>
+</div>
+
+  <!-- Script para exportar -->
+  <script src="{{ url_for('static', filename='js/reset_back.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
+
+</body>
+</html>

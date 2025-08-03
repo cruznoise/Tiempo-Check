@@ -1,44 +1,100 @@
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f4f4f4;
-  color: #333;
-  margin: 0;
-  padding: 0;
-  width: 300px;
-  height: auto;
-}
+      font-family: 'Segoe UI', sans-serif;
+      border: 1px solid #ccc;
+      background-color: #e4f1fb;
+      margin: 10;
+      padding: 10px;
+      width: 300px;
+      border-radius: 10px;
+      border-top-right-radius: 10px;
+      gap: 30px;
+      z-index: 10;
+      box-shadow: 12px;
+    }
 
-.container {
-  padding: 16px;
-  text-align: center;
-}
+    .popup-container {
+      text-align: center;
+    }
 
-h1 {
-  font-size: 20px;
-  color: #0057b8;
-  margin-bottom: 10px;
-}
+    h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #2c3e50;
+      font-weight: bold;
+    }
+    
+    .stats {
+      background-color: #ffffff;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 10px;
+      width: 280px;
+      justify-content: center;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    }
 
-.stats {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+    .stats p {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 10px;
+    }
 
-.stats p {
-  margin: 8px 0;
-  font-size: 14px;
-}
 
-#status {
-  font-style: italic;
-  margin-bottom: 10px;
-  color: #777;
-}
-.all-stats
-{
-    padding: 13px;
-    text-align: center;
-    color: #0057b8;
-}
+    .info-actual {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .rachas {
+      display: flex;
+      gap: 10px;
+      margin: 15px 0;
+      flex-direction: column;
+    }
+
+    .racha {
+      display: flex;
+      flex-direction: column;
+      align-items:flex-start;
+      font-size: 12px;
+      color: #2c3e50;
+    }
+
+    .racha img {
+      width: 32px;
+      height: 32px;
+      margin-bottom: 5px;
+    }
+
+    .historial-container {
+      margin-top: 10px;
+      position: relative;
+    }
+
+    .historial-texto {
+      font-size: 13px;
+      font-weight: bold;
+      color: #2c3e50;
+      cursor: pointer;
+    }
+
+    .historial-popup {
+      display: none;
+      position: absolute;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #ffffff;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 10px;
+      width: 250px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      font-size: 12px;
+      z-index: 10;
+    }
+
+    .historial-container:hover .historial-popup {
+      display: block;
+    }

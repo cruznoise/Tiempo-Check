@@ -1,33 +1,35 @@
 let intervalId = null;
 
-// ===  CONTROL DE DÍA NUEVO ===
+// === CONTROL DE DÍA NUEVO Y CARGA INICIAL ===
 document.addEventListener("DOMContentLoaded", () => {
-  const hoy = new Date().toDateString();  // Ejemplo: "Wed Jul 03 2025"
+  const hoy = new Date().toDateString(); // "Tue Jul 15 2025"
 
   chrome.storage.local.get(['ultimaFecha'], (data) => {
     const ultimaFecha = data.ultimaFecha;
 
     if (ultimaFecha !== hoy) {
-      // Nuevo día → limpiar tiempos, pero conservar historial si se desea
+      // Nuevo día → reiniciar, conservar historial si se desea
       chrome.storage.local.get(null, (allData) => {
         const historialDominios = allData.historialDominios || [];
 
         chrome.storage.local.clear(() => {
           chrome.storage.local.set({
             ultimaFecha: hoy,
+            historialDominios: historialDominios  // Opcional, si lo quieres conservar
           }, () => {
             console.log("⏰ Historial reiniciado por nuevo día.");
-            location.reload();  // Refresca para reflejar el cambio
+            location.reload();
           });
         });
       });
     } else {
-      iniciarPopup(); // Mismo día → carga normal
+      iniciarPopup();
+      cargarRachas();
     }
   });
 });
 
-// ===  LÓGICA PRINCIPAL DEL POPUP ===
+// === LÓGICA PRINCIPAL DEL POPUP ===
 function iniciarPopup() {
   const siteDisplay = document.getElementById("current-site");
   const timeDisplay = document.getElementById("time-spent");
@@ -44,7 +46,6 @@ function iniciarPopup() {
     const domain = url.hostname;
     siteDisplay.textContent = domain;
 
-    // ===  Cargar historial de dominios ===
     chrome.storage.local.get(null, (result) => {
       const historial = result.historialDominios || [];
       let currentSeconds = result[domain] || 0;
@@ -57,14 +58,13 @@ function iniciarPopup() {
         listContainer.appendChild(item);
       }
 
-      //  Actualizar tiempo actual en tiempo real
       if (intervalId !== null) clearInterval(intervalId);
       intervalId = updateLiveTime(timeDisplay, currentSeconds);
     });
   });
 }
 
-// ===  CONTADOR EN TIEMPO REAL ===
+// === ACTUALIZADOR EN TIEMPO REAL ===
 function updateLiveTime(element, initialSeconds) {
   let seconds = initialSeconds;
   element.textContent = formatTime(seconds);
@@ -75,7 +75,7 @@ function updateLiveTime(element, initialSeconds) {
   }, 1000);
 }
 
-// ===  FORMATO LEGIBLE DEL TIEMPO ===
+// === FORMATEO DE TIEMPO ===
 function formatTime(seconds) {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
@@ -88,3 +88,25 @@ function formatTime(seconds) {
     return `${hrs}h ${minsRest}m ${secs}s`;
   }
 }
+
+// === RACHAS: CONSULTA AL BACKEND ===
+fetch("http://localhost:5000/admin/api/estado_rachas", { credentials: 'include' })
+  .then(async res => {
+    const contentType = res.headers.get("content-type");
+    if (!res.ok || !contentType.includes("application/json")) {
+      throw new Error("Respuesta no válida o sin sesión");
+    }
+    return res.json();
+  })
+  .then(data => {
+    const rachaMetas = data.metas || { activa: false, dias: 0 };
+    document.getElementById("contador-racha-metas").textContent = rachaMetas.dias;
+    document.getElementById("icono-racha-metas").src =
+      rachaMetas.activa ? "prendida.PNG" : "apagada.PNG";
+
+    const rachaLimites = data.limites || { activa: false, dias: 0 };
+    document.getElementById("contador-racha-limites").textContent = rachaLimites.dias;
+    document.getElementById("icono-racha-limites").src =
+      rachaLimites.activa ? "prendida.PNG" : "apagada.PNG";
+  })
+  .catch(err => console.error("❌ Error al cargar rachas:", err));

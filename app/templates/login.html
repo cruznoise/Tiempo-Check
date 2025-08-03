@@ -27,33 +27,23 @@
             <input type="password" id="contraseña" name="contraseña" required>
             <button type="submit">Entrar</button>
         </form>
+
+        <hr>
+
+        <p>¿Nuevo usuario? <a href="#" id="mostrarRegistro">Regístrate</a></p>
+
+        <form method="POST" action="{{ url_for('admin_controller.registro') }}" id="formRegistro" style="display: none;">
+          <input type="text" name="nombre" placeholder="Tu nombre" required>
+          <input type="email" name="correo" placeholder="Correo" required>
+          <input type="password" name="contraseña" placeholder="Contraseña" required>
+          <button type="submit">Registrarse</button>
+        </form>
+
     </div>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script>
-    $('#login-form').on('submit', function(e) {
-      e.preventDefault();
+    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
 
-      $.ajax({
-        url: "/login",
-        method: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({
-          correo: $('#correo').val(),
-          contraseña: $('#contraseña').val()
-        }),
-        success: function(res) {
-          if (res.success) {
-            window.location.href = "/dashboard";
-          } else {
-            $('#error').fadeIn();
-          }
-        },
-        error: function() {
-          $('#error').text("Error del servidor").fadeIn();
-        }
-      });
-    });
-    </script>
 </body>
 </html>
 
