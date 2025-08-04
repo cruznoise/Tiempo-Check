@@ -1,8 +1,8 @@
 import sys
 import os
 
-# Añadir la ruta raíz del proyecto (donde está /app) al path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 
 import pandas as pd
 from datetime import datetime
@@ -11,38 +11,45 @@ from app import db
 from app.models import Registro, Categoria, DominioCategoria
 from sqlalchemy.orm import joinedload
 
-# Crear instancia de Flask para usar db
+
+
+# Configuración de Flask para usar SQLAlchemy
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:base@localhost/tiempocheck_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-# Función principal
 def generar_dataset(usuario_id=1):
     with app.app_context():
-        # Consulta: registros del usuario con dominio y categoría
+        # Query con OUTER JOIN para traer todos los registros
         registros = db.session.query(Registro, Categoria.nombre)\
-            .join(DominioCategoria, Registro.dominio == DominioCategoria.dominio)\
-            .join(Categoria, DominioCategoria.categoria_id == Categoria.id)\
+            .outerjoin(DominioCategoria, Registro.dominio == DominioCategoria.dominio)\
+            .outerjoin(Categoria, Categoria.id == DominioCategoria.categoria_id)\
             .filter(Registro.usuario_id == usuario_id)\
             .all()
 
-        datos = [{
-            'usuario_id': r.Registro.usuario_id,
-            'fecha': r.Registro.fecha.strftime("%Y-%m-%d"),
-            'hora': r.Registro.fecha.strftime("%H:%M"),
-            'dominio': r.Registro.dominio,
-            'tiempo_segundos': r.Registro.tiempo,
-            'categoria': r.nombre  
-        } for r in registros]
+        print(f"Total registros obtenidos: {len(registros)}")
 
+        # Crear DataFrame con relleno de "Sin categoría"
+        data = []
+        for r, categoria in registros:
+            data.append({
+                "fecha": r.fecha,
+                "dominio": r.dominio,
+                "tiempo_segundos": r.tiempo,
+                "categoria": categoria if categoria else "Sin categoría"
+            })
 
-        df = pd.DataFrame(datos)
+        df = pd.DataFrame(data)
 
-        ruta_salida = os.path.join("ml", "dataset", f"dataset_usuario_{usuario_id}.csv")
-        df.to_csv(ruta_salida, index=False)
-        print(f"Dataset exportado a {ruta_salida}")
+        if df.empty:
+            print("⚠️ No se generaron datos para este usuario.")
+            return
 
+        # Guardar CSV
+        output_path = os.path.join(os.path.dirname(__file__), 'dataset', f'dataset_usuario_{usuario_id}.csv')
+        df.to_csv(output_path, index=False)
+        print(f"✅ Dataset generado en: {output_path}")
 
 if __name__ == "__main__":
-    generar_dataset()
+    generar_dataset(usuario_id=1) 
