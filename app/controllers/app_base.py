@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify, render_template, Response, session
-from sqlalchemy import text, and_
+from sqlalchemy import text, and_, func
 from datetime import datetime, timedelta, date
 from collections import defaultdict
 from app.models import db, Usuario, Registro, Categoria, DominioCategoria
 from app.models.models import LimiteCategoria, Registro, DominioCategoria
 from app.db import close_db
-
+import tldextract
 
 
 
@@ -13,26 +13,32 @@ admin_base = Blueprint('admin_base', __name__)
 
 
 controlador = Blueprint('controlador', __name__)
-def guardar_tiempo(request, usuario_id):
-    from sqlalchemy import and_, func
-    from datetime import datetime
+def limpiar_dominio(url):
 
+    ext = tldextract.extract(url)
+    return f"{ext.domain}.{ext.suffix}" if ext.domain and ext.suffix else url
+
+def guardar_tiempo(request, usuario_id):
     data = request.get_json()
     dominio = data.get('dominio')
     tiempo = data.get('tiempo')
 
-    print(f"[✔] Petición recibida del dominio: {dominio} con tiempo: {tiempo} para usuario: {usuario_id}")
-
+    # Validaciones básicas
     if tiempo is None or not isinstance(tiempo, int) or tiempo <= 0:
         return jsonify({'error': 'Tiempo inválido'}), 400
-
-    if not dominio or tiempo is None:
+    if not dominio:
         return jsonify({'error': 'Faltan datos'}), 400
+
+    # 🔹 Normalizar dominio antes de guardar
+    dominio_limpio = limpiar_dominio(dominio)
+
+    print(f"[✔] Petición recibida del dominio: {dominio_limpio} ({dominio}) con tiempo: {tiempo} para usuario: {usuario_id}")
 
     ahora = datetime.now()
 
+    # Buscar si ya existe registro de hoy para ese dominio
     registro = Registro.query.filter(
-        Registro.dominio == dominio,
+        Registro.dominio == dominio_limpio,
         Registro.usuario_id == usuario_id,
         func.date(Registro.fecha) == ahora.date()
     ).first()
@@ -41,7 +47,7 @@ def guardar_tiempo(request, usuario_id):
         registro.tiempo += tiempo
     else:
         registro = Registro(
-            dominio=dominio,
+            dominio=dominio_limpio,
             tiempo=tiempo,
             fecha=ahora,
             usuario_id=usuario_id
@@ -50,7 +56,6 @@ def guardar_tiempo(request, usuario_id):
 
     db.session.commit()
     return jsonify({'mensaje': 'Tiempo actualizado'}), 200
-
 
 @controlador.route('/dashboard')
 def dashboard():
