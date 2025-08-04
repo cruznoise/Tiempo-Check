@@ -7,7 +7,8 @@ let ultimaPeticion = {};
 // Inicializar storage al cargar la extensión
 chrome.storage.local.get(null, (data) => {
   tiempoPorDominio = data || {};
-  actualizarDominioActivo();
+  actualizarDominioActivo(); 
+  
 });
 
 // Obtener dominio activo desde la pestaña actual
