@@ -1,12 +1,38 @@
-# Archivos y carpetas a ignorar
-*.zip
-*.rar
-*.tar.gz
-*.pyc
-__pycache__/
-.env
+# Python
 venv/
-node_modules/
-.DS_Store
-*.log
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.env
+.env.*
 
+# macOS / IDE
+.DS_Store
+.vscode/
+.idea/
+.pytest_cache/
+
+# Notebooks
+**/.ipynb_checkpoints/
+*-checkpoint.ipynb
+
+# Datos y artefactos (datasets/outputs locales)
+ml/dataset/raw/
+ml/dataset/processed/
+ml/dataset/**/*.csv
+ml/dataset/**/*.csv.gz
+ml/dataset/**/*.parquet
+*.parquet
+*.csv.gz
+merged_*.parquet
+merged_*.csv.gz
+
+# Config local (sube un example en su lugar)
+config.py
+
+# Chrome extension builds
+tiempocheck_extension/dist/

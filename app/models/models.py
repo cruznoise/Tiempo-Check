@@ -1,7 +1,5 @@
-from flask_sqlalchemy import SQLAlchemy
+from app.extensions import db
 from datetime import datetime
-
-from app.db import db  
 
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
@@ -17,6 +15,7 @@ class Registro(db.Model):
     tiempo = db.Column(db.Integer, nullable=False)
     fecha = db.Column(db.Date, nullable=False)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    fecha_hora = db.Column(db.DateTime, nullable=True, index=True)
 
 class Categoria(db.Model):
     __tablename__ = 'categorias'
@@ -66,3 +65,26 @@ class UsuarioLogro(db.Model):
             "usuario_id": self.usuario_id,
             "logro_id": self.logro_id
         }
+
+class FeatureDiaria(db.Model):
+    __tablename__ = 'features_diarias'
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False, index=True)
+    fecha = db.Column(db.Date, nullable=False, index=True)
+    categoria = db.Column(db.String(64), nullable=False, index=True)
+    minutos = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+    __table_args__ = (db.UniqueConstraint('usuario_id','fecha','categoria', name='uq_features_diarias'),)
+
+class FeatureHoraria(db.Model):
+    __tablename__ = 'features_horarias'
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False, index=True)
+    fecha = db.Column(db.Date, nullable=False, index=True)
+    hora = db.Column(db.SmallInteger, nullable=False)  # 0..23
+    categoria = db.Column(db.String(64), nullable=False, index=True)
+    minutos = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+    __table_args__ = (db.UniqueConstraint('usuario_id','fecha','hora','categoria', name='uq_features_horarias'),)

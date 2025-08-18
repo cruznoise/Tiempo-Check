@@ -3,8 +3,8 @@ from sqlalchemy import text, and_, func
 from datetime import datetime, timedelta, date
 from collections import defaultdict
 from app.models import db, Usuario, Registro, Categoria, DominioCategoria
-from app.models.models import LimiteCategoria, Registro, DominioCategoria
-from app.db import close_db
+from app.models.models import db, Registro, Categoria, DominioCategoria, FeatureDiaria, FeatureHoraria
+from app.mysql_conn import get_mysql, close_mysql
 import tldextract
 
 
@@ -56,6 +56,48 @@ def guardar_tiempo(request, usuario_id):
 
     db.session.commit()
     return jsonify({'mensaje': 'Tiempo actualizado'}), 200
+def _parse_date(s: str):
+    try:
+        return datetime.strptime(str(s), "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+def _rango_fechas_desde_request():
+    hoy = date.today()
+    rango = request.args.get('rango','total')
+    desde = request.args.get('desde')
+    hasta = request.args.get('hasta')
+
+    if rango == '7dias':
+        return hoy - timedelta(days=6), hoy, '7dias'
+    if rango == 'mes':
+        return hoy - timedelta(days=29), hoy, 'mes'
+    if rango == 'entre':
+        d = _parse_date(desde)
+        h = _parse_date(hasta)
+        if d and h and h >= d:
+            return d, h, 'entre'
+        return hoy, hoy, 'hoy'
+    if rango == 'total':
+        # Si quieres el histórico completo, no filtres por fecha en features;
+        # dejamos None y manejamos abajo.
+        return None, None, 'total'
+    # default
+    return hoy, hoy, 'hoy'
+
+def _unificar_alias_sin_categoria(m: dict) -> dict:
+    """Funde claves viejas hacia 'Sin categoría'."""
+    if not m:
+        return {}
+    res = dict(m)
+    aliases = ['SinCategoria', 'Sin categoria', 'sin categoria', 'sincategoria', None, '']
+    carry = 0
+    for k in aliases:
+        if k in res:
+            carry += int(res.pop(k) or 0)
+    if carry:
+        res['Sin categoría'] = int(res.get('Sin categoría', 0)) + carry
+    return res
 
 @controlador.route('/dashboard')
 def dashboard():
@@ -64,122 +106,201 @@ def dashboard():
             return jsonify({'error': 'No autenticado'}), 401
 
         usuario_id = session['usuario_id']
-        rango = request.args.get('rango', 'total')
-        desde = request.args.get('desde')
-        hasta = request.args.get('hasta')
+        fecha_inicio, fecha_fin, etiqueta_rango = _rango_fechas_desde_request()
 
-        if rango == 'hoy':
-            fecha_inicio = datetime.now().date()
-        elif rango == '7dias':
-            fecha_inicio = datetime.now().date() - timedelta(days=7)
-        elif rango == 'mes':
-            fecha_inicio = datetime.now().date() - timedelta(days=30)
-        elif rango == 'entre' and desde and hasta:
-            fecha_inicio = desde
-            fecha_fin = hasta
+        cutover = (
+            db.session.query(func.min(func.date(Registro.fecha_hora)))
+            .filter(func.date(Registro.fecha_hora).isnot(None))
+            .filter(func.hour(Registro.fecha_hora) != 0)
+            .scalar()
+        )
+        from datetime import date
+        cutover = cutover or date.today()
+
+        # ---------- Uso por hora (FeatureHoraria) ----------
+        q_hora = db.session.query(
+            FeatureHoraria.hora.label('hora'),
+            func.sum(FeatureHoraria.minutos).label('total')
+        ).filter(
+            FeatureHoraria.usuario_id == usuario_id
+        )
+
+        # 1) Calcula cutover (por si quieres una vista limpia opcional)
+        cutover = (
+            db.session.query(func.min(func.date(Registro.fecha_hora)))
+            .filter(func.date(Registro.fecha_hora).isnot(None))
+            .filter(func.hour(Registro.fecha_hora) != 0)
+            .scalar()
+        )
+        from datetime import date
+        cutover = cutover or date.today()
+
+        # 2) Por defecto MOSTRAR TODO el histórico (incluye 00:00):
+        #    /dashboard  -> igual que /dashboard?rango=total&todo_historico=1
+        todo_historico = request.args.get('todo_historico', '1') == '1'
+
+        if etiqueta_rango == 'total':
+            if not todo_historico:
+                # Vista “limpia” opcional: cortar desde cutover (sin el 00:00 histórico)
+                q_hora = q_hora.filter(FeatureHoraria.fecha >= cutover)
         else:
-            fecha_inicio = None
+            # En HOY / 7d / MES / ENTRE respeta el rango tal cual (sin cutover)
+            q_hora = q_hora.filter(
+                FeatureHoraria.fecha >= fecha_inicio,
+                FeatureHoraria.fecha <= fecha_fin
+            )
+            # (si quisieras, podrías permitir ?sin0=1 para ocultar medianoche en estos rangos)
+            # if request.args.get('sin0') == '1':
+            #     q_hora = q_hora.filter(FeatureHoraria.hora != 0)
 
-        filtros_base = f"WHERE usuario_id = :usuario_id"
-        params = {"usuario_id": usuario_id}
+        q_hora = q_hora.group_by(FeatureHoraria.hora).order_by(FeatureHoraria.hora)
 
-        if rango == 'entre' and desde and hasta:
-            filtros_base += " AND DATE(fecha) BETWEEN :desde AND :hasta"
-            params.update({"desde": desde, "hasta": hasta})
-        elif fecha_inicio:
-            filtros_base += " AND DATE(fecha) >= :fecha_inicio"
-            params.update({"fecha_inicio": fecha_inicio})
+        uso_horario = [
+            {'hora': int(r.hora), 'total': int(r.total or 0)}
+            for r in q_hora.all()
+        ]
 
-        query = text(f"""
-            SELECT dominio, SUM(tiempo) AS total
-            FROM registro
-            {filtros_base}
-            GROUP BY dominio
-            ORDER BY total DESC
-        """)
-        resultados = db.session.execute(query, params).fetchall()
 
-        query_dias = text(f"""
-            SELECT DATE(fecha) AS dia, SUM(tiempo) AS total
-            FROM registro
-            WHERE usuario_id = :usuario_id
-            GROUP BY dia
-            ORDER BY dia ASC
-        """)
-        por_dia = db.session.execute(query_dias, {"usuario_id": usuario_id}).fetchall()
-        uso_diario = [{'dia': str(r[0]), 'total': round(r[1] / 60)} for r in por_dia]
 
-        query_horas = text(f"""
-            SELECT HOUR(fecha) AS hora, SUM(tiempo) AS total
-            FROM registro
-            WHERE usuario_id = :usuario_id
-            GROUP BY hora
-            ORDER BY hora
-        """)
-        por_hora = db.session.execute(query_horas, {"usuario_id": usuario_id}).fetchall()
-        uso_horario = [{'hora': r[0], 'total': round(r[1] / 60)} for r in por_hora]
+        # ---------- Uso diario (suma por fecha desde FeatureHoraria) ----------
+        q_dia = db.session.query(
+            FeatureDiaria.fecha.label('dia'),
+            func.sum(FeatureDiaria.minutos).label('total')
+        ).filter(
+            FeatureDiaria.usuario_id == usuario_id
+        )
+        if etiqueta_rango != 'total':
+            q_dia = q_dia.filter(
+                FeatureDiaria.fecha >= fecha_inicio,
+                FeatureDiaria.fecha <= fecha_fin
+            )
+        q_dia = q_dia.group_by(FeatureDiaria.fecha).order_by(FeatureDiaria.fecha.asc())
 
-        datos = [{'dominio': r[0], 'total': round(r[1] / 60)} for r in resultados]
+        uso_diario = [
+            {'dia': str(r.dia), 'total': int(r.total or 0)}
+            for r in q_dia.all()
+        ]
 
-        from collections import defaultdict
-        from app.models import DominioCategoria, Categoria
 
-        # Obtener asociaciones dominio → categoría desde la BD
-        asociaciones = db.session.query(DominioCategoria.dominio, Categoria.nombre) \
-            .join(Categoria) \
-            .all()
+        # ---------- Por categoría (FeatureDiaria) ----------
+        q_cat = db.session.query(
+            FeatureDiaria.categoria,
+            func.sum(FeatureDiaria.minutos).label('total')
+        ).filter(
+            FeatureDiaria.usuario_id == usuario_id
+        )
+        if etiqueta_rango != 'total':
+            q_cat = q_cat.filter(
+                FeatureDiaria.fecha >= fecha_inicio,
+                FeatureDiaria.fecha <= fecha_fin
+            )
+        q_cat = q_cat.group_by(FeatureDiaria.categoria)\
+                     .order_by(func.sum(FeatureDiaria.minutos).desc())
 
-        mapa_dominios = {d: c for d, c in asociaciones}  # {'youtube.com': 'Ocio', ...}
+        por_categoria = {}
+        for cat, total in q_cat.all():
+            key = cat or 'Sin categoría'
+            por_categoria[key] = int(total or 0)
+        por_categoria = _unificar_alias_sin_categoria(por_categoria)
 
-        por_categoria = defaultdict(int)
+        # ---------- Top dominios (tabla cruda registro) ----------
+        q_dom = db.session.query(
+            Registro.dominio,
+            (func.sum(Registro.tiempo) / 60.0).label('total_min')
+        ).filter(
+            Registro.usuario_id == usuario_id
+        )
+        if etiqueta_rango != 'total':
+            q_dom = q_dom.filter(
+                func.date(Registro.fecha) >= (fecha_inicio or func.date(Registro.fecha)),
+                func.date(Registro.fecha) <= (fecha_fin or func.date(Registro.fecha))
+            )
+        q_dom = q_dom.group_by(Registro.dominio)\
+                     .order_by(func.sum(Registro.tiempo).desc())
 
-        for dominio, total in [(r[0], r[1]) for r in resultados]:
-            categoria = mapa_dominios.get(dominio, 'Otros')
-            por_categoria[categoria] += round(total / 60)
+        datos = [
+            {'dominio': r.dominio, 'total': int(round(float(r.total_min or 0)))}
+            for r in q_dom.all()
+        ]
 
-                # Consultar metas del usuario
-        metas = db.session.execute(text("""
-            SELECT categoria_id, limite_minutos
-            FROM metas_categoria
-            WHERE usuario_id = :usuario_id
-        """), {'usuario_id': usuario_id}).fetchall()
-
-        # Mapa de id → nombre de categorías
-        categorias = db.session.query(Categoria.id, Categoria.nombre).all()
-        nombres_categoria = {c.id: c.nombre for c in categorias}
-
-        # Comparar metas con el uso del día
+        # ---------- Estado de METAS (si tienes tabla metas_categoria) ----------
         estado_metas = []
+        try:
+            metas_rows = db.session.execute(text("""
+                SELECT categoria_id, limite_minutos
+                FROM metas_categoria
+                WHERE usuario_id = :uid
+            """), {'uid': usuario_id}).fetchall()
+            nombres_categoria = dict(db.session.query(Categoria.id, Categoria.nombre).all())
 
-        for meta in metas:
-            cat_id = meta.categoria_id
-            nombre = nombres_categoria.get(cat_id, 'Desconocida')
-            minutos_meta = meta.limite_minutos
-            minutos_usados = por_categoria.get(nombre, 0)
-            cumplida = minutos_usados >= minutos_meta
+            for row in metas_rows:
+                cat_id = row[0]
+                meta_min = int(row[1] or 0)
+                nombre = nombres_categoria.get(cat_id, 'Desconocida')
+                usado = int(por_categoria.get(nombre, 0))
+                estado_metas.append({
+                    'categoria': nombre,
+                    'meta': meta_min,
+                    'usado': usado,
+                    'cumplida': usado >= meta_min
+                })
+        except Exception:
+            # Si no existe la tabla o hay cambios de esquema, lo omitimos sin romper el dashboard
+            estado_metas = []
 
-            estado_metas.append({
-                'categoria': nombre,
-                'meta': minutos_meta,
-                'usado': minutos_usados,
-                'cumplida': cumplida
-            })
+        # ---------- Estado de LÍMITES (si tienes tabla limites_categoria) ----------
+        estado_limites = []
+        try:
+            limites_rows = db.session.execute(text("""
+                SELECT categoria_id, limite_minutos
+                FROM limites_categoria
+                WHERE usuario_id = :uid
+            """), {'uid': usuario_id}).fetchall()
+            nombres_categoria = dict(db.session.query(Categoria.id, Categoria.nombre).all())
+
+            for row in limites_rows:
+                cat_id = row[0]
+                lim_min = int(row[1] or 0)
+                nombre = nombres_categoria.get(cat_id, 'Desconocida')
+                usado = int(por_categoria.get(nombre, 0))
+                estado_limites.append({
+                    'categoria': nombre,
+                    'limite': lim_min,
+                    'usado': usado,
+                    'excedido': usado > lim_min if lim_min > 0 else False
+                })
+        except Exception:
+            estado_limites = []
+
+        # ---------- Rellenos útiles para el template ----------
+        # Si pediste 'total', para el front mandamos strings vacíos en fechas
+        fi = str(fecha_inicio) if fecha_inicio else ''
+        ff = str(fecha_fin) if fecha_fin else ''
 
         return render_template(
             'dashboard.html',
-            datos=datos,
-            categorias=por_categoria,
-            uso_diario=uso_diario,
-            uso_horario=uso_horario,
+            # datasets para tu JS (si usas data-* en <body>)
+            datos=datos,                     # lista [{dominio, total}]
+            categorias=por_categoria,        # dict {categoria: minutos}
+            uso_horario=uso_horario,         # lista [{hora, total}]
+            uso_diario=uso_diario,           # lista [{dia, total}]
+            # widgets de metas/limites
+            estado_metas=estado_metas,
+            estado_limites=estado_limites,
+            # info de rango
+            rango=etiqueta_rango,
+            fecha_inicio=fi,
+            fecha_fin=ff,
+            mostrar_nota_hora=(etiqueta_rango == 'total' and not todo_historico),
+            cutover=str(cutover)
         )
-
 
     except Exception as e:
         import traceback
         print("ERROR EN /dashboard")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
-
+    
 @controlador.route('/resumen')
 def resumen():
     try:

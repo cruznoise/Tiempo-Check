@@ -1,9 +1,48 @@
 
 // === Dataset desde HTML ===
-const datos = JSON.parse(document.body.dataset.datos);
-const categorias = JSON.parse(document.body.dataset.categorias);
-const usoHorario = JSON.parse(document.body.dataset.usoHorario);
-const usoDiario = JSON.parse(document.body.dataset.usoDiario);
+function parseDatasetJSON(key, fallback = {}) {
+  try {
+    const raw = document.body.dataset[key];
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('parseDatasetJSON falló para', key, e);
+    return fallback;
+  }
+}
+
+const datos       = parseDatasetJSON('datos', []);         // array [{dominio,total}]
+let categoriasRaw = parseDatasetJSON('categorias', {});    // objeto {cat:min} o array [{categoria,minutos}]
+const usoHorario  = parseDatasetJSON('usoHorario', []);    // array [{hora,total}]
+const usoDiario   = parseDatasetJSON('usoDiario', []);     // array [{dia,total}]
+
+function normalizarCategorias(raw) {
+  let obj = {};
+  if (Array.isArray(raw)) {
+    obj = raw.reduce((acc, row) => {
+      const cat = row.categoria ?? 'Sin categoría';
+      acc[cat] = (acc[cat] || 0) + Number(row.minutos || 0);
+      return acc;
+    }, {});
+  } else if (raw && typeof raw === 'object') {
+    obj = { ...raw };
+  }
+
+  // Fusiona variantes viejas (SinCategoria, etc.) en 'Sin categoría'
+  const aliases = ['SinCategoria', 'Sin categoria', 'sin categoria', 'sincategoria'];
+  let carry = 0;
+  for (const k of aliases) {
+    if (obj[k] != null) {
+      carry += Number(obj[k] || 0);
+      delete obj[k];
+    }
+  }
+  if (carry > 0) obj['Sin categoría'] = (obj['Sin categoría'] || 0) + carry;
+
+  return obj;
+}
+
+const categoriasObj = normalizarCategorias(categoriasRaw);
 
 // === Gráfica por dominio ===
 const ctx = document.getElementById('grafica').getContext('2d');
@@ -25,13 +64,7 @@ function crearGrafica(datos) {
     options: {
       responsive: true,
       scales: {
-        x: {
-          ticks: {
-            maxRotation: 90,
-            minRotation: 45,
-            autoSkip: false
-          }
-        },
+        x: { ticks: { maxRotation: 90, minRotation: 45, autoSkip: false } },
         y: { beginAtZero: true }
       }
     }
@@ -84,24 +117,27 @@ new Chart(ctxHorario, {
   }
 });
 
+
 // === Gráfica por categoría ===
 const ctxCat = document.getElementById('graficaPastel').getContext('2d');
-new Chart(ctxCat, {
+const labelsCat = Object.keys(categoriasObj);
+const dataCat = Object.values(categoriasObj);
+
+// evita overlays al recargar en caliente
+if (window._chartCat) window._chartCat.destroy();
+
+window._chartCat = new Chart(ctxCat, {
   type: 'pie',
   data: {
-    labels: Object.keys(categorias),
+    labels: labelsCat,
     datasets: [{
       label: 'Tiempo por categoría (min)',
-      data: Object.values(categorias),
-      backgroundColor: [
-        '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948'
-      ],
+      data: dataCat,
+      backgroundColor: ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#d073c4ff'],
       borderWidth: 1
     }]
   },
-  options: {
-    responsive: true
-  }
+  options: { responsive: true }
 });
 
 // === Gráfica por día ===
@@ -189,3 +225,32 @@ document.addEventListener("DOMContentLoaded", () => {
     })
     .catch(err => console.error("Error al verificar alerta:", err));
 });
+
+////
+(async function(){
+  function isoHoyMX() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth()+1).padStart(2,'0');
+    const d = String(now.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  async function pintarEstado(dia) {
+    const qs = new URLSearchParams({usuario_id: 1, dia});
+    const [est, qa] = await Promise.all([
+      fetch(`/admin/api/features_estado?${qs}`).then(r=>r.json()),
+      fetch(`/admin/api/features_qa?${qs}`).then(r=>r.json())
+    ]);
+    document.querySelector("#fd-count").textContent = est.diarias_count ?? '0';
+    document.querySelector("#fh-count").textContent = est.horarias_count ?? '0';
+    const badge = document.querySelector("#qa-badge");
+    if (qa.ok) {
+      badge.textContent = "QA OK";
+      badge.className = "badge badge-success";
+    } else {
+      badge.textContent = "QA DESCUADRE";
+      badge.className = "badge badge-danger";
+    }
+  }
+  await pintarEstado(isoHoyMX());
+})();

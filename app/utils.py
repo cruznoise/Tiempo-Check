@@ -1,8 +1,11 @@
 import re
 from sqlalchemy import func, text
-from app.db import get_db, db  
-from app.models.models import Registro, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria, db
+from app.mysql_conn import get_mysql, close_mysql
+from app.models.models import Registro, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria, FeatureDiaria, FeatureHoraria
 from datetime import datetime, date, timedelta
+from app.extensions import db 
+from app.schedule.scheduler import get_scheduler
+from flask import current_app, request, jsonify
 
 def generar_backup_completo(usuario_id):
     # Convierte cualquier consulta de modelos SQLAlchemy en listas de diccionarios
@@ -35,7 +38,7 @@ def generar_backup_completo(usuario_id):
 
 
 def clasificar_dominio_automatico(dominio):
-    conexion = get_db()
+    conexion = get_mysql()
     print(f"[DEBUG] Intentando clasificar dominio: {dominio}")
     
     with conexion.cursor() as cursor:
@@ -105,14 +108,14 @@ def restaurar_backup_completo(data, usuario_id):
 
 def resetear_datos_usuario(usuario_id):
     from app.models.models import Registro, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria
-    from app.db import db
+    from app.mysql_conn import db
 
     db.session.query(Registro).filter_by(usuario_id=usuario_id).delete()
     db.session.query(MetaCategoria).filter_by(usuario_id=usuario_id).delete()
     db.session.query(LimiteCategoria).filter_by(usuario_id=usuario_id).delete()
     db.session.query(UsuarioLogro).filter_by(usuario_id=usuario_id).delete()
 
-    # ⚠️ Elimina dominios asignados solo si son personalizados por ese usuario (ajusta si no)
+    #  Elimina dominios asignados solo si son personalizados por ese usuario (ajusta si no)
     dominios = db.session.query(DominioCategoria).all()
     for d in dominios:
         db.session.delete(d)
@@ -121,7 +124,7 @@ def resetear_datos_usuario(usuario_id):
 
 #definicion de desbloquear logros
 def desbloquear_logro(usuario_id, logro_id):
-    db = get_db()
+    conn = get_mysql()
     cursor = db.cursor()
     try:
         cursor.execute("""
@@ -142,7 +145,7 @@ def desbloquear_logro(usuario_id, logro_id):
    
 
 def verificar_logros_dinamicos(usuario_id):
-    conexion = get_db()
+    conexion = get_mysql()
     with conexion.cursor(dictionary=True) as cursor:
         cursor.execute("SELECT * FROM logros_dinamicos")
         logros = cursor.fetchall()
@@ -306,7 +309,7 @@ def verificar_logros_dinamicos(usuario_id):
 #panel para rachas
 
 def actualizar_rachas(usuario_id):
-    conexion = get_db()
+    conexion = get_mysql()
     with conexion.cursor(dictionary=True) as cursor:
         hoy = date.today()
 
@@ -500,3 +503,62 @@ def obtener_dias_uso(usuario_id: int) -> int:
     ).scalar()
 
     return dias_uso or 0
+
+# app/utils/domains.py
+from urllib.parse import urlparse
+
+MULTI_TLDS = {
+    ("com", "mx"), ("org", "mx"), ("gob", "mx"),
+    ("co", "uk"), ("com", "ar"), ("com", "br")
+}
+
+def _solo_host(s: str) -> str:
+    if not s:
+        return ""
+    s = s.strip().lower()
+    if "://" in s:
+        s = urlparse(s).netloc or s
+    s = s.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0].split(":", 1)[0]
+    if s.startswith("www."):
+        s = s[4:]
+    return s
+
+def dominio_base(s: str) -> str:
+    host = _solo_host(s)
+    if not host:
+        return ""
+    parts = host.split(".")
+    if len(parts) >= 3:
+        # Heurística simple para TLDs compuestos comunes (.com.mx, .co.uk, etc.)
+        if (parts[-2], parts[-1]) in MULTI_TLDS:
+            return ".".join(parts[-3:])
+    if len(parts) >= 2:
+        return ".".join(parts[-2:])
+    return host  # localhost, etc.
+
+def _qa_invariantes_dia(usuario_id: int, d: date):
+    """
+    Invariante: para cada categoría, sum(minutos por hora) == minutos diarios.
+    """
+    # Diarias por categoría
+    diarias = {
+        r.categoria: r.minutos
+        for r in FeatureDiaria.query.filter_by(usuario_id=usuario_id, fecha=d).all()
+    }
+
+    # Suma de horarias por categoría
+    horarias_sum = {}
+    for r in FeatureHoraria.query.filter_by(usuario_id=usuario_id, fecha=d).all():
+        horarias_sum[r.categoria] = horarias_sum.get(r.categoria, 0) + int(r.minutos)
+
+    ok = True
+    detalles = []
+    cats = set(diarias.keys()) | set(horarias_sum.keys())
+    for c in cats:
+        vd = int(diarias.get(c, 0))
+        vh = int(horarias_sum.get(c, 0))
+        if vd != vh:
+            ok = False
+            detalles.append({"categoria": c, "diaria": vd, "horas_sum": vh, "delta": vh - vd})
+
+    return {"usuario_id": usuario_id, "dia": d.isoformat(), "ok": ok, "detalles": detalles}

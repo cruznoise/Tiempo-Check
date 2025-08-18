@@ -1,0 +1,189 @@
+"""Motor de features estable para TiempoCheck
+- Normaliza dominios (host/base)
+- Mapea Dominio→Categoria (texto) juntando con `Categoria`
+- Persiste en `features_diarias` y `features_horarias` (UPSERT)
+- Sin dependencias externas (no requiere app.utils.*)
+"""
+from __future__ import annotations
+
+import re
+from datetime import date, timedelta
+from typing import Dict, List, Tuple
+from app.extensions import db
+from sqlalchemy import and_, func
+
+
+from app.models.models import Registro, FeatureDiaria, FeatureHoraria, DominioCategoria, Categoria
+
+VERSION = "fe-0.7-stable"
+print(f"[ENG][LOAD] features_engine {VERSION} file={__file__}")
+
+
+# --- Normalización de dominios (self-contained) --- #
+
+_MULTI_TLDS: set[Tuple[str, str]] = {
+    ("com", "mx"), ("org", "mx"), ("gob", "mx"),
+    ("co", "uk"), ("com", "ar"), ("com", "br"),
+    ("com", "co"), ("com", "pe"), ("com", "ve"),
+}
+
+def _solo_host(s: str) -> str:
+    """Devuelve solo host: quita esquema, path, puerto, query, fragment y www."""
+    if not s:
+        return ""
+    s = s.strip().lower()
+    # cortar esquema
+    if "://" in s:
+        s = s.split("://", 1)[1]
+    # cortar path, query, fragment
+    for sep in ["/", "?", "#"]:
+        if sep in s:
+            s = s.split(sep, 1)[0]
+    # cortar puerto
+    if ":" in s:
+        s = s.split(":", 1)[0]
+    # quitar www.
+    if s.startswith("www."):
+        s = s[4:]
+    return s
+
+def dominio_base(s: str) -> str:
+    """Devuelve dominio base (eTLD+1) con heurística simple para TLDs compuestos."""
+    host = _solo_host(s)
+    if not host:
+        return ""
+    parts = host.split(".")
+    if len(parts) >= 3 and (parts[-2], parts[-1]) in _MULTI_TLDS:
+        return ".".join(parts[-3:])
+    if len(parts) >= 2:
+        return ".".join(parts[-2:])
+    return host
+
+
+# --- Carga de mapeos y patrones --- #
+
+def _cargar_mapa_dominios() -> Dict[str, str]:
+    """Carga dominio→categoria (texto). Incluye host y base para maximizar matches."""
+    rows: List[Tuple[str, str]] = (
+        db.session.query(DominioCategoria.dominio, Categoria.nombre)
+        .join(Categoria, DominioCategoria.categoria_id == Categoria.id)
+        .all()
+    )
+    mapa: Dict[str, str] = {}
+    for dom, cat in rows:
+        if not dom or not cat:
+            continue
+        host = _solo_host(dom)
+        base = dominio_base(dom)
+
+        mapa[base] = cat
+        mapa[host] = cat
+    return mapa
+
+def _cargar_patrones() -> List[Tuple[re.Pattern, str]]:
+    """Si existiera una tabla de patrones, compilar aquí; por ahora, vacío."""
+    return []
+
+
+def _categorizar(host_o_url: str, mapa: Dict[str, str], patrones: List[Tuple[re.Pattern, str]]) -> str:
+    host = _solo_host(host_o_url)
+    if not host:
+        return "Sin categoría"
+    base = dominio_base(host)
+    # 1) por base
+    cat = mapa.get(base)
+    if cat:
+        return cat
+    # 2) por host completo
+    cat = mapa.get(host)
+    if cat:
+        return cat
+    # 3) patrones (si algún día existen)
+    for rex, nombre in patrones:
+        if rex.search(host):
+            return nombre
+    return "Sin categoría"
+
+
+# --- API pública --- #
+
+def calcular_persistir_features(usuario_id: int, dia: date) -> dict:
+    """
+    Calcula agregados por categoría (y por hora) para el día `dia` y hace UPSERT.
+    Usa Registro.fecha_hora si existe; si no, cae a Registro.fecha.
+    """
+    print(f"[ENG][RUN] calcular_persistir_features usuario={usuario_id} dia={dia}")
+
+    mapa = _cargar_mapa_dominios()
+    patrones = _cargar_patrones()
+
+    # --- Filtro del día robusto (DATE o DATETIME) ---
+    if hasattr(Registro, 'fecha_hora'):
+        day_filter = func.date(Registro.fecha_hora) == dia
+    else:
+        day_filter = Registro.fecha == dia
+
+    registros = (
+    db.session.query(Registro)
+    .filter(Registro.usuario_id == usuario_id)
+    .filter(day_filter)
+    .all()
+)
+    acc_diario: Dict[str, int] = {}
+    acc_hora: Dict[tuple, int] = {}
+
+    for r in registros:
+        cat = _categorizar(getattr(r, "dominio", "") or "", mapa, patrones)
+        seg = max(0, int(getattr(r, "tiempo", 0) or 0))
+
+        # Hora real si existe fecha_hora, si no colapsa a 0
+        h = r.fecha_hora.hour if getattr(r, 'fecha_hora', None) else 0
+
+        acc_diario[cat] = acc_diario.get(cat, 0) + seg
+        acc_hora[(h, cat)] = acc_hora.get((h, cat), 0) + seg
+
+    # --- UPSERT features_diarias ---
+    for cat, seg in acc_diario.items():
+        mins = seg // 60
+        obj = (
+            FeatureDiaria.query
+            .filter_by(usuario_id=usuario_id, fecha=dia, categoria=cat)
+            .first()
+        )
+        if obj:
+            obj.minutos = mins
+        else:
+            db.session.add(FeatureDiaria(
+                usuario_id=usuario_id, fecha=dia, categoria=cat, minutos=mins
+            ))
+
+    # --- UPSERT features_horarias ---
+    for (h, cat), seg in acc_hora.items():
+        mins = seg // 60
+        objh = (
+            FeatureHoraria.query
+            .filter_by(usuario_id=usuario_id, fecha=dia, hora=int(h), categoria=cat)
+            .first()
+        )
+        if objh:
+            objh.minutos = mins
+        else:
+            db.session.add(FeatureHoraria(
+                usuario_id=usuario_id, fecha=dia, hora=int(h), categoria=cat, minutos=mins
+            ))
+
+    db.session.commit()
+    return {"ok": 1, "diarias": len(acc_diario), "horarias": len(acc_hora)}
+
+def recalcular_rango(usuario_id: int, desde: date, hasta: date) -> Dict[str, int]:
+    """Recalcula features para el rango [desde, hasta] (ambos inclusive)."""
+    if hasta < desde:
+        desde, hasta = hasta, desde
+    d = desde
+    tot_diarias = tot_horarias = 0
+    while d <= hasta:
+        res = calcular_persistir_features(usuario_id=usuario_id, dia=d)
+        tot_diarias += res.get("diarias", 0)
+        tot_horarias += res.get("horarias", 0)
+        d += timedelta(days=1)
+    return {"ok": 1, "diarias": tot_diarias, "horarias": tot_horarias}

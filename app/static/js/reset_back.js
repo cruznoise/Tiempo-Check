@@ -13,7 +13,7 @@
     const json = await response.json();
 
     if (!json.datos || json.datos.length === 0) {
-      alert("⚠️ No hay datos para exportar en ese rango.");
+      alert(" No hay datos para exportar en ese rango.");
       return;
     }
 
@@ -25,11 +25,11 @@
     a.click();
     URL.revokeObjectURL(url);
 
-    alert("✅ Archivo JSON descargado correctamente");
+    alert("Archivo JSON descargado correctamente");
 
   } catch (error) {
     console.error("Error al exportar JSON:", error);
-    alert("❌ Error al descargar el archivo JSON");
+    alert(" Error al descargar el archivo JSON");
   }
 });
 
@@ -75,7 +75,7 @@ document.getElementById('form-restaurar').addEventListener('submit', function(e)
   })
   .catch(err => {
     console.error("Error al restaurar:", err);
-    alert("❌ Ocurrió un error al restaurar el backup.");
+    alert(" Ocurrió un error al restaurar el backup.");
   });
 });
 
@@ -95,7 +95,7 @@ document.getElementById('btn-reseteo-total').addEventListener('click', function(
   })
   .catch(err => {
     console.error("Error al resetear cuenta:", err);
-    alert("❌ Error al reiniciar la cuenta.");
+    alert(" Error al reiniciar la cuenta.");
   });
 });
 

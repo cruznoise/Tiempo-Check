@@ -1,19 +1,19 @@
 from flask import Flask, render_template, request, session, redirect, jsonify, Response
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, date
 from app.models.models import db, Usuario, Registro
 from app.controllers.app_base import guardar_tiempo, resumen, exportar_csv
 from app.controllers.app_base import controlador as app_base_controller
 from app.controllers.admin_controller import admin_controller
 from app.utils import generar_backup_completo, restaurar_backup_completo
-from app.db import close_db
+from app.mysql_conn import get_mysql, close_mysql
+
 
 import json
 
 app = Flask(__name__)
 app.secret_key = 'tiempocheck_key'
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-
 
 
 # Configuración de base de datos
@@ -145,9 +145,35 @@ def reseteo_total():
         return jsonify({'error': f'Error al resetear la cuenta: {str(e)}'}), 500
 
 
+
+import os
+import atexit
+from app.schedule.scheduler import start_scheduler
+
+
+_scheduler = None
+
+def _start_scheduler_once():
+    global _scheduler
+    if _scheduler is None:
+        _scheduler = start_scheduler(app, usuario_id=1)
+
+
+# Evita doble arranque con el reloader de Flask
+if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
+    _start_scheduler_once()
+
+# Apagar limpio al salir del proceso (NO en teardown de app_context)
+@atexit.register
+def _shutdown_scheduler_on_exit():
+    global _scheduler
+    if _scheduler:
+        try:
+            _scheduler.shutdown(wait=False)
+            print("[SCHED] Scheduler detenido (atexit)")
+        except Exception as e:
+            print(f"[SCHED] Error al detener scheduler en atexit: {e}")
+        _scheduler = None
+
 if __name__ == '__main__':
     app.run(debug=True)
-
-@app.teardown_appcontext
-def cerrar_conexion(error):
-    close_db(error)

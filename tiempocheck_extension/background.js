@@ -32,51 +32,46 @@ function guardarTiempo(forzarEnvio = false) {
   if (!dominioActual || !inicioSesion) return;
 
   const ahora = Date.now();
-  const MAX_TIEMPO_DELTA = 600; //ESTA
+  const MAX_TIEMPO_DELTA = 600; // máx 10 min por tramo
   const deltaCrudo = Math.floor((ahora - inicioSesion) / 1000);
-  const delta = Math.min(deltaCrudo, MAX_TIEMPO_DELTA); //  Y ESTA TAMBIEN 
-
+  const delta = Math.min(deltaCrudo, MAX_TIEMPO_DELTA);
   if (!Number.isFinite(delta) || delta <= 0) return;
 
-  // Validar que no se envíe con demasiada frecuencia
   if (!forzarEnvio && ultimaPeticion[dominioActual] && ahora - ultimaPeticion[dominioActual] < 10000) {
     console.log(`[⏱] Esperando para volver a enviar ${dominioActual}`);
     return;
   }
-
   ultimaPeticion[dominioActual] = ahora;
 
   tiempoAcumulado += delta;
   tiempoPorDominio[dominioActual] = tiempoAcumulado;
-
   chrome.storage.local.set({ [dominioActual]: tiempoAcumulado });
 
   chrome.storage.local.get("historialDominios", (result) => {
     let historial = result.historialDominios || [];
-
     if (!historial.includes(dominioActual)) {
       historial.push(dominioActual);
       chrome.storage.local.set({ historialDominios: historial });
     }
   });
 
+  // ⬇️ AHORA enviamos tambien fecha_hora ISO
   fetch("http://localhost:5000/admin/guardar", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     credentials: "include",
     body: new URLSearchParams({
       dominio: dominioActual,
-      tiempo: delta,
+      tiempo: String(delta),
+      fecha_hora: new Date(ahora).toISOString(),             // 👈 hora real
+      timezone_offset_min: String(new Date().getTimezoneOffset()) // opcional
     })
   });
 
-  // AGREGA ESTA LINEA, DE tiempoAcumulado = 0
+  // reseteos
   tiempoAcumulado = 0;
-
   inicioSesion = Date.now();
-
 }
-
 
 
 // === EVENTOS DEL NAVEGADOR ===

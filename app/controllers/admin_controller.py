@@ -5,12 +5,16 @@ from flask_cors import cross_origin
 import csv
 import json
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from sqlalchemy import text
-from app.db import db, get_db
-from app.models.models import Registro, DominioCategoria, Categoria, LimiteCategoria, MetaCategoria, Usuario
+from app.mysql_conn import get_mysql, close_mysql
+from app.models.models import Registro, DominioCategoria, Categoria, LimiteCategoria, MetaCategoria, Usuario, FeatureDiaria, FeatureHoraria
 from collections import defaultdict
 from datetime import datetime
-from app.utils import clasificar_dominio_automatico, desbloquear_logro, verificar_logros_dinamicos, actualizar_rachas, obtener_promedio_categoria, calcular_nivel_confianza, obtener_dias_uso, calcular_sugerencias_por_categoria
+from app.utils import clasificar_dominio_automatico, desbloquear_logro, verificar_logros_dinamicos, actualizar_rachas, obtener_promedio_categoria, calcular_nivel_confianza, obtener_dias_uso, calcular_sugerencias_por_categoria, _qa_invariantes_dia
+from app.extensions import db 
+from app.services.features_engine import calcular_persistir_features
+from app.schedule.scheduler import get_scheduler
 
 
 bp = Blueprint('exportar', __name__, url_prefix='/admin/exportar')
@@ -526,7 +530,8 @@ def alerta_por_dominio():
     return jsonify({"alerta": False})
 
 
-from app.db import get_db
+from app.mysql_conn import get_mysql, close_mysql
+
 
 @admin_controller.route('/exportar/datos', methods=['GET'])
 def exportar_datos():
@@ -603,7 +608,7 @@ def obtener_logros_usuario():
         return jsonify([])
 
     usuario_id = session['usuario_id']
-    conexion = get_db()  # si es SQLAlchemy
+    conexion = get_mysql()
     with conexion.cursor(dictionary=True) as cursor:
         cursor.execute("""
             SELECT l.id, l.nombre, l.descripcion, l.nivel, l.imagen_url,
@@ -624,7 +629,7 @@ def estado_rachas():
         return jsonify({"error": "No autenticado"}), 401
 
     usuario_id = session['usuario_id']
-    conexion = get_db()
+    conexion = get_mysql()
     with conexion.cursor(dictionary=True) as cursor:
         cursor.execute("""
             SELECT tipo, dias_consecutivos, activa FROM rachas_usuario
@@ -638,39 +643,50 @@ def estado_rachas():
 @cross_origin(origins='*', methods=['POST'])
 def guardar_dominio():
     try:
-        dominio = request.form.get('dominio')
-        tiempo = int(request.form.get('tiempo'))
+        dominio = (request.form.get('dominio') or '').strip()
+        tiempo  = int(request.form.get('tiempo') or 0)
         usuario_id = request.form.get('usuario_id') or session.get('usuario_id')
 
         if not dominio or not tiempo or not usuario_id:
             return jsonify({"error": "Faltan datos"}), 400
 
-        conexion = get_db()
+        # ⬇️ Nuevo: leer fecha_hora ISO que manda la extensión
+        fh_raw = request.form.get('fecha_hora')  # p.ej. "2025-08-12T23:55:10.123Z"
+        fh = None
+        if fh_raw:
+            try:
+                # Acepta "Z" o con offset; la convertimos a hora local y quitamos tz
+                fh = datetime.fromisoformat(fh_raw.replace('Z', '+00:00'))
+                if fh.tzinfo:
+                    fh = fh.astimezone().replace(tzinfo=None)
+            except Exception:
+                fh = None
+        if fh is None:
+            fh = datetime.now()  # fallback
+
+        conexion = get_mysql()
         with conexion.cursor() as cursor:
-            # Verificar si el dominio ya tiene categoría
+            # (opcional) buscar categoría ya asignada; si no la usas aquí, puedes quitar esto
             cursor.execute("SELECT categoria_id FROM dominio_categoria WHERE dominio = %s", (dominio,))
-            row = cursor.fetchone()
+            _ = cursor.fetchone()
 
-            if row:
-                categoria_id = row[0]
-            else:
-                from app.utils import clasificar_dominio_automatico
-                categoria_id = clasificar_dominio_automatico(dominio)
-
-            # Insertar registro de tiempo
+            # ⬇️ Inserta también fecha_hora y conserva fecha (DATE)
             cursor.execute("""
-                INSERT INTO registro (usuario_id, dominio, tiempo, fecha)
-                VALUES (%s, %s, %s, NOW())
-            """, (usuario_id, dominio, tiempo))
+                INSERT INTO registro (usuario_id, dominio, tiempo, fecha, fecha_hora)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (usuario_id, dominio, tiempo, fh.date(), fh))
             conexion.commit()
 
-        print(f"[✔] Petición recibida del dominio: {dominio} con tiempo: {tiempo} para usuario: {usuario_id}")
+        print(f"[✔] /guardar dominio={dominio} tiempo={tiempo}s usuario={usuario_id} fecha_hora={fh}")
         return jsonify({"ok": True})
-    
+
     except Exception as e:
+        try:
+            conexion.rollback()
+        except Exception:
+            pass
         print("Error en /guardar:", e)
         return jsonify({"error": "Error al guardar"}), 500
-
 
 @admin_controller.route('/registro', methods=['POST'])
 def registro():
@@ -743,3 +759,107 @@ def sugerencias():
             s["sugerencia_meta"] = int(proporcion * LIMITE_DIARIO)
 
     return jsonify(sugerencias_resultado)
+
+@admin_controller.route("/admin/api/features_hoy", methods=["GET"])
+def api_features_hoy():
+    """
+    Devuelve features diarias y horarias para un usuario y fecha.
+    Parámetros:
+      - usuario_id (opcional): si no viene, toma session['usuario_id']
+      - fecha (opcional): YYYY-MM-DD, default = hoy MX
+      - recalcular=1 (opcional): ejecuta calcular_persistir_features antes de leer
+    """
+    tz = ZoneInfo("America/Mexico_City")
+    hoy_mx = datetime.now(tz).date()
+
+    usuario_id = request.args.get("usuario_id", type=int) or session.get("usuario_id", 1)
+    fecha_str = request.args.get("fecha")
+    recalcular = request.args.get("recalcular", "0") == "1"
+
+    try:
+        f = date.fromisoformat(fecha_str) if fecha_str else hoy_mx
+    except Exception:
+        return jsonify({"ok": False, "error": "fecha inválida (usa YYYY-MM-DD)"}), 400
+
+    if recalcular:
+        try:
+            calcular_persistir_features(usuario_id=usuario_id, dia=f)
+        except Exception as e:
+            return jsonify({"ok": False, "error": f"error recalculando features: {e}"}), 500
+
+    # Lee diarias
+    diarias_q = (FeatureDiaria.query
+                 .filter_by(usuario_id=usuario_id, fecha=f)
+                 .order_by(FeatureDiaria.categoria.asc()))
+    diarias = [{"categoria": x.categoria, "minutos": int(x.minutos)} for x in diarias_q.all()]
+
+    # Lee horarias
+    horarias_q = (FeatureHoraria.query
+                  .filter_by(usuario_id=usuario_id, fecha=f)
+                  .order_by(FeatureHoraria.hora.asc(), FeatureHoraria.categoria.asc()))
+    horarias = [{"categoria": x.categoria, "hora": int(x.hora), "minutos": int(x.minutos)} for x in horarias_q.all()]
+
+    total_minutos = sum(d["minutos"] for d in diarias)
+
+    # Estructuras útiles para Chart.js
+    categorias = sorted({d["categoria"] for d in diarias})
+    horas = list(range(24))
+    # Mapa [categoria][hora] -> minutos
+    mapa_h = {(h["categoria"], h["hora"]): h["minutos"] for h in horarias}
+    series_horarias = [
+        {
+            "categoria": cat,
+            "datos": [mapa_h.get((cat, h), 0) for h in horas]
+        }
+        for cat in categorias
+    ]
+
+    return jsonify({
+        "ok": True,
+        "usuario_id": usuario_id,
+        "fecha": f.isoformat(),
+        "diarias": diarias,
+        "horarias": horarias,
+        "total_minutos": int(total_minutos),
+        "categorias": categorias,
+        "horas": horas,
+        "series_horarias": series_horarias
+    })
+
+@admin_controller.route('/api/features_estado', methods=['GET'])
+def features_estado():
+    usuario_id = int(request.args.get("usuario_id", 1))
+    d = date.fromisoformat(request.args.get("dia", date.today().isoformat()))
+    fd = FeatureDiaria.query.filter_by(usuario_id=usuario_id, fecha=d).count()
+    fh = FeatureHoraria.query.filter_by(usuario_id=usuario_id, fecha=d).count()
+    return jsonify({
+        "usuario_id": usuario_id,
+        "dia": d.isoformat(),
+        "diarias_count": fd,
+        "horarias_count": fh
+    })
+
+@admin_controller.route('/api/features_health', methods=['GET'])
+def features_health():
+    try:
+        sched = get_scheduler()
+        jobs = []
+        for j in sched.get_jobs():
+            jobs.append({
+                "id": j.id,
+                "next_run_time": j.next_run_time.isoformat() if j.next_run_time else None,
+                "trigger": str(j.trigger)
+            })
+        tz = current_app.config.get("TZ", "America/Mexico_City")
+        return jsonify({"jobs": jobs, "tz": tz})
+    except Exception as e:
+        # Si el scheduler no está inicializado, devolvemos algo útil igual
+        return jsonify({"jobs": [], "tz": current_app.config.get("TZ", "America/Mexico_City"),
+                        "warning": f"scheduler no disponible: {type(e).__name__}"}), 200
+
+@admin_controller.route('/api/features_qa', methods=['GET'])
+def features_qa():
+    usuario_id = int(request.args.get("usuario_id", 1))
+    d = date.fromisoformat(request.args.get("dia", date.today().isoformat()))
+    res = _qa_invariantes_dia(usuario_id, d)
+    return jsonify(res)

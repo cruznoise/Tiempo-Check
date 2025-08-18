@@ -7,10 +7,10 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body
-  data-datos='{{ datos | tojson | safe }}'
-  data-categorias='{{ categorias | tojson | safe }}'
-  data-uso-horario='{{ uso_horario | tojson | safe }}'
-  data-uso-diario='{{ uso_diario | tojson | safe }}'>
+  data-uso-horario='{{ uso_horario|tojson }}'
+  data-uso-diario='{{ uso_diario|tojson }}'
+  data-categorias='{{ categorias|tojson }}'
+  data-datos='{{ datos|tojson }}'>
   <div class="dashboard-container">
 
     <!-- Sidebar -->
@@ -118,6 +118,18 @@
 
         <div class="chart-box">
           <h3>Distribución de uso por hora</h3>
+          {% if rango == 'total' %}
+            <p class="text-xs opacity-70 mt-2">
+              {% if mostrar_nota_hora %}
+                Mostrando distribución por hora desde {{ cutover }} (vista limpia).
+                <a class="underline" href="?rango=total&todo_historico=1">Ver todo el histórico</a>
+              {% else %}
+                Mostrando todo el histórico (incluye 00:00). 
+                <a class="underline" href="?rango=total&todo_historico=0">Ver vista limpia</a>
+              {% endif %}
+            </p>
+          {% endif %}
+
           <canvas id="graficaHorario"></canvas>
             <p class="chart-description">
           Aquí se representa el tiempo total que pasas frente a la pantalla según la hora del día. Este gráfico te ayuda a visualizar en qué momentos eres más propenso a usar el dispositivo, lo que puede ser útil para planificar tus hábitos.
@@ -131,7 +143,19 @@
             <p class="chart-description"> Aquí se muestra tu tiempo total frente a la pantalla por día. 
             Identifica si tus hábitos están subiendo o bajando. Ideal para reconocer días con mayor distracción o foco. </p>
         </div>
-
+        <div class="tile-box" style="display:flex;gap:12px;align-items:center;">
+        <div>
+          <div style="font-size:14px;opacity:.7;">Features diarias</div>
+          <div id="fd-count" style="font-size:22px;font-weight:600;">—</div>
+        </div>
+        <div>
+          <div style="font-size:14px;opacity:.7;">Features horarias</div>
+          <div id="fh-count" style="font-size:22px;font-weight:600;">—</div>
+        </div>
+        <div style="margin-left:auto;">
+          <span id="qa-badge" class="badge">—</span>
+        </div>
+      </div>
 
       </section>
 
@@ -153,7 +177,21 @@
   </div>
 </div>
 
-
+<script type="application/json" id="categorias-json">
+  {{ categorias | tojson | safe }}
+</script>
+<script>
+  // Cárgalo en window para que dashboard.js lo encuentre
+  window.categorias = {};
+  try {
+    const el = document.getElementById('categorias-json');
+    if (el && el.textContent) {
+      window.categorias = JSON.parse(el.textContent);
+    }
+  } catch (e) {
+    console.error('Error parseando categorias JSON:', e);
+  }
+</script>
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
 
