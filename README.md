@@ -120,8 +120,7 @@ tiempocheck_extension/
    ```
 4. **Base de datos**
    ```bash
-   -- Opcional: usa tu esquema
-    -- USE tiempocheck;
+    -- USE -- nombre de tu tabla;
     
     -- ===============================
     -- FEATURE STORE (grano hora/día)
