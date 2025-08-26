@@ -15,7 +15,8 @@ from app.utils import clasificar_dominio_automatico, desbloquear_logro, verifica
 from app.extensions import db 
 from app.services.features_engine import calcular_persistir_features
 from app.schedule.scheduler import get_scheduler
-
+from app.models.models_coach import CoachAlerta, CoachAccionLog,    CoachEstadoRegla, CoachSugerencia
+#from app.app import login
 
 bp = Blueprint('exportar', __name__, url_prefix='/admin/exportar')
 admin_controller = Blueprint('admin_controller', __name__, url_prefix='/admin')
@@ -101,16 +102,12 @@ def vista_metas():
 
     usuario_id = session['usuario_id']
 
-    # Traer categorías
     categorias = db.session.query(Categoria).all()
 
-    # Traer metas establecidas
     metas = db.session.query(MetaCategoria).filter_by(usuario_id=usuario_id).all()
 
-    # Traer límites establecidos
     limites = db.session.query(LimiteCategoria).filter_by(usuario_id=usuario_id).all()
 
-    # Calcular uso actual por categoría (hoy)
     hoy = date.today()
     registros = db.session.execute(text("""
         SELECT dc.categoria_id, SUM(r.tiempo) as total
@@ -122,16 +119,14 @@ def vista_metas():
 
     uso_actual = defaultdict(int)
     for categoria_id, total in registros:
-        uso_actual[categoria_id] = round(total / 60)  # en minutos
+        uso_actual[categoria_id] = round(total / 60)  
 
-    # Estado de metas
     estado_metas = []
     for m in metas:
         nombre = next((c.nombre for c in categorias if c.id == m.categoria_id), 'Desconocida')
         usado = uso_actual.get(m.categoria_id, 0)
         cumplida = usado >= m.limite_minutos
 
-        # ACTUALIZA la meta en base de datos
         m.cumplida = 1 if cumplida else 0
 
         estado_metas.append({
@@ -141,12 +136,10 @@ def vista_metas():
             'cumplida': cumplida
         })
 
-    # Hacer commit una sola vez al final
     db.session.commit()
 
     verificar_logros_dinamicos(usuario_id)
 
-    # Estado de límites
     estado_limites = []
     for l in limites:
         usado = uso_actual.get(l.categoria_id, 0)
@@ -254,7 +247,6 @@ def vista_limites():
     limites = db.session.query(LimiteCategoria).all()
 
 
-    # Uso actual por categoría (solo hoy)
     hoy = date.today()
     registros = db.session.execute(text("""
         SELECT dc.categoria_id, SUM(r.tiempo) as total
@@ -266,7 +258,7 @@ def vista_limites():
 
     uso_actual = defaultdict(int)
     for categoria_id, total in registros:
-        uso_actual[categoria_id] = round(total / 60)  # minutos
+        uso_actual[categoria_id] = round(total / 60)  
 
     estado_limites = []
     for l in limites:
@@ -650,7 +642,6 @@ def guardar_dominio():
         if not dominio or not tiempo or not usuario_id:
             return jsonify({"error": "Faltan datos"}), 400
 
-        # ⬇️ Nuevo: leer fecha_hora ISO que manda la extensión
         fh_raw = request.form.get('fecha_hora')  # p.ej. "2025-08-12T23:55:10.123Z"
         fh = None
         if fh_raw:
@@ -670,7 +661,6 @@ def guardar_dominio():
             cursor.execute("SELECT categoria_id FROM dominio_categoria WHERE dominio = %s", (dominio,))
             _ = cursor.fetchone()
 
-            # ⬇️ Inserta también fecha_hora y conserva fecha (DATE)
             cursor.execute("""
                 INSERT INTO registro (usuario_id, dominio, tiempo, fecha, fecha_hora)
                 VALUES (%s, %s, %s, %s, %s)
@@ -696,9 +686,8 @@ def registro():
 
     if not nombre or not correo or not contraseña:
         flash(" Todos los campos son obligatorios.")
-        return redirect(url_for('admin_controller.login'))
+        return redirect(url_for('app.app.login'))
 
-    # Verificar si el correo ya existe
     existente = db.session.execute(text("""
         SELECT id FROM usuarios WHERE correo = :correo
     """), {"correo": correo}).fetchone()
@@ -707,7 +696,6 @@ def registro():
         flash("Ya existe un usuario con ese correo.")
         return redirect("/login")
 
-    # Insertar nuevo usuario
     db.session.execute(text("""
         INSERT INTO usuarios (nombre, correo, contraseña)
         VALUES (:nombre, :correo, :contraseña)
@@ -715,7 +703,7 @@ def registro():
     db.session.commit()
 
     flash(" Registro exitoso. Ahora inicia sesión.")
-    return redirect(url_for('admin_controller.login'))
+    return redirect(url_for('app.app.login'))
 
 @admin_controller.route('/api/sugerencias', methods=['GET'])
 def sugerencias():
@@ -863,3 +851,40 @@ def features_qa():
     d = date.fromisoformat(request.args.get("dia", date.today().isoformat()))
     res = _qa_invariantes_dia(usuario_id, d)
     return jsonify(res)
+
+@admin_controller.route("/admin/api/coach/alertas")
+def coach_alertas_list():
+    if "usuario_id" not in session:
+        return jsonify({"error": "No autenticado"}), 401
+    usuario_id = session["usuario_id"]
+
+    fecha = request.args.get("fecha")
+    desde = request.args.get("desde")
+    hasta = request.args.get("hasta")
+
+    q = CoachAlerta.query.filter_by(usuario_id=usuario_id)
+    if fecha:
+        q = q.filter(CoachAlerta.fecha == fecha)
+    elif desde and hasta:
+        q = q.filter(CoachAlerta.fecha >= desde, CoachAlerta.fecha <= hasta)
+
+    q = q.order_by(CoachAlerta.fecha.desc(), CoachAlerta.creado_en.desc())
+    data = [{
+        "fecha": str(r.fecha),
+        "categoria": r.categoria,
+        "regla": r.regla,
+        "nivel": r.nivel,
+        "detalle": r.detalle,
+        "creado_en": r.creado_en.isoformat()
+    } for r in q.limit(200).all()]
+
+    return jsonify({"usuario_id": usuario_id, "alertas": data})
+
+@admin_controller.route("/admin/api/coach/generar_alertas", methods=["POST"])
+def coach_alertas_run():
+    if "usuario_id" not in session:
+        return jsonify({"error": "No autenticado"}), 401
+    usuario_id = session["usuario_id"]
+    # Disparo manual para pruebas (ejecuta job con app context actual)
+    job_coach_alertas(current_app, usuario_id)
+    return jsonify({"ok": True})

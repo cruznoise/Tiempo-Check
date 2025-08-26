@@ -7,8 +7,6 @@ from app.models.models import db, Registro, Categoria, DominioCategoria, Feature
 from app.mysql_conn import get_mysql, close_mysql
 import tldextract
 
-
-
 admin_base = Blueprint('admin_base', __name__)
 
 
@@ -23,20 +21,17 @@ def guardar_tiempo(request, usuario_id):
     dominio = data.get('dominio')
     tiempo = data.get('tiempo')
 
-    # Validaciones básicas
     if tiempo is None or not isinstance(tiempo, int) or tiempo <= 0:
         return jsonify({'error': 'Tiempo inválido'}), 400
     if not dominio:
         return jsonify({'error': 'Faltan datos'}), 400
 
-    # 🔹 Normalizar dominio antes de guardar
     dominio_limpio = limpiar_dominio(dominio)
 
     print(f"[✔] Petición recibida del dominio: {dominio_limpio} ({dominio}) con tiempo: {tiempo} para usuario: {usuario_id}")
 
     ahora = datetime.now()
 
-    # Buscar si ya existe registro de hoy para ese dominio
     registro = Registro.query.filter(
         Registro.dominio == dominio_limpio,
         Registro.usuario_id == usuario_id,
@@ -79,10 +74,9 @@ def _rango_fechas_desde_request():
             return d, h, 'entre'
         return hoy, hoy, 'hoy'
     if rango == 'total':
-        # Si quieres el histórico completo, no filtres por fecha en features;
-        # dejamos None y manejamos abajo.
+
         return None, None, 'total'
-    # default
+
     return hoy, hoy, 'hoy'
 
 def _unificar_alias_sin_categoria(m: dict) -> dict:
@@ -117,7 +111,6 @@ def dashboard():
         from datetime import date
         cutover = cutover or date.today()
 
-        # ---------- Uso por hora (FeatureHoraria) ----------
         q_hora = db.session.query(
             FeatureHoraria.hora.label('hora'),
             func.sum(FeatureHoraria.minutos).label('total')
@@ -125,7 +118,6 @@ def dashboard():
             FeatureHoraria.usuario_id == usuario_id
         )
 
-        # 1) Calcula cutover (por si quieres una vista limpia opcional)
         cutover = (
             db.session.query(func.min(func.date(Registro.fecha_hora)))
             .filter(func.date(Registro.fecha_hora).isnot(None))
@@ -135,23 +127,18 @@ def dashboard():
         from datetime import date
         cutover = cutover or date.today()
 
-        # 2) Por defecto MOSTRAR TODO el histórico (incluye 00:00):
-        #    /dashboard  -> igual que /dashboard?rango=total&todo_historico=1
         todo_historico = request.args.get('todo_historico', '1') == '1'
 
         if etiqueta_rango == 'total':
             if not todo_historico:
-                # Vista “limpia” opcional: cortar desde cutover (sin el 00:00 histórico)
                 q_hora = q_hora.filter(FeatureHoraria.fecha >= cutover)
         else:
-            # En HOY / 7d / MES / ENTRE respeta el rango tal cual (sin cutover)
+
             q_hora = q_hora.filter(
                 FeatureHoraria.fecha >= fecha_inicio,
                 FeatureHoraria.fecha <= fecha_fin
             )
-            # (si quisieras, podrías permitir ?sin0=1 para ocultar medianoche en estos rangos)
-            # if request.args.get('sin0') == '1':
-            #     q_hora = q_hora.filter(FeatureHoraria.hora != 0)
+
 
         q_hora = q_hora.group_by(FeatureHoraria.hora).order_by(FeatureHoraria.hora)
 
@@ -161,8 +148,6 @@ def dashboard():
         ]
 
 
-
-        # ---------- Uso diario (suma por fecha desde FeatureHoraria) ----------
         q_dia = db.session.query(
             FeatureDiaria.fecha.label('dia'),
             func.sum(FeatureDiaria.minutos).label('total')
@@ -182,7 +167,6 @@ def dashboard():
         ]
 
 
-        # ---------- Por categoría (FeatureDiaria) ----------
         q_cat = db.session.query(
             FeatureDiaria.categoria,
             func.sum(FeatureDiaria.minutos).label('total')
@@ -203,7 +187,6 @@ def dashboard():
             por_categoria[key] = int(total or 0)
         por_categoria = _unificar_alias_sin_categoria(por_categoria)
 
-        # ---------- Top dominios (tabla cruda registro) ----------
         q_dom = db.session.query(
             Registro.dominio,
             (func.sum(Registro.tiempo) / 60.0).label('total_min')
@@ -223,7 +206,6 @@ def dashboard():
             for r in q_dom.all()
         ]
 
-        # ---------- Estado de METAS (si tienes tabla metas_categoria) ----------
         estado_metas = []
         try:
             metas_rows = db.session.execute(text("""
@@ -272,18 +254,15 @@ def dashboard():
         except Exception:
             estado_limites = []
 
-        # ---------- Rellenos útiles para el template ----------
-        # Si pediste 'total', para el front mandamos strings vacíos en fechas
         fi = str(fecha_inicio) if fecha_inicio else ''
         ff = str(fecha_fin) if fecha_fin else ''
 
         return render_template(
             'dashboard.html',
-            # datasets para tu JS (si usas data-* en <body>)
-            datos=datos,                     # lista [{dominio, total}]
-            categorias=por_categoria,        # dict {categoria: minutos}
-            uso_horario=uso_horario,         # lista [{hora, total}]
-            uso_diario=uso_diario,           # lista [{dia, total}]
+            datos=datos,                  
+            categorias=por_categoria,        
+            uso_horario=uso_horario,        
+            uso_diario=uso_diario,        
             # widgets de metas/limites
             estado_metas=estado_metas,
             estado_limites=estado_limites,

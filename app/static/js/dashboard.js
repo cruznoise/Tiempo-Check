@@ -56,8 +56,8 @@ function crearGrafica(datos) {
       datasets: [{
         label: 'Tiempo total (min)',
         data: datos.map(d => d.total),
-        backgroundColor: 'rgba(54, 162, 235, 0.7)',
-        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(226, 241, 251, 0.7)',
+        borderColor: 'rgba(255, 0, 251, 1)',
         borderWidth: 1
       }]
     },

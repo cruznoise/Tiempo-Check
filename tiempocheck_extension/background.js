@@ -134,7 +134,7 @@ async function verificarAlertas() {
   }
 }
 
-// 🛡️ Pedir permiso y lanzar cada x minutos
+// Pedir permiso y lanzar cada x minutos
 if (Notification.permission !== 'granted') {
   Notification.requestPermission();
 }
