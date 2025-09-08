@@ -26,14 +26,6 @@ Esta versión consolida la salida de predicciones, añade barandales (guardrails
 - **Puerto**: `127.0.0.1:5000`.
 - **CORS**: `http://localhost:5000`, `http://127.0.0.1:5000`, `chrome-extension://*`.
 
-Ejemplo `SingleUserConfig`:
-```python
-class SingleUserConfig(Config):
-    SQLALCHEMY_DATABASE_URI = f"sqlite:///{DBFILE}"  # DBFILE = Path.home()/'.tiempocheck'/'tiempocheck.db'
-    SCHED_SHOULD_START = True
-    DEBUG = False
-    CORS_ORIGINS = ["http://127.0.0.1:5000", "http://localhost:5000", "chrome-extension://*"]
-```
 
 ---
 
