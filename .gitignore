@@ -15,12 +15,16 @@ build/
 .vscode/
 .idea/
 .pytest_cache/
+*.sqlite
+*.log
 
 # Notebooks
 **/.ipynb_checkpoints/
 *-checkpoint.ipynb
 
 # Datos y artefactos (datasets/outputs locales)
+dataset/
+datasets/
 ml/dataset/raw/
 ml/dataset/processed/
 ml/dataset/**/*.csv
@@ -30,7 +34,8 @@ ml/dataset/**/*.parquet
 *.csv.gz
 merged_*.parquet
 merged_*.csv.gz
-
+ml/artifacts/
+app/ml/processed/
 # Config local (sube un example en su lugar)
 config.py
 

@@ -99,6 +99,12 @@
         </div>
       </section>
 
+      <div id="ml-predict-card" class="tile-box">
+        <h3>Predicción de mañana (por categoría)</h3>
+        <ul id="ml-predict-list"></ul>
+      </div>
+
+
 
       <!-- Gráficas -->
       <section class="graphs">
@@ -177,11 +183,14 @@
   </div>
 </div>
 
+<div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
+
+
 <script type="application/json" id="categorias-json">
   {{ categorias | tojson | safe }}
 </script>
 <script>
-  // Cárgalo en window para que dashboard.js lo encuentre
+
   window.categorias = {};
   try {
     const el = document.getElementById('categorias-json');

@@ -8,7 +8,7 @@ from app.schedule.scheduler import get_scheduler
 from flask import current_app, request, jsonify
 
 def generar_backup_completo(usuario_id):
-    # Convierte cualquier consulta de modelos SQLAlchemy en listas de diccionarios
+
     def serializar(queryset):
         resultado = []
         for obj in queryset:
@@ -59,7 +59,6 @@ def clasificar_dominio_automatico(dominio):
 
 def restaurar_backup_completo(data, usuario_id):
 
-    # Limpiar registros previos (opcional, según política)
     db.session.query(Registro).filter_by(usuario_id=usuario_id).delete()
 
     for entry in data.get('registro', []):
@@ -115,14 +114,12 @@ def resetear_datos_usuario(usuario_id):
     db.session.query(LimiteCategoria).filter_by(usuario_id=usuario_id).delete()
     db.session.query(UsuarioLogro).filter_by(usuario_id=usuario_id).delete()
 
-    #  Elimina dominios asignados solo si son personalizados por ese usuario (ajusta si no)
     dominios = db.session.query(DominioCategoria).all()
     for d in dominios:
         db.session.delete(d)
 
     db.session.commit()
 
-#definicion de desbloquear logros
 def desbloquear_logro(usuario_id, logro_id):
     conn = get_mysql()
     cursor = db.cursor()
@@ -140,180 +137,196 @@ def desbloquear_logro(usuario_id, logro_id):
             """, (usuario_id, logro_id))
             db.commit()
     finally:
-        cursor.fetchall()  # Por si acaso quedó algo pendiente
+        cursor.fetchall()  
         cursor.close()
    
 
-def verificar_logros_dinamicos(usuario_id):
-    conexion = get_mysql()
-    with conexion.cursor(dictionary=True) as cursor:
-        cursor.execute("SELECT * FROM logros_dinamicos")
-        logros = cursor.fetchall()
+def verificar_logros_dinamicos(usuario_id: int):
+    cnx = get_mysql()
+    try:
 
-        for logro in logros:
-            logro_id = logro['logro_id']
-            tipo = logro['tipo_condicion']
-            categoria_id = logro['categoria_id']
-            valor = logro['valor_referencia']
+        with cnx.cursor(dictionary=True, buffered=True) as cursor:
 
-            cursor.execute("""
-                SELECT 1 FROM usuario_logro
-                WHERE usuario_id = %s AND logro_id = %s
-            """, (usuario_id, logro_id))
-            if cursor.fetchone():
-                continue
-            else:
-                cursor.fetchall()
+            cursor.execute("SELECT * FROM logros_dinamicos")
+            logros = cursor.fetchall()  
 
-            cumple = False
+            for logro in logros:
+                logro_id     = logro['logro_id']
+                tipo         = logro['tipo_condicion']
+                categoria_id = logro['categoria_id']
+                valor        = logro['valor_referencia']
 
-            if tipo == 'total_metas':
-                cursor.execute("SELECT COUNT(*) AS total FROM metas_categoria WHERE usuario_id = %s", (usuario_id,))
-                cumple = cursor.fetchone()['total'] >= valor
-
-            elif tipo == 'total_limites':
-                cursor.execute("SELECT COUNT(*) AS total FROM limite_categoria WHERE usuario_id = %s", (usuario_id,))
-                cumple = cursor.fetchone()['total'] >= valor
-
-            elif tipo == 'minutos_categoria_total':
                 cursor.execute("""
-                    SELECT SUM(r.tiempo) AS total
-                    FROM registro r
-                    JOIN dominio_categoria dc ON r.dominio = dc.dominio
-                    WHERE r.usuario_id = %s AND dc.categoria_id = %s
-                """, (usuario_id, categoria_id))
-                minutos = cursor.fetchone()['total'] or 0
-                cumple = minutos >= valor if valor >= 0 else minutos <= abs(valor)
+                    SELECT COUNT(*) AS c
+                    FROM usuario_logro
+                    WHERE usuario_id = %s AND logro_id = %s
+                """, (usuario_id, logro_id))
+                if cursor.fetchone()['c'] > 0:
+                    continue  
+                cumple = False
 
-            elif tipo == 'metas_cumplidas':
-                cursor.execute("""
-                    SELECT COUNT(*) AS total FROM metas_categoria
-                    WHERE usuario_id = %s AND cumplida = 1
-                """, (usuario_id,))
-                cumple = cursor.fetchone()['total'] >= valor
-
-            elif tipo == 'minutos_categoria_dia':
-                hoy = date.today()
-                cursor.execute("""
-                    SELECT SUM(r.tiempo) AS total
-                    FROM registro r
-                    JOIN dominio_categoria dc ON r.dominio = dc.dominio
-                    WHERE r.usuario_id = %s AND dc.categoria_id = %s AND DATE(r.fecha) = %s
-                """, (usuario_id, categoria_id, hoy))
-                minutos = cursor.fetchone()['total'] or 0
-                cumple = minutos >= valor if valor >= 0 else minutos <= abs(valor)
-
-            elif tipo == 'metas_dias_consecutivos':
-                cursor.execute("""
-                    SELECT DATE(fecha) AS dia
-                    FROM metas_categoria
-                    WHERE usuario_id = %s AND cumplida = 1
-                    GROUP BY DATE(fecha)
-                    ORDER BY dia DESC
-                """, (usuario_id,))
-                dias_cumplidos = [row['dia'] for row in cursor.fetchall()]
-                racha = 0
-                hoy = date.today()
-                for i in range(valor):
-                    dia_revisado = hoy - timedelta(days=i)
-                    if dia_revisado in dias_cumplidos:
-                        racha += 1
-                    else:
-                        break
-                cumple = racha >= valor
-
-            elif tipo == 'dias_sin_exceder_limites':
-                racha = 0
-                hoy = date.today()
-                for i in range(valor):
-                    dia = hoy - timedelta(days=i)
-
+                if tipo == 'total_metas':
                     cursor.execute("""
                         SELECT COUNT(*) AS total
-                        FROM registro
-                        WHERE usuario_id = %s AND DATE(fecha) = %s
-                    """, (usuario_id, dia))
-                    hubo_uso = cursor.fetchone()['total'] > 0
+                        FROM metas_categoria
+                        WHERE usuario_id = %s
+                    """, (usuario_id,))
+                    cumple = cursor.fetchone()['total'] >= valor
 
-                    if not hubo_uso:
-                        break
-
+                elif tipo == 'total_limites':
                     cursor.execute("""
-                        SELECT dc.categoria_id, SUM(r.tiempo) AS total_usado, MAX(l.limite_minutos) AS limite
-                        FROM limite_categoria l
-                        JOIN dominio_categoria dc ON l.categoria_id = dc.categoria_id
-                        JOIN registro r ON r.dominio = dc.dominio AND r.usuario_id = l.usuario_id
-                        WHERE l.usuario_id = %s AND DATE(r.fecha) = %s
-                        GROUP BY dc.categoria_id
-                        HAVING total_usado > limite
-                    """, (usuario_id, dia))
-                    if cursor.fetchone():
-                        cursor.fetchall()
-                        break
-                    else:
-                        cursor.fetchall()
+                        SELECT COUNT(*) AS total
+                        FROM limite_categoria
+                        WHERE usuario_id = %s
+                    """, (usuario_id,))
+                    cumple = cursor.fetchone()['total'] >= valor
+
+                elif tipo == 'minutos_categoria_total':
+                    cursor.execute("""
+                        SELECT SUM(r.tiempo) AS total
+                        FROM registro r
+                        JOIN dominio_categoria dc ON r.dominio = dc.dominio
+                        WHERE r.usuario_id = %s AND dc.categoria_id = %s
+                    """, (usuario_id, categoria_id))
+                    minutos = cursor.fetchone()['total'] or 0
+                    cumple = minutos >= valor if valor >= 0 else minutos <= abs(valor)
+
+                elif tipo == 'metas_cumplidas':
+                    cursor.execute("""
+                        SELECT COUNT(*) AS total
+                        FROM metas_categoria
+                        WHERE usuario_id = %s AND cumplida = 1
+                    """, (usuario_id,))
+                    cumple = cursor.fetchone()['total'] >= valor
+
+                elif tipo == 'minutos_categoria_dia':
+                    hoy = date.today()
+                    cursor.execute("""
+                        SELECT SUM(r.tiempo) AS total
+                        FROM registro r
+                        JOIN dominio_categoria dc ON r.dominio = dc.dominio
+                        WHERE r.usuario_id = %s AND dc.categoria_id = %s AND DATE(r.fecha) = %s
+                    """, (usuario_id, categoria_id, hoy))
+                    minutos = cursor.fetchone()['total'] or 0
+                    cumple = minutos >= valor if valor >= 0 else minutos <= abs(valor)
+
+                elif tipo == 'metas_dias_consecutivos':
+                    cursor.execute("""
+                        SELECT DATE(fecha) AS dia
+                        FROM metas_categoria
+                        WHERE usuario_id = %s AND cumplida = 1
+                        GROUP BY DATE(fecha)
+                        ORDER BY dia DESC
+                    """, (usuario_id,))
+                    dias_cumplidos = [row['dia'] for row in cursor.fetchall()]
+                    racha = 0
+                    hoy = date.today()
+                    for i in range(valor):
+                        dia_revisado = hoy - timedelta(days=i)
+                        if dia_revisado in dias_cumplidos:
+                            racha += 1
+                        else:
+                            break
+                    cumple = racha >= valor
+
+                elif tipo == 'dias_sin_exceder_limites':
+                    racha = 0
+                    hoy = date.today()
+                    for i in range(valor):
+                        dia = hoy - timedelta(days=i)
+
+                        cursor.execute("""
+                            SELECT COUNT(*) AS total
+                            FROM registro
+                            WHERE usuario_id = %s AND DATE(fecha) = %s
+                        """, (usuario_id, dia))
+                        hubo_uso = cursor.fetchone()['total'] > 0
+                        if not hubo_uso:
+                            break
+
+                        cursor.execute("""
+                            SELECT 1
+                            FROM limite_categoria l
+                            JOIN dominio_categoria dc ON l.categoria_id = dc.categoria_id
+                            JOIN registro r ON r.dominio = dc.dominio AND r.usuario_id = l.usuario_id
+                            WHERE l.usuario_id = %s AND DATE(r.fecha) = %s
+                            GROUP BY dc.categoria_id
+                            HAVING SUM(r.tiempo) > MAX(l.limite_minutos)
+                            LIMIT 1
+                        """, (usuario_id, dia))
+                        excedio = cursor.fetchone() is not None
+
+                        if excedio:
+                            break
                         racha += 1
 
-                cumple = racha >= valor
+                    cumple = racha >= valor
 
-            elif tipo == 'equilibrio_digital':
-                racha = 0
-                hoy = date.today()
-                for i in range(valor):
-                    dia = hoy - timedelta(days=i)
+                elif tipo == 'equilibrio_digital':
+                    racha = 0
+                    hoy = date.today()
+                    for i in range(valor):
+                        dia = hoy - timedelta(days=i)
 
+                        cursor.execute("""
+                            SELECT 1
+                            FROM metas_categoria
+                            WHERE usuario_id = %s AND cumplida = 1 AND DATE(fecha) = %s
+                            LIMIT 1
+                        """, (usuario_id, dia))
+                        meta_ok = cursor.fetchone() is not None
+
+                        cursor.execute("""
+                            SELECT 1
+                            FROM limite_categoria l
+                            JOIN dominio_categoria dc ON l.categoria_id = dc.categoria_id
+                            JOIN registro r ON r.dominio = dc.dominio AND r.usuario_id = l.usuario_id
+                            WHERE l.usuario_id = %s AND DATE(r.fecha) = %s
+                            GROUP BY dc.categoria_id
+                            HAVING SUM(r.tiempo) > MAX(l.limite_minutos)
+                            LIMIT 1
+                        """, (usuario_id, dia))
+                        limites_ok = cursor.fetchone() is None
+
+                        if meta_ok and limites_ok:
+                            racha += 1
+                        else:
+                            break
+
+                    cumple = racha >= valor
+
+                elif tipo == 'metas_categoria_cumplidas':
                     cursor.execute("""
-                        SELECT 1 FROM metas_categoria
-                        WHERE usuario_id = %s AND cumplida = 1 AND DATE(fecha) = %s
-                    """, (usuario_id, dia))
-                    meta_ok = cursor.fetchone() is not None
+                        SELECT COUNT(*) AS total
+                        FROM metas_categoria
+                        WHERE usuario_id = %s AND cumplida = 1 AND categoria_id = %s
+                    """, (usuario_id, categoria_id))
+                    cumple = cursor.fetchone()['total'] >= valor
 
-                    cursor.execute("""
-                        SELECT dc.categoria_id, SUM(r.tiempo) AS total_usado, MAX(l.limite_minutos) AS limite
-                        FROM limite_categoria l
-                        JOIN dominio_categoria dc ON l.categoria_id = dc.categoria_id
-                        JOIN registro r ON r.dominio = dc.dominio AND r.usuario_id = l.usuario_id
-                        WHERE l.usuario_id = %s AND DATE(r.fecha) = %s
-                        GROUP BY dc.categoria_id
-                        HAVING total_usado > limite
-                    """, (usuario_id, dia))
-                    limites_ok = cursor.fetchone() is None
-                    cursor.fetchall()
 
-                    if meta_ok and limites_ok:
-                        racha += 1
-                    else:
-                        break
+                if cumple:
+                    try:
+                        cursor.execute("""
+                            INSERT INTO usuario_logro (usuario_id, logro_id)
+                            VALUES (%s, %s)
+                        """, (usuario_id, logro_id))
+                    except Exception as e:
 
-                cumple = racha >= valor
+                        print(f"[logros] Error al insertar logro {logro_id}: {e}")
 
-            elif tipo == 'metas_categoria_cumplidas':
-                cursor.execute("""
-                    SELECT COUNT(*) AS total FROM metas_categoria
-                    WHERE usuario_id = %s AND cumplida = 1 AND categoria_id = %s
-                """, (usuario_id, categoria_id))
-                cumple = cursor.fetchone()['total'] >= valor
-
-            # 🔓 Si se cumple, desbloquear el logro
-            if cumple:
-                try:
-                    cursor.execute("""
-                        INSERT INTO usuario_logro (usuario_id, logro_id)
-                        VALUES (%s, %s)
-                    """, (usuario_id, logro_id))
-                except Exception as e:
-                    print(f"Error al insertar logro {logro_id}: {e}")
-
-        conexion.commit()
-
-#panel para rachas
+        cnx.commit()
+    except Exception:
+        cnx.rollback()
+        raise
+    finally:
+        cnx.close()
 
 def actualizar_rachas(usuario_id):
     conexion = get_mysql()
     with conexion.cursor(dictionary=True) as cursor:
         hoy = date.today()
 
-        # --- Verificar si el usuario usó el navegador hoy ---
+
         cursor.execute("""
             SELECT COUNT(*) AS total FROM registro
             WHERE usuario_id = %s AND DATE(fecha) = %s
@@ -323,7 +336,7 @@ def actualizar_rachas(usuario_id):
         if not hubo_uso:
             return  # No hacemos nada si no usó navegador hoy
 
-        ### Racha de METAS
+
         cursor.execute("""
             SELECT COUNT(*) AS total FROM metas_categoria
             WHERE usuario_id = %s AND cumplida = 1 AND DATE(fecha) = %s
@@ -346,14 +359,13 @@ def actualizar_rachas(usuario_id):
                     WHERE id = %s
                 """, (nuevo_conteo, activar, hoy, racha['id']))
             else:
-                # Si no cumplió meta, reiniciar racha
+      
                 cursor.execute("""
                     UPDATE rachas_usuario
                     SET dias_consecutivos = 0, activa = FALSE, ultima_fecha = %s
                     WHERE id = %s
                 """, (hoy, racha['id']))
         else:
-            # Crear la racha si no existe
             estado = cumplio_meta
             cursor.execute("""
                 INSERT INTO rachas_usuario (usuario_id, tipo, dias_consecutivos, activa, ultima_fecha)
@@ -388,7 +400,7 @@ def actualizar_rachas(usuario_id):
                     WHERE id = %s
                 """, (nuevo_conteo, activar, hoy, racha['id']))
             else:
-                # Si excedió límite, reiniciar
+               
                 cursor.execute("""
                     UPDATE rachas_usuario
                     SET dias_consecutivos = 0, activa = FALSE, ultima_fecha = %s
@@ -403,9 +415,7 @@ def actualizar_rachas(usuario_id):
 
         conexion.commit()
 
-# ---------------------------
-# FUNCIONES DE SUGERENCIAS
-# ---------------------------
+
 
 def obtener_promedio_categoria(usuario_id, categoria_id, dias=5):
     """
@@ -430,14 +440,12 @@ def obtener_promedio_categoria(usuario_id, categoria_id, dias=5):
         "hoy": hoy
     }).fetchall()
 
-    # Extraer los valores diarios
     tiempos = [row.total for row in registros if row.total is not None]
     if not tiempos:
         return 0
 
-    # Promedio en segundos
     promedio_segundos = float(sum(tiempos)) / len(tiempos)
-    # Convertir a minutos para que coincida con tus sugerencias visibles
+
     promedio_minutos = promedio_segundos / 60.0
 
     return promedio_minutos
@@ -458,7 +466,6 @@ def calcular_sugerencias_por_categoria(categoria, promedio):
         meta_sugerida = int(promedio)
         limite_sugerido = int(promedio * 0.80)
 
-    # Tope por categoría
     MAX_POR_CATEGORIA = {
         'productividad': 600,
         'estudio': 480,
@@ -474,9 +481,6 @@ def calcular_sugerencias_por_categoria(categoria, promedio):
 
     return meta_sugerida, limite_sugerido
 
-# ---------------------------
-# FUNCIONES DE CONFIANZA
-# ---------------------------
 
 def calcular_nivel_confianza(dias_con_datos: int) -> str:
     """
@@ -504,7 +508,7 @@ def obtener_dias_uso(usuario_id: int) -> int:
 
     return dias_uso or 0
 
-# app/utils/domains.py
+
 from urllib.parse import urlparse
 
 MULTI_TLDS = {
@@ -529,24 +533,22 @@ def dominio_base(s: str) -> str:
         return ""
     parts = host.split(".")
     if len(parts) >= 3:
-        # Heurística simple para TLDs compuestos comunes (.com.mx, .co.uk, etc.)
+
         if (parts[-2], parts[-1]) in MULTI_TLDS:
             return ".".join(parts[-3:])
     if len(parts) >= 2:
         return ".".join(parts[-2:])
-    return host  # localhost, etc.
-
+    return host  
 def _qa_invariantes_dia(usuario_id: int, d: date):
     """
     Invariante: para cada categoría, sum(minutos por hora) == minutos diarios.
     """
-    # Diarias por categoría
+
     diarias = {
         r.categoria: r.minutos
         for r in FeatureDiaria.query.filter_by(usuario_id=usuario_id, fecha=d).all()
     }
 
-    # Suma de horarias por categoría
     horarias_sum = {}
     for r in FeatureHoraria.query.filter_by(usuario_id=usuario_id, fecha=d).all():
         horarias_sum[r.categoria] = horarias_sum.get(r.categoria, 0) + int(r.minutos)

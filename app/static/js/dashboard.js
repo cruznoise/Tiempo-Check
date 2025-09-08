@@ -254,3 +254,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   await pintarEstado(isoHoyMX());
 })();
+
+/// predicciones del ML
+
+function minsToHM(m){
+  const mm = Math.round(m);
+  const h = Math.floor(mm/60);
+  const mi = mm%60;
+  return (h>0? `${h}h ` : "") + `${mi}m`;
+}
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const r = await fetch('/api/ml/predict');
+    const data = await r.json();
+    const ul = document.getElementById('ml-predict-list');
+    ul.innerHTML = '';
+    (data.predicciones || []).forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = `${p.categoria}: ${minsToHM(p.yhat_minutos)}`;
+      ul.appendChild(li);
+    });
+    if (!data.predicciones || data.predicciones.length === 0) {
+      ul.innerHTML = '<li>Sin suficiente historial aún</li>';
+    }
+  } catch (e) {
+    console.error(e);
+  }
+});

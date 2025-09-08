@@ -1,5 +1,6 @@
 from app.extensions import db
 from datetime import datetime
+from sqlalchemy import Index
 
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
@@ -88,3 +89,56 @@ class FeatureHoraria(db.Model):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
     __table_args__ = (db.UniqueConstraint('usuario_id','fecha','hora','categoria', name='uq_features_horarias'),)
+
+class FeaturesCategoriaDiaria(db.Model):
+    __tablename__ = "features_categoria_diaria"
+
+    usuario_id = db.Column(db.Integer, nullable=False, primary_key=True)
+    fecha = db.Column(db.Date, nullable=False, primary_key=True)
+    categoria = db.Column(db.String(100), nullable=False, primary_key=True)
+
+    minutos = db.Column(db.Integer, nullable=False, default=0)
+
+    __table_args__ = (
+        Index("ix_fcdiaria_usuario_fecha", "usuario_id", "fecha"),
+        Index("ix_fcdiaria_fecha", "fecha"),
+        Index("ix_fcdiaria_usuario_categoria", "usuario_id", "categoria"),
+    )
+
+    def __repr__(self):
+        return f"<FCD {self.usuario_id} {self.fecha} {self.categoria}={self.minutos}>"
+
+class AggVentanaCategoria(db.Model):
+    __tablename__ = 'agg_ventana_categoria'
+    usuario_id = db.Column(db.Integer, primary_key=True)
+    categoria  = db.Column(db.String(64), primary_key=True)
+    ventana    = db.Column(db.String(8),  primary_key=True)  # '7d','14d','30d'
+    fecha_fin  = db.Column(db.Date,       primary_key=True)
+    minutos_sum      = db.Column(db.Float, nullable=False)
+    minutos_promedio = db.Column(db.Float, nullable=False)
+    dias_con_datos   = db.Column(db.Integer, nullable=False)
+    pct_del_total    = db.Column(db.Float, nullable=False)
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+class AggEstadoDia(db.Model):
+    __tablename__ = 'agg_estado_dia'
+    usuario_id = db.Column(db.Integer, primary_key=True)
+    fecha      = db.Column(db.Date,    primary_key=True)
+    categoria  = db.Column(db.String(64), primary_key=True)
+    minutos    = db.Column(db.Float, nullable=False)
+    meta_min   = db.Column(db.Float)
+    limite_min = db.Column(db.Float)
+    cumplio_meta   = db.Column(db.Boolean, default=False)
+    excedio_limite = db.Column(db.Boolean, default=False)
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+class AggKpiRango(db.Model):
+    __tablename__ = 'agg_kpi_rango'
+    usuario_id = db.Column(db.Integer, primary_key=True)
+    rango      = db.Column(db.String(12), primary_key=True)  # 'hoy','7dias','mes','total'
+    fecha_ref  = db.Column(db.Date, primary_key=True)
+    min_total         = db.Column(db.Float, nullable=False)
+    min_productivo    = db.Column(db.Float, nullable=False)
+    min_no_productivo = db.Column(db.Float, nullable=False)
+    pct_productivo    = db.Column(db.Float, nullable=False)
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
