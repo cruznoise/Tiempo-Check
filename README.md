@@ -67,12 +67,12 @@ Salida ejemplo `predict`:
   "fecha_pred": "2025-xx-xx",
   "predicciones": [
     {"categoria": "Productividad", "yhat_minutos": xx.xx},
-    {"categoria": "Trabajo", "yhat_minutos": xx.xx}},
-    {"categoria": "Ocio", "yhat_minutos": xx.xx}},
-    {"categoria": "Estudio", "yhat_minutos": xx.xx}},
-    {"categoria": "Redes Sociales", "yhat_minutos": xx.xx}},
-    {"categoria": "Herramientas", "yhat_minutos": xx.xx}},
-    {"categoria": "Comercio", "yhat_minutos": xx.xx}}
+    {"categoria": "Trabajo", "yhat_minutos": xx.xx},
+    {"categoria": "Ocio", "yhat_minutos": xx.xx},
+    {"categoria": "Estudio", "yhat_minutos": xx.xx},
+    {"categoria": "Redes Sociales", "yhat_minutos": xx.xx},
+    {"categoria": "Herramientas", "yhat_minutos": xx.xx},
+    {"categoria": "Comercio", "yhat_minutos": xx.xx}
   ],
   "meta": {
     "dow": 1,
