@@ -1,7 +1,7 @@
 # app/__init__.py
 import os
 from flask import Flask, jsonify
-from app.extensions import db, cors
+from app.extensions import db, cors, migrate
 
 
 def create_app(config_object=None):
@@ -26,7 +26,7 @@ def create_app(config_object=None):
             },
         supports_credentials=True,
     )
-
+    migrate.init_app(app, db)   
     from .controllers.app_base import bp as app_base_bp
     from .controllers.admin_controller import bp as admin_bp
     from .controllers.api_controller import bp as api_bp

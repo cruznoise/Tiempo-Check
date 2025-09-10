@@ -8,10 +8,13 @@ from joblib import dump, load
 from ml.data import load_fc_diaria
 from ml.features import make_lagged, get_feature_cols, split_train_holdout, latest_X_per_categoria
 from ml.estimators import NaiveLast, MA7, RFReg
-from ml.metrics import mae, rmse, smape
+from ml.metrics import mae, rmse, smape, _best_baseline, log_metrics
 import numpy as np
 import unicodedata
 import re as _re
+import sqlalchemy as sa
+from app.extensions import db
+
 
 def _strip_accents(s: str) -> str:
     if not isinstance(s, str):
@@ -98,7 +101,7 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
 
     n_dias = 0 if df.empty else df["fecha"].nunique()
     d = make_lagged(df) if not df.empty else df
-    threshold = max(10, int(0.75 * hist_days))
+    threshold = min(hist_days, max(10, int(0.5 * hist_days)))
     if df.empty or n_dias < threshold:
         from ml.estimators import BaselineHybrid
         if d is None or len(getattr(d, "index", [])) == 0:
@@ -111,15 +114,32 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
         model_path = ARTIF_DIR / f"model_{ts}_baseline.joblib"
         dump(bundle, model_path)
         shutil.copyfile(model_path, LATEST)
+        reason = "sin datos" if df.empty else f"hist_insuficiente: n_dias={n_dias} < threshold={threshold}"
         metrics = {
             "usuario_id": usuario_id, "hist_days": n_dias,
             "hist_requested": hist_days,
             "holdout_days": 0, "timestamp": ts,
             "rows_train": 0, "rows_test": 0,
-            "note": "baseline-only (cold-start, <10 dias)"
+            "note": f"baseline-only ({reason})"
         }
         _save_json(ARTIF_DIR / f"metrics_{ts}.json", metrics)
         _save_json(LATEST_METRICS, metrics)
+
+        log_metrics({
+            "fecha": date.today(),
+            "usuario_id": usuario_id,
+            "modelo": "baseline",
+            "categoria": "ALL",
+            "hist_days": int(n_dias),
+            "rows_train": 0,
+            "rows_test": 0,
+            "metric_mae": None,
+            "metric_rmse": None,
+            "baseline": "baseline",
+            "is_promoted": 1,
+            "artifact_path": str(model_path),
+        })
+
         return {"model_path": str(model_path), "metrics": metrics, "promoted": True}
     
     X_cols = get_feature_cols(d) 
@@ -135,15 +155,32 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
         model_path = ARTIF_DIR / f"model_{ts}_baseline.joblib"
         dump(bundle, model_path)
         shutil.copyfile(model_path, LATEST)
+        reason = f"sin features X_cols (n_dias={n_dias}, threshold={threshold})"
         metrics = {
             "usuario_id": usuario_id, "hist_days": n_dias,
             "hist_requested": hist_days,
             "holdout_days": 0, "timestamp": ts,
             "rows_train": 0, "rows_test": 0,
-            "note": "baseline-only (sin features X_cols)"
+            "note": f"baseline-only ({reason})"
         }
         _save_json(ARTIF_DIR / f"metrics_{ts}.json", metrics)
         _save_json(LATEST_METRICS, metrics)
+
+        log_metrics({
+            "fecha": date.today(),
+            "usuario_id": usuario_id,
+            "modelo": "baseline",
+            "categoria": "ALL",
+            "hist_days": int(n_dias),
+            "rows_train": 0,
+            "rows_test": 0,
+            "metric_mae": None,
+            "metric_rmse": None,
+            "baseline": "baseline",
+            "is_promoted": 1,
+            "artifact_path": str(model_path),
+        })
+
         return {"model_path": str(model_path), "metrics": metrics, "promoted": True}
 
 
@@ -182,6 +219,22 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
     }
     _save_json(ARTIF_DIR / f"metrics_{ts}.json", metrics)
 
+    best_base = _best_baseline(metrics.get("baselines"), prefer="MAE")
+
+    log_metrics({
+        "fecha": date.today(),
+        "usuario_id": usuario_id,
+        "modelo": "rf",
+        "categoria": "ALL",  # si luego entrenas por categoría, cambia aquí
+        "hist_days": int(n_dias),
+        "rows_train": int(len(Xtr)),
+        "rows_test": int(len(Xte)),
+        "metric_mae": float(m_rf["MAE"]),
+        "metric_rmse": float(m_rf["RMSE"]),
+        "baseline": best_base,
+        "is_promoted": 0,
+        "artifact_path": str(model_path),
+    })
     
     # Política de promoción: RF debe ganarle a MA7 en MAE y RMSE por un margen.
     margin = 0.0  # 0.01 => 1% de mejora mínima
@@ -190,6 +243,21 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
     if promote:
         shutil.copyfile(model_path, LATEST)
         _save_json(LATEST_METRICS, metrics)
+
+        log_metrics({
+            "fecha": date.today(),
+            "usuario_id": usuario_id,
+            "modelo": "rf",
+            "categoria": "ALL",
+            "hist_days": int(n_dias),
+            "rows_train": int(len(Xtr)),
+            "rows_test": int(len(Xte)),
+            "metric_mae": float(m_rf["MAE"]),
+            "metric_rmse": float(m_rf["RMSE"]),
+            "baseline": best_base,
+            "is_promoted": 1,
+            "artifact_path": str(model_path),
+        })
 
     return {"model_path": str(model_path), "metrics": metrics, "promoted": promote}
 
