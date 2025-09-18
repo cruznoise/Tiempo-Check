@@ -67,8 +67,18 @@
       <h2> Sugerencias de metas para hoy</h2>
        <div id="contenedor-sugerencias" data-usuario="{{ session['usuario_id'] }}"></div>
     </div>
+    
+    <button class="btn-info" data-role="ver-explicacion" data-categoria="{{categoria}}">¿Cómo se calculó?</button>
 
-     
+    <!-- Modal sencillo -->
+    <div id="modal-explicacion" class="modal" style="display:none">
+      <div class="modal-content">
+        <h3>Detalle de sugerencia</h3>
+        <pre id="explicacion-texto"></pre>
+        <button id="cerrar-explicacion">Cerrar</button>
+      </div>
+    </div>
+        
       <div class="dashboard-form-grid">
       <!-- Metas existentes -->
       <div class="dashboard-form-grid">
@@ -214,6 +224,19 @@
     </div>
   </main>
 </div>
+<div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/coach_toast.js') }}"></script>
+<script>
+
+  if (!window.__coachPollingStarted) {
+    window.__coachPollingStarted = true;
+    checkCoachAlertas();
+    window.__coachPolling = setInterval(checkCoachAlertas, 5 * 60 * 1000);
+  }
+</script>
+{% endblock %}
 
 
 <script src="{{ url_for('static', filename='js/metas.js') }}"> </script>

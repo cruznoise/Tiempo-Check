@@ -15,26 +15,27 @@ from app.utils import clasificar_dominio_automatico, desbloquear_logro, verifica
 from app.extensions import db 
 from app.services.features_engine import calcular_persistir_features
 from app.schedule.scheduler import get_scheduler
+from app.models.models_coach import CoachAlerta, CoachAccionLog,    CoachEstadoRegla, CoachSugerencia
+from app.schedule.coach_jobs import job_coach_alertas
+from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash, current_app, send_file
 
 
-bp = Blueprint('exportar', __name__, url_prefix='/admin/exportar')
-admin_controller = Blueprint('admin_controller', __name__, url_prefix='/admin')
+bp = Blueprint('admin_controller', __name__)
 
-
-@admin_controller.route('/categorias', methods=['GET'])
+@bp.route('/categorias', methods=['GET'])
 def vista_categorias():
     categorias = Categoria.query.all()
     dominios = DominioCategoria.query.all()
     return render_template('admin/categorias.html', categorias=categorias, dominios=dominios)
 
-@admin_controller.route('/configuracion')
+@bp.route('/configuracion')
 def vista_configuracion():
     if 'usuario_id' not in session:
         return redirect('/login')
     return render_template('admin/configuracion.html')
 
 
-@admin_controller.route('/categorias', methods=['POST'])
+@bp.route('/categorias', methods=['POST'])
 def agregar_categoria():
     nombre = request.form.get('nombre')
     if nombre:
@@ -44,7 +45,7 @@ def agregar_categoria():
         flash('Categoría agregada correctamente')
     return redirect(url_for('admin_controller.vista_categorias'))
 
-@admin_controller.route('/dominios', methods=['POST'])
+@bp.route('/dominios', methods=['POST'])
 def agregar_dominio():
     dominio = request.form.get('dominio')
     categoria_id = request.form.get('categoria_id')
@@ -55,7 +56,7 @@ def agregar_dominio():
         flash('Dominio agregado correctamente')
     return redirect(url_for('admin_controller.vista_categorias'))
 
-@admin_controller.route('/categorias/eliminar/<int:id>', methods=['POST'])
+@bp.route('/categorias/eliminar/<int:id>', methods=['POST'])
 def eliminar_categoria(id):
     categoria = Categoria.query.get_or_404(id)
     db.session.delete(categoria)
@@ -63,7 +64,7 @@ def eliminar_categoria(id):
     flash('Categoría eliminada')
     return redirect(url_for('admin_controller.vista_categorias'))
 
-@admin_controller.route('/dominios/eliminar/<int:id>', methods=['POST'])
+@bp.route('/dominios/eliminar/<int:id>', methods=['POST'])
 def eliminar_dominio(id):
     dominio = DominioCategoria.query.get_or_404(id)
     db.session.delete(dominio)
@@ -71,7 +72,7 @@ def eliminar_dominio(id):
     flash('Dominio eliminado')
     return redirect(url_for('admin_controller.vista_categorias'))
 
-@admin_controller.route('/categorias/editar/<int:id>', methods=['POST'])
+@bp.route('/categorias/editar/<int:id>', methods=['POST'])
 def editar_categoria(id):
     categoria = Categoria.query.get_or_404(id)
     nuevo_nombre = request.form.get('nuevo_nombre')
@@ -81,7 +82,7 @@ def editar_categoria(id):
         flash('Categoría actualizada')
     return redirect(url_for('admin_controller.vista_categorias'))
 
-@admin_controller.route('/dominios/editar/<int:id>', methods=['POST'])
+@bp.route('/dominios/editar/<int:id>', methods=['POST'])
 def editar_dominio(id):
     dominio = DominioCategoria.query.get_or_404(id)
     nuevo_dominio = request.form.get('nuevo_dominio')
@@ -94,23 +95,19 @@ def editar_dominio(id):
     return redirect(url_for('admin_controller.vista_categorias'))
 
 
-@admin_controller.route('/metas')
+@bp.route('/metas')
 def vista_metas():
     if 'usuario_id' not in session:
         return redirect(url_for('controlador.login'))
 
     usuario_id = session['usuario_id']
 
-    # Traer categorías
     categorias = db.session.query(Categoria).all()
 
-    # Traer metas establecidas
     metas = db.session.query(MetaCategoria).filter_by(usuario_id=usuario_id).all()
 
-    # Traer límites establecidos
     limites = db.session.query(LimiteCategoria).filter_by(usuario_id=usuario_id).all()
 
-    # Calcular uso actual por categoría (hoy)
     hoy = date.today()
     registros = db.session.execute(text("""
         SELECT dc.categoria_id, SUM(r.tiempo) as total
@@ -122,16 +119,14 @@ def vista_metas():
 
     uso_actual = defaultdict(int)
     for categoria_id, total in registros:
-        uso_actual[categoria_id] = round(total / 60)  # en minutos
+        uso_actual[categoria_id] = round(total / 60)  
 
-    # Estado de metas
     estado_metas = []
     for m in metas:
         nombre = next((c.nombre for c in categorias if c.id == m.categoria_id), 'Desconocida')
         usado = uso_actual.get(m.categoria_id, 0)
         cumplida = usado >= m.limite_minutos
 
-        # ACTUALIZA la meta en base de datos
         m.cumplida = 1 if cumplida else 0
 
         estado_metas.append({
@@ -141,12 +136,10 @@ def vista_metas():
             'cumplida': cumplida
         })
 
-    # Hacer commit una sola vez al final
     db.session.commit()
 
     verificar_logros_dinamicos(usuario_id)
 
-    # Estado de límites
     estado_limites = []
     for l in limites:
         usado = uso_actual.get(l.categoria_id, 0)
@@ -172,7 +165,7 @@ def vista_metas():
     )
 
 
-@admin_controller.route('/metas', methods=['POST'])
+@bp.route('/metas', methods=['POST'])
 def agregar_meta():
     usuario_id = request.form.get('usuario_id')
     categoria_id = request.form.get('categoria_id')
@@ -199,8 +192,7 @@ def agregar_meta():
 
     return redirect(url_for('admin_controller.vista_metas'))
 
-#Endpoint de agregar metas sugeridas, no confundir con el de arriba que es el manual
-@admin_controller.route('/api/agregar_meta', methods=['POST'])
+@bp.route('/api/agregar_meta', methods=['POST'])
 def agregar_meta_api():
     usuario_id = request.form.get('usuario_id')
     categoria_id = request.form.get('categoria_id')
@@ -223,7 +215,7 @@ def agregar_meta_api():
     return jsonify({"ok": True})
 
 
-@admin_controller.route('/metas/eliminar/<int:id>', methods=['POST'])
+@bp.route('/metas/eliminar/<int:id>', methods=['POST'])
 def eliminar_meta(id):
     meta = MetaCategoria.query.get_or_404(id)
     db.session.delete(meta)
@@ -231,7 +223,7 @@ def eliminar_meta(id):
     flash('Meta eliminada')
     return redirect(url_for('admin_controller.vista_metas'))
 
-@admin_controller.route('/metas/editar/<int:id>', methods=['POST'])
+@bp.route('/metas/editar/<int:id>', methods=['POST'])
 def editar_meta(id):
     meta = MetaCategoria.query.get_or_404(id)
     nuevo_limite = request.form.get('limite_minutos')
@@ -243,7 +235,7 @@ def editar_meta(id):
 
     return redirect(url_for('admin_controller.vista_metas'))
 
-@admin_controller.route('/limites')
+@bp.route('/limites')
 def vista_limites():
     if 'usuario_id' not in session:
         return redirect(url_for('controlador.login'))
@@ -254,7 +246,6 @@ def vista_limites():
     limites = db.session.query(LimiteCategoria).all()
 
 
-    # Uso actual por categoría (solo hoy)
     hoy = date.today()
     registros = db.session.execute(text("""
         SELECT dc.categoria_id, SUM(r.tiempo) as total
@@ -266,7 +257,7 @@ def vista_limites():
 
     uso_actual = defaultdict(int)
     for categoria_id, total in registros:
-        uso_actual[categoria_id] = round(total / 60)  # minutos
+        uso_actual[categoria_id] = round(total / 60)  
 
     estado_limites = []
     for l in limites:
@@ -287,7 +278,7 @@ def vista_limites():
                     estado_limites=estado_limites
                 )
 
-@admin_controller.route('/agregar_limite', methods=['POST'])
+@bp.route('/agregar_limite', methods=['POST'])
 def agregar_limite():
     try:
         usuario_id = request.form.get('usuario_id')
@@ -317,7 +308,7 @@ def agregar_limite():
 
 #ENDPOINT PARA AGREGAR LIMITES SUGERIDOS (EL DE ARRIBA ES MANUAL)
 
-@admin_controller.route('/api/agregar_limite', methods=['POST'])
+@bp.route('/api/agregar_limite', methods=['POST'])
 def agregar_limite_api():
     usuario_id = request.form.get('usuario_id')
     categoria_id = request.form.get('categoria_id')
@@ -363,7 +354,7 @@ def agregar_limite_api():
 
 
 
-@admin_controller.route('/editar_limite/<int:id>', methods=['POST'])
+@bp.route('/editar_limite/<int:id>', methods=['POST'])
 def editar_limite(id):
     try:
         nuevo_limite = int(request.form['limite_minutos'])
@@ -379,7 +370,8 @@ def editar_limite(id):
         flash(" Error al editar límite.")
 
     return redirect(url_for('admin_controller.vista_metas'))
-@admin_controller.route('/eliminar_limite/<int:id>', methods=['POST'])
+
+@bp.route('/eliminar_limite/<int:id>', methods=['POST'])
 def eliminar_limite(id):
     try:
         limite = LimiteCategoria.query.get(id)
@@ -395,7 +387,7 @@ def eliminar_limite(id):
 
     return redirect(url_for('admin_controller.vista_metas'))
 
-@admin_controller.route('/api/categorias_usuario')
+@bp.route('/api/categorias_usuario')
 def categorias_usuario():
     if 'usuario_id' not in session:
         return jsonify([])
@@ -403,7 +395,7 @@ def categorias_usuario():
     categorias = db.session.query(Categoria.id, Categoria.nombre).all()
     return jsonify([{'id': c.id, 'nombre': c.nombre} for c in categorias])
 
-@admin_controller.route('/api/alerta_categoria', methods=['POST', 'OPTIONS'])
+@bp.route('/api/alerta_categoria', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST', 'OPTIONS'], allow_headers='Content-Type')
 def verificar_alerta_categoria():
     print(" SESSION:", session)
@@ -458,7 +450,7 @@ def verificar_alerta_categoria():
 
     return jsonify({'alerta': False})
 
-@admin_controller.route('/api/alerta_dominio', methods=['POST', 'OPTIONS'])
+@bp.route('/api/alerta_dominio', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST', 'OPTIONS'], allow_headers='Content-Type')
 def alerta_por_dominio():
     if request.method == 'OPTIONS':
@@ -471,7 +463,7 @@ def alerta_por_dominio():
 
     data = request.get_json()
     dominio = data.get('dominio')
-    usuario_id = 1  # session.get('usuario_id')
+    usuario_id = 1 
 
     if not dominio or not usuario_id:
         return jsonify({"alerta": False, "error": "Faltan datos"}), 400
@@ -530,17 +522,14 @@ def alerta_por_dominio():
     return jsonify({"alerta": False})
 
 
-from app.mysql_conn import get_mysql, close_mysql
-
-
-@admin_controller.route('/exportar/datos', methods=['GET'])
+@bp.route('/exportar/datos', methods=['GET'])
 def exportar_datos():
     if 'usuario_id' not in session:
         return jsonify({"error": "No autenticado"}), 401
 
     usuario_id = session['usuario_id']
-    formato = request.args.get('formato', 'csv')     # 'csv' o 'json'
-    rango = request.args.get('rango', 'todo')         # '3dias', '15dias', 'mes', '3meses', 'todo'
+    formato = request.args.get('formato', 'csv')  
+    rango = request.args.get('rango', 'todo')      
 
     hoy = datetime.now().date()
 
@@ -553,7 +542,7 @@ def exportar_datos():
     elif rango == '3meses':
         fecha_min = hoy - timedelta(days=90)
     else:
-        fecha_min = None  # Todo el tiempo
+        fecha_min = None  
 
     query = Registro.query.filter_by(usuario_id=usuario_id)
     if fecha_min:
@@ -577,7 +566,7 @@ def exportar_datos():
         })
 
     elif formato == 'csv':
-        # Crear contenido CSV como string
+
             from io import StringIO
             salida_texto = StringIO()
             writer = csv.writer(salida_texto)
@@ -585,7 +574,6 @@ def exportar_datos():
             for r in registros:
                 writer.writerow([r.fecha, r.dominio, r.tiempo])
 
-        # Convertir string a bytes
             salida_bytes = BytesIO()
             salida_bytes.write(salida_texto.getvalue().encode('utf-8'))
             salida_bytes.seek(0)
@@ -601,7 +589,7 @@ def exportar_datos():
     else:
         return jsonify({"error": "Formato no válido"}), 400
 
-@admin_controller.route('/api/logros')
+@bp.route('/api/logros')
 def obtener_logros_usuario():
     if 'usuario_id' not in session:
         print(" Sesión no activa para /admin/api/logros")
@@ -623,7 +611,7 @@ def obtener_logros_usuario():
 
     return jsonify(logros)
 
-@admin_controller.route('/api/estado_rachas')
+@bp.route('/api/estado_rachas')
 def estado_rachas():
     if 'usuario_id' not in session:
         return jsonify({"error": "No autenticado"}), 401
@@ -639,7 +627,7 @@ def estado_rachas():
 
     return jsonify({r['tipo']: {"activa": r['activa'], "dias": r['dias_consecutivos']} for r in rachas})
 
-@admin_controller.route('/guardar', methods=['POST'])
+@bp.route('/guardar', methods=['POST'])
 @cross_origin(origins='*', methods=['POST'])
 def guardar_dominio():
     try:
@@ -650,27 +638,32 @@ def guardar_dominio():
         if not dominio or not tiempo or not usuario_id:
             return jsonify({"error": "Faltan datos"}), 400
 
-        # ⬇️ Nuevo: leer fecha_hora ISO que manda la extensión
-        fh_raw = request.form.get('fecha_hora')  # p.ej. "2025-08-12T23:55:10.123Z"
+        fh_raw = request.form.get('fecha_hora')  
         fh = None
         if fh_raw:
             try:
-                # Acepta "Z" o con offset; la convertimos a hora local y quitamos tz
+
                 fh = datetime.fromisoformat(fh_raw.replace('Z', '+00:00'))
                 if fh.tzinfo:
                     fh = fh.astimezone().replace(tzinfo=None)
             except Exception:
                 fh = None
         if fh is None:
-            fh = datetime.now()  # fallback
+            fh = datetime.now()  
 
         conexion = get_mysql()
         with conexion.cursor() as cursor:
-            # (opcional) buscar categoría ya asignada; si no la usas aquí, puedes quitar esto
-            cursor.execute("SELECT categoria_id FROM dominio_categoria WHERE dominio = %s", (dominio,))
-            _ = cursor.fetchone()
 
-            # ⬇️ Inserta también fecha_hora y conserva fecha (DATE)
+            cursor.execute("SELECT categoria_id FROM dominio_categoria WHERE dominio = %s", (dominio,))
+            row = cursor.fetchone()
+
+            if row:
+                categoria_id = row[0]
+            else:
+                from app.utils import clasificar_dominio_automatico
+                categoria_id = clasificar_dominio_automatico(dominio)
+
+
             cursor.execute("""
                 INSERT INTO registro (usuario_id, dominio, tiempo, fecha, fecha_hora)
                 VALUES (%s, %s, %s, %s, %s)
@@ -688,7 +681,7 @@ def guardar_dominio():
         print("Error en /guardar:", e)
         return jsonify({"error": "Error al guardar"}), 500
 
-@admin_controller.route('/registro', methods=['POST'])
+@bp.route('/registro', methods=['POST'])
 def registro():
     nombre = request.form['nombre']
     correo = request.form['correo']
@@ -696,9 +689,8 @@ def registro():
 
     if not nombre or not correo or not contraseña:
         flash(" Todos los campos son obligatorios.")
-        return redirect(url_for('admin_controller.login'))
+        return redirect(url_for('app_base.login'))
 
-    # Verificar si el correo ya existe
     existente = db.session.execute(text("""
         SELECT id FROM usuarios WHERE correo = :correo
     """), {"correo": correo}).fetchone()
@@ -707,7 +699,6 @@ def registro():
         flash("Ya existe un usuario con ese correo.")
         return redirect("/login")
 
-    # Insertar nuevo usuario
     db.session.execute(text("""
         INSERT INTO usuarios (nombre, correo, contraseña)
         VALUES (:nombre, :correo, :contraseña)
@@ -715,9 +706,9 @@ def registro():
     db.session.commit()
 
     flash(" Registro exitoso. Ahora inicia sesión.")
-    return redirect(url_for('admin_controller.login'))
+    return redirect(url_for('app_base.login'))
 
-@admin_controller.route('/api/sugerencias', methods=['GET'])
+@bp.route('/api/sugerencias', methods=['GET'])
 def sugerencias():
 
     usuario_id = session.get('usuario_id')
@@ -760,7 +751,7 @@ def sugerencias():
 
     return jsonify(sugerencias_resultado)
 
-@admin_controller.route("/admin/api/features_hoy", methods=["GET"])
+@bp.route("/admin/api/features_hoy", methods=["GET"])
 def api_features_hoy():
     """
     Devuelve features diarias y horarias para un usuario y fecha.
@@ -787,13 +778,13 @@ def api_features_hoy():
         except Exception as e:
             return jsonify({"ok": False, "error": f"error recalculando features: {e}"}), 500
 
-    # Lee diarias
+
     diarias_q = (FeatureDiaria.query
                  .filter_by(usuario_id=usuario_id, fecha=f)
                  .order_by(FeatureDiaria.categoria.asc()))
     diarias = [{"categoria": x.categoria, "minutos": int(x.minutos)} for x in diarias_q.all()]
 
-    # Lee horarias
+
     horarias_q = (FeatureHoraria.query
                   .filter_by(usuario_id=usuario_id, fecha=f)
                   .order_by(FeatureHoraria.hora.asc(), FeatureHoraria.categoria.asc()))
@@ -801,10 +792,10 @@ def api_features_hoy():
 
     total_minutos = sum(d["minutos"] for d in diarias)
 
-    # Estructuras útiles para Chart.js
+
     categorias = sorted({d["categoria"] for d in diarias})
     horas = list(range(24))
-    # Mapa [categoria][hora] -> minutos
+
     mapa_h = {(h["categoria"], h["hora"]): h["minutos"] for h in horarias}
     series_horarias = [
         {
@@ -826,7 +817,7 @@ def api_features_hoy():
         "series_horarias": series_horarias
     })
 
-@admin_controller.route('/api/features_estado', methods=['GET'])
+@bp.route('/api/features_estado', methods=['GET'])
 def features_estado():
     usuario_id = int(request.args.get("usuario_id", 1))
     d = date.fromisoformat(request.args.get("dia", date.today().isoformat()))
@@ -839,7 +830,7 @@ def features_estado():
         "horarias_count": fh
     })
 
-@admin_controller.route('/api/features_health', methods=['GET'])
+@bp.route('/api/features_health', methods=['GET'])
 def features_health():
     try:
         sched = get_scheduler()
@@ -853,13 +844,49 @@ def features_health():
         tz = current_app.config.get("TZ", "America/Mexico_City")
         return jsonify({"jobs": jobs, "tz": tz})
     except Exception as e:
-        # Si el scheduler no está inicializado, devolvemos algo útil igual
         return jsonify({"jobs": [], "tz": current_app.config.get("TZ", "America/Mexico_City"),
                         "warning": f"scheduler no disponible: {type(e).__name__}"}), 200
 
-@admin_controller.route('/api/features_qa', methods=['GET'])
+@bp.route('/api/features_qa', methods=['GET'])
 def features_qa():
     usuario_id = int(request.args.get("usuario_id", 1))
     d = date.fromisoformat(request.args.get("dia", date.today().isoformat()))
     res = _qa_invariantes_dia(usuario_id, d)
     return jsonify(res)
+
+@bp.route("/admin/api/coach/alertas")
+def coach_alertas_list():
+    if "usuario_id" not in session:
+        return jsonify({"error": "No autenticado"}), 401
+    usuario_id = session["usuario_id"]
+
+    fecha = request.args.get("fecha")
+    desde = request.args.get("desde")
+    hasta = request.args.get("hasta")
+
+    q = CoachAlerta.query.filter_by(usuario_id=usuario_id)
+    if fecha:
+        q = q.filter(CoachAlerta.fecha == fecha)
+    elif desde and hasta:
+        q = q.filter(CoachAlerta.fecha >= desde, CoachAlerta.fecha <= hasta)
+
+    q = q.order_by(CoachAlerta.fecha.desc(), CoachAlerta.creado_en.desc())
+    data = [{
+        "fecha": str(r.fecha),
+        "categoria": r.categoria,
+        "regla": r.regla,
+        "nivel": r.nivel,
+        "detalle": r.detalle,
+        "creado_en": r.creado_en.isoformat()
+    } for r in q.limit(200).all()]
+
+    return jsonify({"usuario_id": usuario_id, "alertas": data})
+
+@bp.route("/admin/api/coach/generar_alertas", methods=["POST"])
+def coach_alertas_run():
+    if "usuario_id" not in session:
+        return jsonify({"error": "No autenticado"}), 401
+    usuario_id = session["usuario_id"]
+    job_coach_alertas(current_app, usuario_id)
+    return jsonify({"ok": True})
+

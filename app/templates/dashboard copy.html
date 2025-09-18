@@ -7,45 +7,42 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body
-  data-uso-horario='{{ uso_horario|tojson }}'
-  data-uso-diario='{{ uso_diario|tojson }}'
-  data-categorias='{{ categorias|tojson }}'
-  data-datos='{{ datos|tojson }}'>
+  data-datos='{{ datos | tojson | safe }}'
+  data-categorias='{{ categorias | tojson | safe }}'
+  data-uso-horario='{{ uso_horario | tojson | safe }}'
+  data-uso-diario='{{ uso_diario | tojson | safe }}'>
   <div class="dashboard-container">
 
-    <!-- Sidebar -->
     <aside class="sidebar">
-      <h2>¡Hola,<br>Angel!</h2>
+      <h2>¡Hola,<br>{{ nombre }}!</h2>
       <p>Este es tu resumen personal</p>
       <nav>
-      <ul>
-        <li>
-          <a href="{{ url_for('controlador.dashboard') }}">
-            <img src="{{ url_for('static', filename='icons/home.svg') }}" alt="Home">
-          </a>
-        </li>
-        <li>
-          <a href="{{ url_for('admin_controller.vista_metas') }}">
-            <img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros">
-          </a>
-        </li>
-        <li>
-          <a href="{{ url_for('admin_controller.vista_configuracion') }}">
-            <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración">
-          </a>
-        </li>
-      </ul>
-
+        <ul>
+          <li>
+            <a href="{{ url_for('controlador.dashboard') }}">
+              <img src="{{ url_for('static', filename='icons/home.svg') }}" alt="Home">
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('admin_controller.vista_metas') }}">
+              <img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros">
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('admin_controller.vista_configuracion') }}">
+              <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración">
+            </a>
+          </li>
+        </ul>
       </nav>
     </aside>
 
-    <!-- Contenido principal -->
     <main class="content">
-      <header>
+      <header class="main-header">
         <h1>DASHBOARD</h1>
-        <p class="intro-text"> Este es un resumen personalizado de tu actividad digital.</p>
+        <p class="intro-text">Este es un resumen personalizado de tu actividad digital.</p>
       </header>
-
+      
       <section class="controls-bar">
         <div class="control-group">
           <label for="rango">Rango de tiempo:</label>
@@ -136,38 +133,18 @@
     </main>
   </div>
 
-<!-- Modal de alerta por límite excedido -->
-<div id="alertaModal" class="modal-overlay hidden">
-  <div class="modal-contenido">
-    <h2>“TiempoCheck”</h2>
-    <p><span id="categoriaModal"></span> ¿Deseas continuar?</p>
-    <div class="botones">
-      <button onclick="cerrarModal()">Aceptar y cerrar</button>
-      <button onclick="ignorarAlerta()">Ignorar</button>
+  <div id="alertaModal" class="modal-overlay hidden">
+    <div class="modal-contenido">
+      <h2>“TiempoCheck”</h2>
+      <p><span id="categoriaModal"></span> ¿Deseas continuar?</p>
+      <div class="botones">
+        <button onclick="cerrarModal()">Aceptar y cerrar</button>
+        <button onclick="ignorarAlerta()">Ignorar</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
-
-
-<script type="application/json" id="categorias-json">
-  {{ categorias | tojson | safe }}
-</script>
-<script>
-
-  window.categorias = {};
-  try {
-    const el = document.getElementById('categorias-json');
-    if (el && el.textContent) {
-      window.categorias = JSON.parse(el.textContent);
-    }
-  } catch (e) {
-    console.error('Error parseando categorias JSON:', e);
-  }
-</script>
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-<script src="{{ url_for('static', filename='js/temas.js') }}"></script>
-
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
 </body>
 </html>
