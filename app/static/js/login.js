@@ -18,14 +18,14 @@ $(document).ready(function() {
           window.location.href = "/dashboard";
         } else {
           errorMsg
-            .text("❌ Correo o contraseña incorrectos")
+            .text(" Correo o contraseña incorrectos")
             .removeClass("d-none")
             .fadeIn();
         }
       },
       error: function() {
         errorMsg
-          .text("⚠️ Error del servidor")
+          .text(" Error del servidor")
           .removeClass("d-none")
           .fadeIn();
       }

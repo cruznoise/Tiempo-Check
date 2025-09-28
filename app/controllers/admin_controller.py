@@ -11,7 +11,8 @@ from app.mysql_conn import get_mysql, close_mysql
 from app.models.models import Registro, DominioCategoria, Categoria, LimiteCategoria, MetaCategoria, Usuario, FeatureDiaria, FeatureHoraria
 from collections import defaultdict
 from datetime import datetime
-from app.utils import clasificar_dominio_automatico, desbloquear_logro, verificar_logros_dinamicos, actualizar_rachas, obtener_promedio_categoria, calcular_nivel_confianza, obtener_dias_uso, calcular_sugerencias_por_categoria, _qa_invariantes_dia
+from app.utils import clasificar_dominio_automatico, desbloquear_logro, verificar_logros_dinamicos, obtener_promedio_categoria, calcular_nivel_confianza, obtener_dias_uso, calcular_sugerencias_por_categoria, _qa_invariantes_dia
+from app.services.rachas_service import actualizar_rachas
 from app.extensions import db 
 from app.services.features_engine import calcular_persistir_features
 from app.schedule.scheduler import get_scheduler
@@ -607,6 +608,8 @@ def obtener_logros_usuario():
         """, (usuario_id,))
         logros = cursor.fetchall()
 
+    for logro in logros:
+        logro["imagen_url"] = url_for('static', filename='icons/logro.png')
     
 
     return jsonify(logros)

@@ -111,7 +111,7 @@ function crearGraficas() {
       datasets: [{
         label: 'Tiempo por categoría (min)',
         data: Object.values(categorias),
-        backgroundColor: colorAccents,
+        backgroundColor: ['#3700b3', '#03dac6', '#6200ee', '#cf6679', '#9955ee'],
         borderWidth: 1
       }]
     },
@@ -199,7 +199,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (desde && hasta) window.location.href = `/dashboard?rango=entre&desde=${desde}&hasta=${hasta}`;
   });
 
-  // === Resumen ===
   try {
     const res = await fetch('/resumen');
     const data = await res.json();
@@ -283,7 +282,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Error en predicciones ML:", err);
   }
 
-  // === Persistencia de tema ===
   const guardado = localStorage.getItem("tema_usuario");
   const temaSelect = document.getElementById('selector-tema');
   const modoToggle = document.getElementById('modoDiaNoche');

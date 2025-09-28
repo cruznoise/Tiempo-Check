@@ -11,7 +11,7 @@ fetch('/admin/api/logros')
         const div = document.createElement('div');
         div.className = `insignia ${logro.nivel} ${logro.desbloqueado ? '' : 'locked'}`;
         div.innerHTML = `
-          <img src="${logro.imagen_url}" alt="${logro.nombre}">
+          <img src="/static/icons/logro.png" alt="${logro.nombre}">
           <h3>${logro.nombre}</h3>
           <p>${logro.descripcion}</p>
         `;

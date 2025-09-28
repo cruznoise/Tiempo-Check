@@ -7,7 +7,8 @@ from app.models.models import db,Usuario, Registro, Categoria, DominioCategoria,
 from app.models import DominioCategoria, Categoria
 from collections import defaultdict
 import tldextract
-from app.utils import clasificar_dominio_automatico, desbloquear_logro, verificar_logros_dinamicos, actualizar_rachas, obtener_promedio_categoria, calcular_nivel_confianza, obtener_dias_uso, calcular_sugerencias_por_categoria, _qa_invariantes_dia
+from app.utils import clasificar_dominio_automatico, desbloquear_logro, verificar_logros_dinamicos, obtener_promedio_categoria, calcular_nivel_confianza, obtener_dias_uso, calcular_sugerencias_por_categoria, _qa_invariantes_dia
+from app.services.rachas_service import actualizar_rachas
 
 controlador = Blueprint('controlador', __name__)
 bp = controlador 

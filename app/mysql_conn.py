@@ -7,7 +7,7 @@ def get_mysql():
     if 'mysql_conn' not in g:
         g.mysql_conn = mysql.connector.connect(
             host='localhost',
-            user='root',
+            user='angel',
             password='base',
             database='tiempocheck_db'
         )

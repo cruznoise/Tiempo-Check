@@ -10,6 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 from app.schedule.coach_jobs import job_coach_alertas
 from .features_jobs import job_features_horarias, job_features_diarias, job_catchup
 from app.schedule.agg_jobs import job_agg_short, job_agg_close_day, job_agg_catchup 
+from app.schedule.rachas_jobs import job_rachas
 from app.schedule.coach_jobs import coach_short, coach_daily, coach_catchup
 from app.models import Usuario
 
@@ -61,7 +62,6 @@ def start_scheduler(app, usuario_id: int = 1, tz: str | None = None):
             EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_MISSED | EVENT_JOB_MAX_INSTANCES,
         )
 
-    # --- lee frecuencias de config ---
     every_min   = int(app.config.get("JOB_FH_MINUTES", 1))
     close_hour  = int(app.config.get("JOB_CLOSE_HOUR", 0))
     close_min   = int(app.config.get("JOB_CLOSE_MINUTE", 5))
@@ -74,7 +74,6 @@ def start_scheduler(app, usuario_id: int = 1, tz: str | None = None):
     agg_cu_hours    = int(app.config.get("JOB_AGG_CATCHUP_HOURS", 6))
     agg_cu_lookback = int(app.config.get("JOB_AGG_CATCHUP_LOOKBACK", 30))
 
-    # ===== Bloque 1: features =====
     _SCHED.add_job(
         job_features_horarias, trigger="interval",
         minutes=every_min,
@@ -94,8 +93,6 @@ def start_scheduler(app, usuario_id: int = 1, tz: str | None = None):
         kwargs={"app": app, "usuario_id": usuario_id, "dias_atras": cu_lookback},
         id="features_catchup", replace_existing=True,
     )
-
-    # ===== Bloque 2: agregados =====
     _SCHED.add_job(
         job_agg_short, trigger="interval",
         minutes=agg_every_min,
@@ -120,7 +117,7 @@ def start_scheduler(app, usuario_id: int = 1, tz: str | None = None):
         for uid in _usuarios_activos():
             _SCHED.add_job(
                 func=job_coach_alertas,
-                trigger=CronTrigger(hour=0, minute=10, timezone=tz),  # <-- usar tz, no TZ
+                trigger=CronTrigger(hour=0, minute=10, timezone=tz),
                 args=[app, uid],
                 id=f"coach_alertas_u{uid}",
                 replace_existing=True,
@@ -128,6 +125,49 @@ def start_scheduler(app, usuario_id: int = 1, tz: str | None = None):
                 max_instances=1,
                 misfire_grace_time=300,
             )
+            from app.schedule.ml_jobs import job_ml_train, job_ml_predict, job_ml_catchup
+            _SCHED.add_job(
+                func=job_ml_train,
+                trigger=CronTrigger(day_of_week="sun", hour=0, minute=10, timezone=tz),
+                #trigger=CronTrigger(minute="*/1", timezone=tz), #Se comenta esta linea por que es para pruebas
+                args=[app, uid],
+                id=f"ml_train_u{uid}",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
+            _SCHED.add_job(
+                func=job_ml_predict,
+                trigger=CronTrigger(hour=0, minute=15, timezone=tz),
+                #trigger=CronTrigger(minute="*/1", timezone=tz),
+                args=[app, uid],
+                id=f"ml_predict_u{uid}",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
+            _SCHED.add_job(
+                func=job_ml_catchup,
+                trigger=CronTrigger(hour=1, minute=0, timezone=tz),
+                args=[app, uid],
+                kwargs={"dias": 3},
+                id=f"ml_catchup_u{uid}",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+                misfire_grace_time=300,
+            )
+            _SCHED.add_job(
+                func=job_rachas,
+                trigger=CronTrigger(hour=23, minute=59, timezone=tz),  
+                args=[app, uid],
+                id=f"rachas_u{uid}",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+                misfire_grace_time=300,
+            )
+
 
     if not _SCHED.running:
         _SCHED.start()

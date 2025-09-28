@@ -400,7 +400,7 @@ canvas {
   left: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text);
+  color: #ffffff;
   transition: color 0.3s ease;
 }
 
@@ -409,25 +409,25 @@ canvas {
   padding: 0.85rem 1rem 0.85rem 3rem;
   border-radius: 0.8rem;
   border: 1px solid var(--accent-light);
-  background-color: var(--card);
+  background-color: #ffffff;
   color: var(--text);
   font-size: 0.95rem;
   transition: all 0.3s ease;
 }
 
 .login-container input::placeholder {
-  color: var(--text);
+  color: #ffffff;
   opacity: 0.6;
 }
 
 .login-container input:focus {
-  border-color: var(--accent);
+  border-color: var(--text);
   box-shadow: 0 0 10px var(--accent-light);
   outline: none;
 }
 
 .input-group:focus-within .input-group-icon {
-  color: var(--accent);
+  color: #ffffff;
 }
 
 .login-btn, .register-btn {
@@ -438,7 +438,7 @@ canvas {
   font-weight: 600;
   font-size: 1rem;
   color: white;
-  background-color: var(--accent);
+  background-color: #ffffff;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -1261,4 +1261,18 @@ body {
   transform: none;
   cursor: not-allowed;
   box-shadow: var(--shadow);
+}
+
+.tile-box {
+  align-items: center;  /* centra horizontalmente los elementos hijos */
+  text-align: center;   /* centra texto dentro de los bloques */
+  background-color: var(--accent);
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 40px; 
 }

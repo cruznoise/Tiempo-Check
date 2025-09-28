@@ -68,11 +68,16 @@ def sugerencias_detalle():
 
 @bp.route('/api/ml/predict')
 def ml_predict():
-    if 'usuario_id' not in session:
+    usuario_id = session.get('usuario_id')
+    if not usuario_id:
+        usuario_id = request.args.get('usuario_id', type=int)
+    if not usuario_id:
         return jsonify({'error': 'No autenticado'}), 401
-    usuario_id = session['usuario_id']
-    fecha = request.args.get('fecha')  
-    res = predict(usuario_id=usuario_id, fecha=None if not fecha else __import__('datetime').date.fromisoformat(fecha))
+    fecha = request.args.get('fecha')
+    res = predict(
+        usuario_id=usuario_id,
+        fecha=None if not fecha else __import__('datetime').date.fromisoformat(fecha)
+    )
     return jsonify(res)
 
 

@@ -1,5 +1,5 @@
 import argparse, json, glob, shutil
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -14,6 +14,7 @@ import unicodedata
 import re as _re
 import sqlalchemy as sa
 from app.extensions import db
+import json
 
 
 def _strip_accents(s: str) -> str:
@@ -102,68 +103,32 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
     n_dias = 0 if df.empty else df["fecha"].nunique()
     d = make_lagged(df) if not df.empty else df
     threshold = min(hist_days, max(10, int(0.5 * hist_days)))
+    ts = date.today().isoformat()
+
+    # ---------------- Baseline case ----------------
     if df.empty or n_dias < threshold:
         from ml.estimators import BaselineHybrid
-        if d is None or len(getattr(d, "index", [])) == 0:
-            X_cols = ["min_t-1","MA7","dow","is_weekend","day","days_to_eom"]
-        else:
+        X_cols = get_feature_cols(d) if (d is not None and len(getattr(d, "index", [])) > 0) else \
+                 ["min_t-1","MA7","dow","is_weekend","day","days_to_eom"]
 
-            X_cols = get_feature_cols(d)
         bundle = {"model": BaselineHybrid(), "features": X_cols, "mode": "baseline"}
-        ts = date.today().isoformat()
         model_path = ARTIF_DIR / f"model_{ts}_baseline.joblib"
         dump(bundle, model_path)
         shutil.copyfile(model_path, LATEST)
+
         reason = "sin datos" if df.empty else f"hist_insuficiente: n_dias={n_dias} < threshold={threshold}"
         metrics = {
-            "usuario_id": usuario_id, "hist_days": n_dias,
-            "hist_requested": hist_days,
-            "holdout_days": 0, "timestamp": ts,
-            "rows_train": 0, "rows_test": 0,
-            "note": f"baseline-only ({reason})"
-        }
-        _save_json(ARTIF_DIR / f"metrics_{ts}.json", metrics)
-        _save_json(LATEST_METRICS, metrics)
-
-        log_metrics({
-            "fecha": date.today(),
             "usuario_id": usuario_id,
-            "modelo": "baseline",
-            "categoria": "ALL",
-            "hist_days": int(n_dias),
+            "mode": "baseline",
+            "hist_days": n_dias,
+            "hist_requested": hist_days,
+            "holdout_days": 0,
+            "timestamp": ts,
             "rows_train": 0,
             "rows_test": 0,
-            "metric_mae": None,
-            "metric_rmse": None,
-            "baseline": "baseline",
-            "is_promoted": 1,
-            "artifact_path": str(model_path),
-        })
-
-        return {"model_path": str(model_path), "metrics": metrics, "promoted": True}
-    
-    X_cols = get_feature_cols(d) 
-
-    if not X_cols:
-        fallback = ["min_t-1", "MA7", "dow", "is_weekend", "day", "days_to_eom"]
-        X_cols = [c for c in fallback if c in d.columns]
-
-    if not X_cols:
-        from ml.estimators import BaselineHybrid
-        bundle = {"model": BaselineHybrid(), "features": [], "mode": "baseline"}
-        ts = date.today().isoformat()
-        model_path = ARTIF_DIR / f"model_{ts}_baseline.joblib"
-        dump(bundle, model_path)
-        shutil.copyfile(model_path, LATEST)
-        reason = f"sin features X_cols (n_dias={n_dias}, threshold={threshold})"
-        metrics = {
-            "usuario_id": usuario_id, "hist_days": n_dias,
-            "hist_requested": hist_days,
-            "holdout_days": 0, "timestamp": ts,
-            "rows_train": 0, "rows_test": 0,
             "note": f"baseline-only ({reason})"
         }
-        _save_json(ARTIF_DIR / f"metrics_{ts}.json", metrics)
+        _save_json(ARTIF_DIR / f"metrics_{ts}_baseline.json", metrics)
         _save_json(LATEST_METRICS, metrics)
 
         log_metrics({
@@ -183,31 +148,42 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
 
         return {"model_path": str(model_path), "metrics": metrics, "promoted": True}
 
+    # ---------------- RandomForest case ----------------
+    X_cols = get_feature_cols(d) or \
+             [c for c in ["min_t-1","MA7","dow","is_weekend","day","days_to_eom"] if c in d.columns]
 
+    if not X_cols:
+        raise RuntimeError("No hay columnas de features útiles para entrenar.")
     train_df, test_df = split_train_holdout(d, holdout_days=holdout_days)
     Xtr, ytr = train_df[X_cols], train_df["minutos"]
     Xte, yte = test_df[X_cols], test_df["minutos"]
+
     if len(Xtr) < 20 or len(Xte) < 5:
         raise RuntimeError("Muy pocas filas útiles para entrenar/evaluar. Aumenta hist o espera más días.")
-   
-    naive, ma7 = NaiveLast(), MA7()
-    yhat_naive = naive.predict(Xte)
-    yhat_ma7 = ma7.predict(Xte)
 
+    # baselines
+    naive, ma7 = NaiveLast(), MA7()
+    yhat_naive, yhat_ma7 = naive.predict(Xte), ma7.predict(Xte)
     m_naive = {"MAE": mae(yte, yhat_naive), "RMSE": rmse(yte, yhat_naive), "sMAPE": smape_safe(yte, yhat_naive)}
     m_ma7   = {"MAE": mae(yte, yhat_ma7),   "RMSE": rmse(yte, yhat_ma7),   "sMAPE": smape_safe(yte, yhat_ma7)}
 
+    # rf
     rf = RFReg()
     rf.fit(Xtr, ytr)
     yhat_rf = rf.predict(Xte)
     m_rf = {"MAE": mae(yte, yhat_rf), "RMSE": rmse(yte, yhat_rf), "sMAPE": smape_safe(yte, yhat_rf)}
 
-    ts = date.today().isoformat()
-    model_path = ARTIF_DIR / f"model_{ts}.joblib"
-    dump({"model": rf, "features": X_cols}, model_path)
+    model_path = ARTIF_DIR / f"model_{ts}_rf.joblib"
+    dump({"model": rf, "features": X_cols, "mode": "rf"}, model_path)
+
+    try:
+        hyperparams = rf.get_params()
+    except AttributeError:
+        hyperparams = rf.model.get_params() if hasattr(rf, "model") else {}
 
     metrics = {
         "usuario_id": usuario_id,
+        "mode": "rf",
         "hist_days": int(n_dias),
         "hist_requested": int(hist_days),
         "holdout_days": holdout_days,
@@ -215,9 +191,11 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
         "rows_train": int(len(Xtr)),
         "rows_test": int(len(Xte)),
         "baselines": {"naive": m_naive, "MA7": m_ma7},
-        "rf": m_rf
+        "rf": m_rf,
+        "hyperparams": hyperparams
     }
-    _save_json(ARTIF_DIR / f"metrics_{ts}.json", metrics)
+    _save_json(ARTIF_DIR / f"metrics_{ts}_rf.json", metrics)
+    _save_json(LATEST_METRICS, metrics)
 
     best_base = _best_baseline(metrics.get("baselines"), prefer="MAE")
 
@@ -225,7 +203,7 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
         "fecha": date.today(),
         "usuario_id": usuario_id,
         "modelo": "rf",
-        "categoria": "ALL", 
+        "categoria": "ALL",
         "hist_days": int(n_dias),
         "rows_train": int(len(Xtr)),
         "rows_test": int(len(Xte)),
@@ -236,13 +214,10 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
         "artifact_path": str(model_path),
     })
 
-    margin = 0.0  # 0.01 => 1% de mejora mínima
-    promote = (m_rf["MAE"] <= m_ma7["MAE"] * (1 - margin)) and (m_rf["RMSE"] <= m_ma7["RMSE"] * (1 - margin))
-
+    promote = (m_rf["MAE"] <= m_ma7["MAE"]) and (m_rf["RMSE"] <= m_ma7["RMSE"])
     if promote:
         shutil.copyfile(model_path, LATEST)
-        _save_json(LATEST_METRICS, metrics)
-
+        _save_json(LATEST_METRICS, metrics)  
         log_metrics({
             "fecha": date.today(),
             "usuario_id": usuario_id,
@@ -383,13 +358,15 @@ def predict(usuario_id: int, fecha: date | None = None, save_csv: bool = False):
 
     if save_csv:
         from pathlib import Path
+        ts = datetime.now().strftime("%Y%m%dT%H%M%S") 
         outdir = Path("ml/preds") / str(usuario_id)
         outdir.mkdir(parents=True, exist_ok=True)
 
-        import pandas as pd
         df_out = pd.DataFrame(preds)
         df_out.insert(0, "usuario_id", usuario_id)
         df_out.insert(1, "fecha_pred", fecha.isoformat())
+        df_out.insert(2, "generated_at", datetime.now().isoformat())  
+        df_out.to_csv(outdir / f"{fecha.isoformat()}_{ts}.csv", index=False)
         df_out.to_csv(outdir / f"{fecha.isoformat()}.csv", index=False)
 
     return result

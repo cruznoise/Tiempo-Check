@@ -51,20 +51,17 @@ def create_app(config_object=None):
     def server_error(e):
         return jsonify({"error": "Internal server error"}), 500
 
-    # --- /api/health idempotente (si aún no lo pusiste así) ---
     if "health" not in app.view_functions:
         def health():
             return {"status": "ok"}
         app.add_url_rule("/api/health", endpoint="health", view_func=health, methods=["GET"])
 
-    # --- Logging de arranque (útil para ver config y DB) ---
     db_url = app.config.get("SQLALCHEMY_DATABASE_URI", "")
     print(f"[BOOT] env={os.getenv('TIEMPOCHECK_CONFIG','config.Config')}  [DB] url={db_url}")
-
-    # --- Scheduler (controlado por config; sin duplicarse con reloader) ---
-    should_start = app.config.get("ENABLE_SCHEDULER", False)
+    should_start = app.config.get("ENABLE_SCHEDULER", True)
     is_main = os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug
     print(f"[SCHED][FLAGS] should_start={should_start} is_main={is_main} debug={app.debug} ext_sched={app.extensions.get('scheduler') is not None}")
+
     if should_start and is_main and app.extensions.get("scheduler") is None:
         usuario_id = int(app.config.get("SCHED_USUARIO_ID", 1))
         tz = app.config.get("TZ", "America/Mexico_City")

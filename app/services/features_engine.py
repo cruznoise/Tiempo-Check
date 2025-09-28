@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple
 import unicodedata
 from app.extensions import db
 from sqlalchemy import and_, func
-from app.models.models import Registro, FeatureDiaria, FeatureHoraria, DominioCategoria, Categoria, AggVentanaCategoria, AggEstadoDia, AggKpiRango
+from app.models.models import Registro, FeatureDiaria, FeatureHoraria, DominioCategoria, Categoria, AggVentanaCategoria, AggEstadoDia, AggKpiRango, FeaturesCategoriaDiaria
 
 VERSION = "fe-0.7-stable"
 print(f"[ENG][LOAD] features_engine {VERSION} file={__file__}")
@@ -19,12 +19,14 @@ def _strip_accents(s: str) -> str:
     return ''.join([c for c in nfkd if not unicodedata.combining(c)])
 
 _CANON_EQ = {
+    "productivo": "Productividad",
     "sincategoria": "Sin categoría",
     "sin categoria": "Sin categoría",
     "sin categoria ": "Sin categoría",
     "sin categoria.": "Sin categoría",
     "sin categoria,": "Sin categoría",
     "sin categoría": "Sin categoría",
+    "sin clasificar": "Sin categoría"
 }
 
 def _canon_cat(name: str) -> str:
@@ -140,23 +142,25 @@ def calcular_persistir_features(usuario_id: int, dia: date) -> dict:
         day_filter = Registro.fecha == dia
 
     registros = (
-    db.session.query(Registro)
-    .filter(Registro.usuario_id == usuario_id)
-    .filter(day_filter)
-    .all()
-)
+        db.session.query(Registro)
+        .filter(Registro.usuario_id == usuario_id)
+        .filter(day_filter)
+        .all()
+    )
+    print(f"[DEBUG] {dia} → registros={len(registros)}")
     acc_diario: Dict[str, int] = {}
     acc_hora: Dict[tuple, int] = {}
 
     for r in registros:
         cat = _canon_cat(_categorizar(getattr(r, "dominio", "") or "", mapa, patrones))
         seg = max(0, int(getattr(r, "tiempo", 0) or 0))
-
+        #print(f"[DEBUG] {dia} → cat={cat}, seg={seg}, dominio={getattr(r, 'dominio', '')}") #DESCOMENTAR SOLO EN CASO DE PRUEBAS O VERIFICAR QUE FUNCIONA CON NORMALIDAD
         h = r.fecha_hora.hour if getattr(r, 'fecha_hora', None) else 0
 
         acc_diario[cat] = acc_diario.get(cat, 0) + seg
         acc_hora[(h, cat)] = acc_hora.get((h, cat), 0) + seg
 
+    # --- FeatureDiaria ---
     for cat, seg in acc_diario.items():
         mins = seg // 60
         obj = (
@@ -171,6 +175,25 @@ def calcular_persistir_features(usuario_id: int, dia: date) -> dict:
                 usuario_id=usuario_id, fecha=dia, categoria=cat, minutos=mins
             ))
 
+    # --- FeaturesCategoriaDiaria ---
+    for cat, seg in acc_diario.items():
+        mins = seg // 60
+        objfc = (
+            FeaturesCategoriaDiaria.query
+            .filter_by(usuario_id=usuario_id, fecha=dia, categoria=cat)
+            .first()
+        )
+        if objfc:
+            objfc.minutos = mins
+        else:
+            db.session.add(FeaturesCategoriaDiaria(
+                usuario_id=usuario_id,
+                fecha=dia,
+                categoria=cat,
+                minutos=mins
+            ))
+
+    # --- FeatureHoraria ---
     for (h, cat), seg in acc_hora.items():
         mins = seg // 60
         objh = (
@@ -185,18 +208,30 @@ def calcular_persistir_features(usuario_id: int, dia: date) -> dict:
                 usuario_id=usuario_id, fecha=dia, hora=int(h), categoria=cat, minutos=mins
             ))
 
-    db.session.commit()
-    return {"ok": 1, "diarias": len(acc_diario), "horarias": len(acc_hora)}
+    print(f"[DEBUG][COMMIT] {dia} → diarias={len(acc_diario)}, horarias={len(acc_hora)}, new={len(db.session.new)}, dirty={len(db.session.dirty)}")
+    try:
+        db.session.commit()
+    except Exception as e:
+        print(f"[ERROR][COMMIT] {dia} → {e}")
+        db.session.rollback()
 
+    rows = FeatureDiaria.query.filter_by(usuario_id=usuario_id, fecha=dia).all()
+    print(f"[DEBUG][POST-COMMIT] {dia} → rows_in_db={len(rows)}")
+
+    return {"ok": 1, "diarias": len(acc_diario), "horarias": len(acc_hora)}
 def recalcular_rango(usuario_id: int, desde: date, hasta: date) -> Dict[str, int]:
+    print(f"[DEBUG] Entrando a recalcular_rango {desde} → {hasta}")
+
     """Recalcula features para el rango [desde, hasta] (ambos inclusive)."""
     if hasta < desde:
         desde, hasta = hasta, desde
     d = desde
     tot_diarias = tot_horarias = 0
     while d <= hasta:
+        print(f"[DEBUG] Día en loop: {d}")
         res = calcular_persistir_features(usuario_id=usuario_id, dia=d)
         tot_diarias += res.get("diarias", 0)
         tot_horarias += res.get("horarias", 0)
         d += timedelta(days=1)
     return {"ok": 1, "diarias": tot_diarias, "horarias": tot_horarias}
+    
