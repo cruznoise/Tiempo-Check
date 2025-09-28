@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard - ProcrastiGuard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body
+  data-datos='{{ datos | tojson | safe }}'
+  data-categorias='{{ categorias | tojson | safe }}'
+  data-uso-horario='{{ uso_horario | tojson | safe }}'
+  data-uso-diario='{{ uso_diario | tojson | safe }}'>
+  <div class="dashboard-container">
+
+    <aside class="sidebar">
+      <h2>¡Hola,<br>{{ nombre }}!</h2>
+      <p>Este es tu resumen personal</p>
+      <nav>
+        <ul>
+          <li>
+            <a href="{{ url_for('controlador.dashboard') }}">
+              <img src="{{ url_for('static', filename='icons/home.svg') }}" alt="Home">
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('admin_controller.vista_metas') }}">
+              <img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros">
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('admin_controller.vista_configuracion') }}">
+              <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración">
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="main-header">
+        <h1>DASHBOARD</h1>
+        <p class="intro-text">Este es un resumen personalizado de tu actividad digital.</p>
+      </header>
+      
+      <section class="controls-bar">
+        <div class="control-group">
+          <label for="rango">Rango de tiempo:</label>
+          <select id="rango">
+            <option value="total">Total</option>
+            <option value="hoy">Hoy</option>
+            <option value="7dias">Últimos 7 días</option>
+            <option value="mes">Último mes</option>
+            <option value="entre">Entre fechas...</option>
+          </select>
+          <div id="fechas" style="display:none;">
+            <input type="date" id="desde">
+            <input type="date" id="hasta">
+            <button id="filtrar">Aplicar</button>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <div class="panel-temas">
+            <h3>Elige tu estilo visual</h3>
+            <select id="selector-tema">
+              <option value="dark-minimal">🕶️ Dark Minimal</option>
+              <option value="claro-profesionald">🌞 Claro Profesional</option>
+              <option value="color-vivid">🌈 Color Vivid</option>
+              <option value="soft-pastel">🍃 Soft Pastel</option>
+              <option value="retro-terminal">🧃 Retro Terminal</option>
+            </select>
+            <label class="toggle-container">
+              <input type="checkbox" id="modoDiaNoche">
+              <span class="slider"></span>
+            </label>
+            <label for="modoDiaNoche" class="toggle-label">🌙 Modo noche</label>
+          </div>
+        </div>
+      </section>
+
+      <section class="summary-bar">
+        <div class="summary-card">
+          <h4>Tiempo total</h4>
+          <p id="resumen-tiempo">...</p>
+        </div>
+        <div class="summary-card">
+          <h4>Día más activo</h4>
+          <p id="resumen-dia">...</p>
+        </div>
+        <div class="summary-card">
+          <h4>Sitio más visitado</h4>
+          <p id="resumen-sitio">...</p>
+        </div>
+        <div class="summary-card">
+          <h4>Categoría dominante</h4>
+          <p id="resumen-categoria">...</p>
+        </div>
+        <div class="summary-card">
+          <h4>Promedio diario</h4>
+          <p id="resumen-promedio">...</p>
+        </div>
+      </section>
+
+      
+      <div id="ml-predict-card" class="tile-box">
+        <h3>Predicción de mañana (por categoría)</h3>
+        <ul id="ml-predict-list"></ul>
+      </div>
+
+
+      <section class="graphs">
+        <div class="chart-box">
+          <h3>Tiempo por sitio web</h3>
+          <canvas id="grafica"></canvas>
+        </div>
+
+        <div class="chart-box">
+          <h3>Distribución por categoría</h3>
+          <canvas id="graficaPastel"></canvas>
+        </div>
+
+        <div class="chart-box">
+          <h3>Distribución de uso por hora</h3>
+          <canvas id="graficaHorario"></canvas>
+        </div>
+
+        <div class="chart-box">
+          <h3>Tiempo total en pantalla por día</h3>
+          <canvas id="graficaLinea"></canvas>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="alertaModal" class="modal-overlay hidden">
+    <div class="modal-contenido">
+      <h2>“TiempoCheck”</h2>
+      <p><span id="categoriaModal"></span> ¿Deseas continuar?</p>
+      <div class="botones">
+        <button onclick="cerrarModal()">Aceptar y cerrar</button>
+        <button onclick="ignorarAlerta()">Ignorar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
+</body>
+</html>

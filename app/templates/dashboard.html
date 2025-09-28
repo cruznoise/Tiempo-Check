@@ -44,38 +44,44 @@
       <header>
         <h1>DASHBOARD</h1>
         <p class="intro-text"> Este es un resumen personalizado de tu actividad digital.</p>
-        <section class="panel-temas">
-        <h3>Elige tu estilo visual</h3>
-        <select id="selector-tema">
-          <option value="dark-minimal">🕶️ Dark Minimal</option>
-          <option value="claro-profesional">🌞 Claro Profesional</option>
-          <option value="color-vivid">🌈 Color Vivid</option>
-          <option value="soft-pastel">🍃 Soft Pastel</option>
-          <option value="retro-terminal">🧃 Retro Terminal</option>
-        </select>
-        <button onclick="aplicarTema()">Aplicar tema</button>
-
-        <label>
-          <input type="checkbox" id="modoDiaNoche"> 🌙 Modo noche
-        </label>
-      </section>
-
-        <label for="rango">Rango de tiempo:</label>
-        <select id="rango">
-          <option value="total">Total</option>
-          <option value="hoy">Hoy</option>
-          <option value="7dias">Últimos 7 días</option>
-          <option value="mes">Último mes</option>
-          <option value="entre">Entre fechas...</option>
-        </select>
-        <div id="fechas" style="display:none;">
-          <input type="date" id="desde">
-          <input type="date" id="hasta">
-          <button id="filtrar">Aplicar</button>
-        </div>
       </header>
 
-      <!-- Módulo resumen -->
+      <section class="controls-bar">
+        <div class="control-group">
+          <label for="rango">Rango de tiempo:</label>
+          <select id="rango">
+            <option value="total">Total</option>
+            <option value="hoy">Hoy</option>
+            <option value="7dias">Últimos 7 días</option>
+            <option value="mes">Último mes</option>
+            <option value="entre">Entre fechas...</option>
+          </select>
+          <div id="fechas" style="display:none;">
+            <input type="date" id="desde">
+            <input type="date" id="hasta">
+            <button id="filtrar">Aplicar</button>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <div class="panel-temas">
+            <h3>Elige tu estilo visual</h3>
+            <select id="selector-tema">
+              <option value="dark-minimal">🕶️ Dark Minimal</option>
+              <option value="claro-profesionald">🌞 Claro Profesional</option>
+              <option value="color-vivid">🌈 Color Vivid</option>
+              <option value="soft-pastel">🍃 Soft Pastel</option>
+              <option value="retro-terminal">🧃 Retro Terminal</option>
+            </select>
+            <label class="toggle-container">
+              <input type="checkbox" id="modoDiaNoche">
+              <span class="slider"></span>
+            </label>
+            <label for="modoDiaNoche" class="toggle-label">🌙 Modo noche</label>
+          </div>
+        </div>
+      </section>
+
       <section class="summary-bar">
         <div class="summary-card">
           <h4>Tiempo total</h4>
@@ -99,71 +105,36 @@
         </div>
       </section>
 
+      
+      <div id="ml-predict-card" class="tile-box">
+        <h3>Predicción de mañana (por categoría)</h3>
+        <ul id="ml-predict-list"></ul>
+      </div>
 
-      <!-- Gráficas -->
+
       <section class="graphs">
         <div class="chart-box">
           <h3>Tiempo por sitio web</h3>
           <canvas id="grafica"></canvas>
-             <p class="chart-description">Estos son los sitios donde pasaste más tiempo en el periodo seleccionado. 
-            El análisis te puede ayudar a detectar hábitos repetitivos o páginas que demandan mucha atención. </p>
         </div>
 
         <div class="chart-box">
           <h3>Distribución por categoría</h3>
           <canvas id="graficaPastel"></canvas>
-            <p class="chart-description">Esta gráfica agrupa los sitios por categorías generales. Así puedes visualizar el equilibrio 
-            (o desequilibrio) entre actividades de ocio, redes, productividad, educación, etc. </p>
         </div>
 
         <div class="chart-box">
           <h3>Distribución de uso por hora</h3>
-          {% if rango == 'total' %}
-            <p class="text-xs opacity-70 mt-2">
-              {% if mostrar_nota_hora %}
-                Mostrando distribución por hora desde {{ cutover }} (vista limpia).
-                <a class="underline" href="?rango=total&todo_historico=1">Ver todo el histórico</a>
-              {% else %}
-                Mostrando todo el histórico (incluye 00:00). 
-                <a class="underline" href="?rango=total&todo_historico=0">Ver vista limpia</a>
-              {% endif %}
-            </p>
-          {% endif %}
-
           <canvas id="graficaHorario"></canvas>
-            <p class="chart-description">
-          Aquí se representa el tiempo total que pasas frente a la pantalla según la hora del día. Este gráfico te ayuda a visualizar en qué momentos eres más propenso a usar el dispositivo, lo que puede ser útil para planificar tus hábitos.
-        </p>
         </div>
-
 
         <div class="chart-box">
           <h3>Tiempo total en pantalla por día</h3>
           <canvas id="graficaLinea"></canvas>
-            <p class="chart-description"> Aquí se muestra tu tiempo total frente a la pantalla por día. 
-            Identifica si tus hábitos están subiendo o bajando. Ideal para reconocer días con mayor distracción o foco. </p>
         </div>
-        <div class="tile-box" style="display:flex;gap:12px;align-items:center;">
-        <div>
-          <div style="font-size:14px;opacity:.7;">Features diarias</div>
-          <div id="fd-count" style="font-size:22px;font-weight:600;">—</div>
-        </div>
-        <div>
-          <div style="font-size:14px;opacity:.7;">Features horarias</div>
-          <div id="fh-count" style="font-size:22px;font-weight:600;">—</div>
-        </div>
-        <div style="margin-left:auto;">
-          <span id="qa-badge" class="badge">—</span>
-        </div>
-      </div>
-
       </section>
-
-
     </main>
   </div>
-
- <!-- ALERTAS EMERGENTES LUGAR PROVISIONAL-->
 
 <!-- Modal de alerta por límite excedido -->
 <div id="alertaModal" class="modal-overlay hidden">
@@ -177,11 +148,14 @@
   </div>
 </div>
 
+<div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
+
+
 <script type="application/json" id="categorias-json">
   {{ categorias | tojson | safe }}
 </script>
 <script>
-  // Cárgalo en window para que dashboard.js lo encuentre
+
   window.categorias = {};
   try {
     const el = document.getElementById('categorias-json');

@@ -3,7 +3,7 @@ import os
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from app.services.features_engine import calcular_persistir_features
-from app.extensions import db  # sólo si quieres loguear la URL
+from app.extensions import db  
 
 def _hoy(app):
     tz = ZoneInfo(app.config.get("TZ", "America/Mexico_City"))
@@ -13,11 +13,8 @@ def job_features_horarias(app, usuario_id: int):
     with app.app_context():
         d = _hoy(app)
         res = calcular_persistir_features(usuario_id=usuario_id, dia=d)
-        print(f"[SCHED][horarias] pid={os.getpid()} file={__file__} {d} user={usuario_id} → {res}")
-        try:
-            print(f"[DB] url={db.engine.url}")
-        except Exception:
-            pass
+        print(f"[SCHED][horarias] user={usuario_id} fecha={d} → diarias={res.get('diarias',0)} horarias={res.get('horarias',0)} ok={res.get('ok',0)}")
+
 
 def job_features_diarias(app, usuario_id: int):
     with app.app_context():

@@ -1,5 +1,4 @@
-
-// === Dataset desde HTML ===
+// === Utils para dataset robusto ===
 function parseDatasetJSON(key, fallback = {}) {
   try {
     const raw = document.body.dataset[key];
@@ -28,7 +27,6 @@ function normalizarCategorias(raw) {
     obj = { ...raw };
   }
 
-  // Fusiona variantes viejas (SinCategoria, etc.) en 'Sin categoría'
   const aliases = ['SinCategoria', 'Sin categoria', 'sin categoria', 'sincategoria'];
   let carry = 0;
   for (const k of aliases) {
@@ -42,204 +40,203 @@ function normalizarCategorias(raw) {
   return obj;
 }
 
-const categoriasObj = normalizarCategorias(categoriasRaw);
+const categorias = normalizarCategorias(categoriasRaw);
 
-// === Gráfica por dominio ===
+// === Referencias canvas ===
 const ctx = document.getElementById('grafica').getContext('2d');
-let grafica = crearGrafica(datos);
+const ctxCat = document.getElementById('graficaPastel').getContext('2d');
+const ctxHorario = document.getElementById('graficaHorario').getContext('2d');
+const ctxLinea = document.getElementById('graficaLinea').getContext('2d');
 
-function crearGrafica(datos) {
-  return new Chart(ctx, {
+let grafica, graficaPastel, graficaHorario, graficaLinea;
+
+function crearGraficas() {
+  const style = getComputedStyle(document.body);
+  const colorPrimary = style.getPropertyValue('--chart-primary-color');
+  const colorSecondary = style.getPropertyValue('--chart-secondary-color');
+  const colorAccents = style.getPropertyValue('--chart-accents').split(',').map(s => s.trim());
+  const textColor = style.getPropertyValue('--text');
+
+  if (grafica) grafica.destroy();
+  if (graficaPastel) graficaPastel.destroy();
+  if (graficaHorario) graficaHorario.destroy();
+  if (graficaLinea) graficaLinea.destroy();
+
+  const tooltipOptions = {
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    titleColor: '#fff',
+    bodyColor: '#fff',
+    borderColor: '#fff',
+    borderWidth: 1,
+    borderRadius: 8,
+    displayColors: false,
+    bodyFont: { size: 14 },
+    titleFont: { size: 16, weight: 'bold' },
+    padding: 12
+  };
+
+  grafica = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: datos.map(d => d.dominio),
       datasets: [{
         label: 'Tiempo total (min)',
         data: datos.map(d => d.total),
-        backgroundColor: 'rgba(54, 162, 235, 0.7)',
-        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: colorPrimary,
+        borderColor: colorSecondary,
         borderWidth: 1
       }]
     },
     options: {
       responsive: true,
+      interaction: { mode: 'index', intersect: false },
       scales: {
-        x: { ticks: { maxRotation: 90, minRotation: 45, autoSkip: false } },
-        y: { beginAtZero: true }
+        x: { ticks: { maxRotation: 90, minRotation: 45, autoSkip: false, color: textColor }, grid: { color: 'rgba(255,255,255,0.1)' } },
+        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: 'rgba(255,255,255,0.1)' } }
+      },
+      plugins: {
+        legend: { labels: { color: textColor } },
+        tooltip: {
+          ...tooltipOptions,
+          callbacks: { footer: () => 'Estos son los sitios donde pasaste más tiempo.' }
+        }
+      }
+    }
+  });
+
+  graficaPastel = new Chart(ctxCat, {
+    type: 'pie',
+    data: {
+      labels: Object.keys(categorias),
+      datasets: [{
+        label: 'Tiempo por categoría (min)',
+        data: Object.values(categorias),
+        backgroundColor: ['#3700b3', '#03dac6', '#6200ee', '#cf6679', '#9955ee'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: textColor } },
+        tooltip: {
+          ...tooltipOptions,
+          callbacks: { footer: () => 'Agrupa los sitios por categorías generales.' }
+        }
+      }
+    }
+  });
+
+  graficaHorario = new Chart(ctxHorario, {
+    type: 'line',
+    data: {
+      labels: usoHorario.map(e => `${e.hora}:00`),
+      datasets: [{
+        label: 'Minutos en pantalla por hora',
+        data: usoHorario.map(e => e.total),
+        backgroundColor: `${colorPrimary}33`,
+        borderColor: colorPrimary,
+        tension: 0.2,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: 'Minutos', color: textColor }, ticks: { color: textColor } },
+        x: { title: { display: true, text: 'Hora del día', color: textColor }, ticks: { color: textColor } }
+      },
+      plugins: {
+        legend: { labels: { color: textColor } },
+        tooltip: { ...tooltipOptions }
+      }
+    }
+  });
+
+  graficaLinea = new Chart(ctxLinea, {
+    type: 'line',
+    data: {
+      labels: usoDiario.map(e => e.dia),
+      datasets: [{
+        label: 'Minutos por día',
+        data: usoDiario.map(e => e.total),
+        backgroundColor: `${colorPrimary}33`,
+        borderColor: colorPrimary,
+        tension: 0.2
+      }]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        y: { beginAtZero: true, ticks: { color: textColor } },
+        x: { ticks: { color: textColor } }
+      },
+      plugins: {
+        legend: { labels: { color: textColor } },
+        tooltip: { ...tooltipOptions }
       }
     }
   });
 }
 
-// === Filtro de rango de tiempo ===
-document.getElementById('rango').addEventListener('change', () => {
-  const seleccion = document.getElementById('rango').value;
-  document.getElementById('fechas').style.display = (seleccion === 'entre') ? 'block' : 'none';
-  if (seleccion !== 'entre') {
-    window.location.href = `/dashboard?rango=${seleccion}`;
-  }
-});
+document.body.addEventListener('temaCambiado', crearGraficas);
 
-document.getElementById('filtrar').addEventListener('click', () => {
-  const desde = document.getElementById('desde').value;
-  const hasta = document.getElementById('hasta').value;
-  if (desde && hasta) {
-    window.location.href = `/dashboard?rango=entre&desde=${desde}&hasta=${hasta}`;
-  }
-});
+document.addEventListener("DOMContentLoaded", async () => {
+  crearGraficas();
 
-// === Gráfica de uso por hora ===
-const ctxHorario = document.getElementById('graficaHorario').getContext('2d');
-new Chart(ctxHorario, {
-  type: 'line',
-  data: {
-    labels: usoHorario.map(e => `${e.hora}:00`),
-    datasets: [{
-      label: 'Minutos en pantalla por hora',
-      data: usoHorario.map(e => e.total),
-      backgroundColor: 'rgba(255, 159, 64, 0.2)',
-      borderColor: 'rgba(255, 159, 64, 1)',
-      tension: 0.2,
-      fill: true
-    }]
-  },
-  options: {
-    responsive: true,
-    scales: {
-      y: {
-        beginAtZero: true,
-        title: { display: true, text: 'Minutos' }
-      },
-      x: {
-        title: { display: true, text: 'Hora del día' }
-      }
-    }
-  }
-});
+  const rangoSel = document.getElementById('rango');
+  rangoSel.addEventListener('change', () => {
+    const seleccion = rangoSel.value;
+    document.getElementById('fechas').style.display = (seleccion === 'entre') ? 'block' : 'none';
+    if (seleccion !== 'entre') window.location.href = `/dashboard?rango=${seleccion}`;
+  });
 
+  document.getElementById('filtrar').addEventListener('click', () => {
+    const desde = document.getElementById('desde').value;
+    const hasta = document.getElementById('hasta').value;
+    if (desde && hasta) window.location.href = `/dashboard?rango=entre&desde=${desde}&hasta=${hasta}`;
+  });
 
-// === Gráfica por categoría ===
-const ctxCat = document.getElementById('graficaPastel').getContext('2d');
-const labelsCat = Object.keys(categoriasObj);
-const dataCat = Object.values(categoriasObj);
-
-// evita overlays al recargar en caliente
-if (window._chartCat) window._chartCat.destroy();
-
-window._chartCat = new Chart(ctxCat, {
-  type: 'pie',
-  data: {
-    labels: labelsCat,
-    datasets: [{
-      label: 'Tiempo por categoría (min)',
-      data: dataCat,
-      backgroundColor: ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#d073c4ff'],
-      borderWidth: 1
-    }]
-  },
-  options: { responsive: true }
-});
-
-// === Gráfica por día ===
-const ctxLinea = document.getElementById('graficaLinea').getContext('2d');
-new Chart(ctxLinea, {
-  type: 'line',
-  data: {
-    labels: usoDiario.map(e => e.dia),
-    datasets: [{
-      label: 'Minutos por día',
-      data: usoDiario.map(e => e.total),
-      backgroundColor: 'rgba(54, 162, 235, 0.3)',
-      borderColor: 'rgba(54, 162, 235, 1)',
-      tension: 0.2
-    }]
-  },
-  options: {
-    responsive: true,
-    scales: {
-      y: { beginAtZero: true }
-    }
-  }
-});
-
-// === Resumen de actividad ===
-fetch('/resumen')
-  .then(response => response.json())
-  .then(data => {
+  try {
+    const res = await fetch('/resumen');
+    const data = await res.json();
     document.getElementById('resumen-tiempo').textContent = `${data.tiempo_total} minutos`;
     document.getElementById('resumen-dia').textContent = `${data.dia_mas_activo} (${data.tiempo_dia_top} min)`;
     document.getElementById('resumen-sitio').textContent = `${data.sitio_mas_visitado} (${data.tiempo_sitio_top} min)`;
     document.getElementById('resumen-categoria').textContent = `${data.categoria_dominante} (${data.tiempo_categoria_top} min)`;
     document.getElementById('resumen-promedio').textContent = `${data.promedio_diario} min/día`;
-  })
-  .catch(err => {
+  } catch (err) {
     console.error("Error al cargar resumen:", err);
-  });
+  }
 
-// === Modal alerta por categoría ===
-function mostrarModal(mensaje) {
-  document.getElementById('categoriaModal').textContent = mensaje;
-  document.getElementById('alertaModal').classList.remove('hidden');
-}
+  // === Modal alertas ===
+  function mostrarModal(mensaje) {
+    document.getElementById('categoriaModal').textContent = mensaje;
+    document.getElementById('alertaModal').classList.remove('hidden');
+  }
+  window.cerrarModal = () => document.getElementById('alertaModal').classList.add('hidden');
+  window.ignorarAlerta = () => document.getElementById('alertaModal').classList.add('hidden');
 
-function cerrarModal() {
-  document.getElementById('alertaModal').classList.add('hidden');
-}
-
-function ignorarAlerta() {
-  document.getElementById('alertaModal').classList.add('hidden');
-}
-
-// === DOMContentLoaded ===
-document.addEventListener("DOMContentLoaded", () => {
-  const guardado = localStorage.getItem("tema_usuario");
-  const temaSelect = document.getElementById('selector-tema');
-  const modoToggle = document.getElementById('modoDiaNoche');
-
-  if (guardado) {
-    const [temaClass, modoClass] = guardado.split(" ");
-    document.body.classList.forEach(cls => {
-      if (cls.startsWith("theme-") || cls === "day" || cls === "night") {
-        document.body.classList.remove(cls);
-      }
+  const currentDomain = window.location.hostname;
+  try {
+    const resp = await fetch('/admin/api/alerta_dominio', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dominio: currentDomain })
     });
-    document.body.classList.add(temaClass, modoClass);
-
-    if (temaSelect && modoToggle) {
-      temaSelect.value = temaClass.replace("theme-", "");
-      modoToggle.checked = modoClass === "night";
-    }
+    const data = await resp.json();
+    if (data.alerta) mostrarModal(data.mensaje);
+  } catch (err) {
+    console.error("Error al verificar alerta dominio:", err);
   }
 
-  // Verificar alerta de categoría (por ahora fija: categoría 3 = redes)
-  fetch('/admin/api/alerta_categoria', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ categoria_id: 3 })
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (data.alerta) {
-        mostrarModal(data.mensaje);
-      }
-    })
-    .catch(err => console.error("Error al verificar alerta:", err));
-});
-
-////
-(async function(){
-  function isoHoyMX() {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth()+1).padStart(2,'0');
-    const d = String(now.getDate()).padStart(2,'0');
-    return `${y}-${m}-${d}`;
-  }
+  // === Estado features (QA) ===
   async function pintarEstado(dia) {
-    const qs = new URLSearchParams({usuario_id: 1, dia});
+    const qs = new URLSearchParams({ usuario_id: 1, dia });
     const [est, qa] = await Promise.all([
-      fetch(`/admin/api/features_estado?${qs}`).then(r=>r.json()),
-      fetch(`/admin/api/features_qa?${qs}`).then(r=>r.json())
+      fetch(`/admin/api/features_estado?${qs}`).then(r => r.json()),
+      fetch(`/admin/api/features_qa?${qs}`).then(r => r.json())
     ]);
     document.querySelector("#fd-count").textContent = est.diarias_count ?? '0';
     document.querySelector("#fh-count").textContent = est.horarias_count ?? '0';
@@ -252,5 +249,51 @@ document.addEventListener("DOMContentLoaded", () => {
       badge.className = "badge badge-danger";
     }
   }
+  function isoHoyMX() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth()+1).padStart(2,'0');
+    const d = String(now.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
   await pintarEstado(isoHoyMX());
-})();
+
+  // === Predicciones ML ===
+  function minsToHM(m) {
+    const mm = Math.round(m);
+    const h = Math.floor(mm / 60);
+    const mi = mm % 60;
+    return (h > 0 ? `${h}h ` : "") + `${mi}m`;
+  }
+  try {
+    const r = await fetch('/api/ml/predict');
+    const data = await r.json();
+    const ul = document.getElementById('ml-predict-list');
+    ul.innerHTML = '';
+    (data.predicciones || []).forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = `${p.categoria}: ${minsToHM(p.yhat_minutos)}`;
+      ul.appendChild(li);
+    });
+    if (!data.predicciones || data.predicciones.length === 0) {
+      ul.innerHTML = '<li>Sin suficiente historial aún</li>';
+    }
+  } catch (err) {
+    console.error("Error en predicciones ML:", err);
+  }
+
+  const guardado = localStorage.getItem("tema_usuario");
+  const temaSelect = document.getElementById('selector-tema');
+  const modoToggle = document.getElementById('modoDiaNoche');
+  if (guardado) {
+    const [temaClass, modoClass] = guardado.split(" ");
+    document.body.classList.forEach(cls => {
+      if (cls.startsWith("theme-") || cls === "day" || cls === "night") document.body.classList.remove(cls);
+    });
+    document.body.classList.add(temaClass, modoClass);
+    if (temaSelect && modoToggle) {
+      temaSelect.value = temaClass.replace("theme-", "");
+      modoToggle.checked = modoClass === "night";
+    }
+  }
+});

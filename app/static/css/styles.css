@@ -1,135 +1,145 @@
-
-/* === THEME VARIABLES === */
-.theme-dark-minimal {
-  --bg: #1e1e2f;
-  --text: #f5f5f5;
-  --card: #252540;
-  --accent: #e67e22;
-  --font: 'Segoe UI', sans-serif;
-  --shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
-
-.theme-claro-profesional {
-  --bg: #f5f6fa;
-  --text: #2c3e50;
-  --card: #ffffff;
-  --accent: #3498db;
-  --font: 'Segoe UI', sans-serif;
-  --shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.theme-color-vivid {
-  --bg: #0f111a;
-  --text: #ffffff;
-  --card: #1c1e2b;
-  --accent: #ff4ecd;
-  --font: 'Segoe UI', sans-serif;
-  --shadow: 0 0 10px rgba(255, 78, 205, 0.5);
-}
-
-.theme-soft-pastel {
-  --bg: #fbf8f3;
-  --text: #333;
-  --card: #ffffff;
-  --accent: #a8dadc;
-  --font: 'Quicksand', sans-serif;
-  --shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-}
-
-.theme-retro-terminal {
-  --bg: #0d1117;
-  --text: #33ff33;
-  --card: #141c20;
-  --accent: #ffaa00;
-  --font: 'Courier New', monospace;
-  --shadow: none;
-}
-
-
 /* --- Reset básico --- */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
-/*Modos*/
 
+/*Variables de Temas*/
+
+/* Tema Dark Minimal */
 .theme-dark-minimal {
-  --bg: #1e1e2f;
-  --text: #f5f5f5;
-  --card: #252540;
-  --accent: #e67e22;
+  --bg: #121212;
+  --text: #e0e0e0;
+  --card: #1e1e1e;
+  --accent: #bb86fc;
+  --accent-light: #70599B;
+  --accent-dark: #3700B3;
+  --font: 'Segoe UI', sans-serif;
+  --shadow: 0 4px 10px rgba(4, 4, 4, 0.4);
+  --chart-primary-color: #070707;
+  --chart-secondary-color: #03dac6;
+  --chart-accents: #3700b3, #03dac6, #6200ee, #cf6679, #9955ee;
+  --chart-text-color: #d6d3d3;
 }
 
-.theme-claro-profesional {
-  --bg: var(--bg);
-  --text: var(--text);
-  --card: var(--text);
-  --accent: #3498db;
+/* Tema Claro Profesional */
+.theme-claro-profesionald {
+  --bg: #f4f7f9;
+  --text: #333333;
+  --card: #ffffff;
+  --accent: #2e69f8;
+  --accent-light: #6ea4ff;
+  --accent-dark: #1f47a6;
+  --font: 'Segoe UI', sans-serif;
+  --shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  --chart-primary-color: #2e69f8;
+  --chart-secondary-color: #a4c6ff;
+  --chart-accents: #2e69f8, #f8a531, #1ec04a, #ff708d, #8068e8;
+  --chart-text-color: #333333;
 }
 
+/* Tema Vivid */
 .theme-color-vivid {
-  --bg: #0f111a;
-  --text: var(--text);
-  --card: #1c1e2b;
-  --accent: #ff4ecd;
+  --bg: #5D2B96;
+  --text: #ffffff;
+  --card: #20B0B0;
+  --accent: #FDC72B;
+  --accent-light: #FD8328;
+  --accent-dark: #F84C4C;
+  --font: 'Segoe UI', sans-serif;
+  --shadow: 0 0 10px rgba(32, 176, 176, 0.5);
+  --chart-primary-color: #FDC72B;
+  --chart-secondary-color: #F84C4C;
+  --chart-accents: #5D2B96, #20B0B0, #FDC72B, #FD8328, #F84C4C;
+  --chart-text-color: #ffffff;
 }
 
+/* Tema Soft Pastel */
 .theme-soft-pastel {
-  --bg: #fbf8f3;
-  --text: #333;
-  --card: var(--text);
-  --accent: #a8dadc;
+ --bg: #EBEBEB;
+  --text: #4a4a4a;
+  --card: #E4D5E9;
+  --accent: #FFC0CB;
+  --accent-light: #A4D9F4;
+  --accent-dark: #FDFEAA;
+  --font: 'Quicksand', sans-serif;
+  --shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --chart-primary-color: #FFC0CB;
+  --chart-secondary-color: #A4D9F4;
+  --chart-accents: #E4D5E9, #FFC0CB, #A4D9F4, #FDFEAA, #B2D8BB;
+  --chart-text-color: #4a4a4a;
 }
 
+/* Tema Retro Terminal */
 .theme-retro-terminal {
-  --bg: #0d1117;
-  --text: #33ff33;
-  --card: #141c20;
-  --accent: #ffaa00;
+  --bg: #E3D9C9;
+  --text: #6A3A35;
+  --card: #B09E7B; /* Un tono café más claro y unificado */
+  --accent: #CB4538;
+  --accent-light: #5B6645;
+  --accent-dark: #913931;
+  --font: 'Monospace', monospace;
+  --shadow: none;
+  --chart-primary-color: #CB4538;
+  --chart-secondary-color: #5B6645;
+  --chart-accents: #6A3A35, #B09E7B, #CB4538, #5B6645, #E3D9C9;
+  --chart-text-color: #6A3A35;
 }
 
-/*cuerpo */
+
+/* * ========================================
+ * Estilos Base y Layout
+ * ========================================
+ */
 body {
   font-family: var(--font);
-  font-family: 'Segoe UI', sans-serif;
   background-color: var(--bg);
-  color: var(--text); /* Azul muy oscuro */
+  color: var(--text);
   height: 100vh;
   display: flex;
   justify-content: flex-start;
   align-items: center;
+  transition: background-color 0.3s, color 0.3s;
 }
 
-/* --- Layout general --- */
 .dashboard-container {
   display: flex;
   height: 100vh;
+  width: 100%;
 }
 
-/* --- Sidebar --- */
+.content {
+  flex-grow: 1;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  overflow: auto;
+}
+
+
+/* * ========================================
+ * Componentes Específicos del Dashboard
+ * ========================================
+ */
+
+/* Sidebar */
 .sidebar {
-  background-color: var(--card); /* Azul medio */
+  background-color: var(--card);
   width: 220px;
   padding: 20px;
-  display: flex-start;
+  display: flex;
   flex-direction: column;
   justify-content: flex-start;
   gap: 30px;
   border-top-right-radius: 20px;
   border-bottom-right-radius: 20px;
+  box-shadow: var(--shadow);
+  overflow: visible;
 }
 
-.sidebar h2 {
-  font-size: 20px;
-  font-weight: bold;
-  line-height: 1.2;
-  margin-bottom: 10px;
-  color: var(--text);
-}
-
-.sidebar p {
-  font-size: 14px;
+.sidebar h2, .sidebar p {
   color: var(--text);
 }
 
@@ -144,104 +154,147 @@ body {
 .sidebar nav ul li a img {
   width: 30px;
   height: 30px;
-  filter: brightness(0) invert(1);
+  filter: brightness(0) invert(var(--img-invert, 1));
   transition: transform 0.2s ease;
 }
 
+.theme-dark-minimal .sidebar nav ul li a img { --img-invert: 0.9; }
+.theme-claro-profesionald .sidebar nav ul li a img { --img-invert: 0; }
+.theme-color-vivid .sidebar nav ul li a img { --img-invert: 0; }
+.theme-soft-pastel .sidebar nav ul li a img { --img-invert: 0; }
+.theme-retro-terminal .sidebar nav ul li a img { --img-invert: 0; }
+
 .sidebar nav ul li a:hover img {
   transform: scale(1.1);
+  filter: invert(30%) sepia(80%) saturate(200%) hue-rotate(240deg) brightness(1.2);
 }
 
-/* --- Contenido principal --- */
-.content {
-  flex-grow: 1;
-  padding: 30px;
+/* Header principal */
+.main-header {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 10px;
 }
 
-/* --- Encabezado / filtros --- */
-header {
+.main-header h1 {
+  font-size: 28px;
+  color: var(--accent);
+}
+
+/* Barra de controles */
+.controls-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 1rem;
+  background-color: var(--card);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: visible;
+}
+
+.controls-bar label, .controls-bar h3 {
+  color: var(--text);
+}
+
+.control-group {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-header h1 {
-  font-size: 28px;
-  color: var(--accent);
-  flex-basis: 100%;
+.panel-temas {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
+/* Componentes de formularios */
 select, input[type="date"], button {
   padding: 6px 10px;
   background-color: var(--accent);
-  color: #fff;
+  color: var(--text);
   border: none;
   border-radius: 6px;
-}
-
-button:hover {
-  background-color: var(--accent);
   cursor: pointer;
 }
 
-/* --- Gráficas --- */
+button:hover {
+  filter: brightness(1.1);
+}
+
+/* Secciones de gráficas */
 .graphs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   justify-content: center;
   gap: 50px;
+  overflow: visible;
 }
 
+.chart-box {
+  background-color: var(--card);
+  box-shadow: var(--shadow);
+  padding: 25px;
+  border-radius: 15px;
+  overflow: visible;
+}
 
 .chart-box h3 {
   margin-bottom: 15px;
   font-size: 18px;
   font-weight: 500;
+  color: var(--accent);
 }
 
-/* --- Gráficas responsivas --- */
+.chart-box table {
+  background-color: transparent;
+  color: var(--text);
+  border-collapse: collapse;
+}
+
+.chart-box th,
+.chart-box td {
+  border-bottom: 1px solid var(--accent-light);
+}
+
 canvas {
   width: 100% !important;
   height: auto !important;
 }
-.export-btn {
-  display: inline-block;
-  margin-top: 10px;
-  background-color: var(--accent);
-  color: white;
-  padding: 8px 14px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: bold;
-  transition: background 0.3s ease;
-}
 
-.export-btn:hover {
-  background-color: var(--card);
-}
-
+/* Barra de resumen */
 .summary-bar {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 1rem;
   margin: 2rem 0;
   padding: 1rem;
-  background-color: var(--accent);
+  background-color: var(--card);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow);
 }
 
 .summary-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  padding: 1rem;
+  background-color: var(--card);
+  border-radius: 12px;
+  color: var(--text);
+  text-align: center;
+  flex: 1 1 180px;
+  border: 1px solid var(--accent-light);
 }
+
 .summary-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  border-color: var(--accent);
 }
 
 .summary-card h4 {
@@ -256,248 +309,960 @@ canvas {
   color: var(--text);
 }
 
-body.modo-oscuro {
-  background-color: #121212;
-  color: #eee;
-}
-body.modo-oscuro .chart-box,
-body.modo-oscuro .summary-card {
-  background-color: #1e1e1e;
-  color: #fff;
-}
 
-@media (prefers-color-scheme: dark) {
-  body {
-  font-family: var(--font);
-    background-color: #1e1e1e;
-    color: #f0f0f0;
-  }
-  .summary-card {
-    background-color: #2a2a2a;
-  }
-}
+/* * ========================================
+ * Componentes de Alertas y Login
+ * ========================================
+ */
 
-
-/* --- Stylos de alerta emergente --- */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(6px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-  }
-  .modal-contenido {
-    background-color: rgba(30, 41, 59, 0.95);
-    color: white;
-    padding: 2rem;
-    border-radius: 1rem;
-    text-align: center;
-    width: 90%;
-    max-width: 400px;
-    font-family: 'Arial', sans-serif;
-  }
-  .modal-contenido h2 {
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-  }
-  .modal-contenido p {
-    margin-bottom: 1.5rem;
-  }
-  .botones button {
-    background-color: white;
-    color: var(--card);
-    border: none;
-    padding: 0.5rem 1.2rem;
-    border-radius: 9999px;
-    margin: 0 0.5rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  .botones button:hover {
-    background-color: #cbd5e1;
-  }
-  .hidden {
-    display: none;
-  }
-
-  /* estilos de log in*/
-  body {
-  font-family: var(--font);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .login-container {
-            background-color: var(--card);
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: var(--shadow);
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .login-container h2 {
-            text-align: center;
-            margin-bottom: 1.5rem;
-            color: var(--text);
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 0.75rem;
-            margin-bottom: 1rem;
-            border: 1px solid var(--card);
-            border-radius: 0.5rem;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            border-color: #4b6cb7;
-            outline: none;
-        }
-
-        .error {
-            color: red;
-            text-align: center;
-            margin-bottom: 1rem;
-            display: none;
-        }
-
-/* --- Estilo limpio para tarjetas y formularios --- */
-.dashboard-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 30px;
-  justify-content: center;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.dashboard-form-grid.categorias-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Fuerza 2 columnas */
-  gap: 30px;
-  justify-content: center;
-}
-
-.chart-box {
-  min-height: 260px;
+/* Alertas emergentes (modal) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: 15px;
-  background-color: #4d82bc;
-  padding: 25px 25px 30px;
-  border-radius: 15px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-  margin-bottom: 40px;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
 }
 
-/* --- Etiquetas y campos alineados --- */
-.chart-box label {
-  margin-bottom: 6px;
-  font-weight: 500;
-}
-
-.chart-box input,
-.chart-box select,
-.chart-box button {
-  margin-bottom: 12px;
-}
-
-/* --- Inputs y selects con máximo tamaño adecuado --- */
-input[type="number"],
-select {
-  width: 100%;
-  max-width: 120px;
-  padding: 6px 10px;
-  background-color: var(--accent);
+.modal-contenido {
+  background-color: var(--card);
   color: var(--text);
-  border: none;
-  border-radius: 6px;
+  padding: 2rem;
+  border-radius: 1rem;
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+  font-family: var(--font);
+  box-shadow: var(--shadow);
 }
 
-/* --- Botones internos --- */
-form button {
-  padding: 6px 10px;
-  margin-left: 5px;
+.modal-contenido h2 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.modal-contenido p {
+  margin-bottom: 1.5rem;
+}
+
+.botones button {
   background-color: var(--accent);
   color: white;
   border: none;
-  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  border-radius: 9999px;
+  margin: 0 0.5rem;
+  font-weight: bold;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-form button:hover {
+.botones button:hover {
+  filter: brightness(1.2);
+}
+
+.hidden {
+  display: none;
+}
+
+
+/* Estilos para el login */
+.login-container {
+  background-color: var(--card);
+  padding: 2.5rem;
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 420px;
+  margin: 2rem auto;
+  transition: all 0.3s ease;
+}
+
+.login-container h2 {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--accent);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.input-group-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ffffff;
+  transition: color 0.3s ease;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 3rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--accent-light);
+  background-color: #ffffff;
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.login-container input::placeholder {
+  color: #ffffff;
+  opacity: 0.6;
+}
+
+.login-container input:focus {
+  border-color: var(--text);
+  box-shadow: 0 0 10px var(--accent-light);
+  outline: none;
+}
+
+.input-group:focus-within .input-group-icon {
+  color: #ffffff;
+}
+
+.login-btn, .register-btn {
+  width: 100%;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover, .register-btn:hover {
+  background-color: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+  color: var(--text);
+}
+
+.divider span {
+  background-color: var(--card);
+  padding: 0 0.8rem;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--accent-light);
+  z-index: 0;
+}
+
+.registro-texto {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.registro-texto a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.registro-texto a:hover {
+  filter: brightness(1.2);
+}
+
+.hidden {
+  display: none;
+}
+
+/* SOLUCIÓN PARA LOS TOOLTIPS DE CHART.JS */
+.chartjs-tooltip {
+  opacity: 1 !important;
+  z-index: 999999 !important;
+}
+
+/* --- Estilos para el login --- */
+.login-container {
+  background-color: var(--card);
+  padding: 2.5rem;
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 420px;
+  margin: 2rem auto;
+  transition: all 0.3s ease;
+}
+
+.login-container h2 {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--accent);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.input-group-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text);
+  transition: color 0.3s ease;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 3rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--accent-light);
+  background-color: var(--card);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.login-container input::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.login-container input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-light);
+  outline: none;
+}
+
+.input-group:focus-within .input-group-icon {
+  color: var(--accent);
+}
+
+.login-btn, .register-btn {
+  width: 100%;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
   background-color: var(--accent);
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-/* --- Formularios con buena separación --- */
-.chart-box form {
+.login-btn:hover, .register-btn:hover {
+  background-color: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+  color: var(--text);
+}
+
+.divider span {
+  background-color: var(--card);
+  padding: 0 0.8rem;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--accent-light);
+  z-index: 0;
+}
+
+.registro-texto {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.registro-texto a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.registro-texto a:hover {
+  filter: brightness(1.2);
+}
+
+.hidden {
+  display: none;
+}
+
+/* --- SOLUCIÓN PARA LOS TOOLTIPS DE CHART.JS --- */
+.chartjs-tooltip {
+  opacity: 1 !important;
+  z-index: 999999 !important;
+}
+
+
+/* --- Estilos para el login --- */
+.login-container {
+  background-color: var(--card);
+  padding: 2.5rem;
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 420px;
+  margin: 2rem auto;
+  transition: all 0.3s ease;
+}
+
+.login-container h2 {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--accent);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.input-group-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text);
+  transition: color 0.3s ease;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 3rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--accent-light);
+  background-color: var(--card);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.login-container input::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.login-container input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-light);
+  outline: none;
+}
+
+.input-group:focus-within .input-group-icon {
+  color: var(--accent);
+}
+
+.login-btn, .register-btn {
+  width: 100%;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  background-color: var(--accent);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover, .register-btn:hover {
+  background-color: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+  color: var(--text);
+}
+
+.divider span {
+  background-color: var(--card);
+  padding: 0 0.8rem;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--accent-light);
+  z-index: 0;
+}
+
+.registro-texto {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.registro-texto a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.registro-texto a:hover {
+  filter: brightness(1.2);
+}
+
+.hidden {
+  display: none;
+}
+
+/* --- SOLUCIÓN PARA LOS TOOLTIPS DE CHART.JS --- */
+.chartjs-tooltip {
+  opacity: 1 !important;
+  z-index: 999999 !important;
+}
+
+/* --- Estilos para el login --- */
+.login-container {
+  background-color: var(--card);
+  padding: 2.5rem;
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 420px;
+  margin: 2rem auto;
+  transition: all 0.3s ease;
+}
+
+.login-container h2 {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--accent);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.input-group-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text);
+  transition: color 0.3s ease;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 3rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--accent-light);
+  background-color: var(--card);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.login-container input::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.login-container input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-light);
+  outline: none;
+}
+
+.input-group:focus-within .input-group-icon {
+  color: var(--accent);
+}
+
+.login-btn, .register-btn {
+  width: 100%;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  background-color: var(--accent);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover, .register-btn:hover {
+  background-color: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+  color: var(--text);
+}
+
+.divider span {
+  background-color: var(--card);
+  padding: 0 0.8rem;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--accent-light);
+  z-index: 0;
+}
+
+.registro-texto {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.registro-texto a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.registro-texto a:hover {
+  filter: brightness(1.2);
+}
+
+.hidden {
+  display: none;
+}
+
+/* --- SOLUCIÓN PARA LOS TOOLTIPS DE CHART.JS --- */
+.chartjs-tooltip {
+  opacity: 1 !important;
+  z-index: 999999 !important;
+}
+
+/* --- Estilos para el login --- */
+.login-container {
+  background-color: var(--card);
+  padding: 2.5rem;
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 420px;
+  margin: 2rem auto;
+  transition: all 0.3s ease;
+}
+
+.login-container h2 {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--accent);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.input-group-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text);
+  transition: color 0.3s ease;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 3rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--accent-light);
+  background-color: var(--card);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.login-container input::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.login-container input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-light);
+  outline: none;
+}
+
+.input-group:focus-within .input-group-icon {
+  color: var(--accent);
+}
+
+.login-btn, .register-btn {
+  width: 100%;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  background-color: var(--accent);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover, .register-btn:hover {
+  background-color: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+  color: var(--text);
+}
+
+.divider span {
+  background-color: var(--card);
+  padding: 0 0.8rem;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--accent-light);
+  z-index: 0;
+}
+
+.registro-texto {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.registro-texto a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.registro-texto a:hover {
+  filter: brightness(1.2);
+}
+
+.hidden {
+  display: none;
+}
+
+/* --- Estilos generales del Login--- */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f0f2f5; /* Un fondo gris claro para un look moderno */
+  color: #333;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* --- Contenedor del formulario --- */
+.login-container {
+  background-color: #ffffff;
+  padding: 40px;
+  border-radius: 20px; /* Bordes más redondeados para un estilo suave */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); /* Sombra más pronunciada */
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  transition: all 0.3s ease-in-out;
+}
+
+/* --- Encabezado --- */
+.login-container h2 {
+  font-size: 2.5em;
+  font-weight: 700;
+  color: #1a237e; /* Un azul oscuro para un toque profesional */
+  margin-bottom: 20px;
+}
+
+/* --- Inputs y etiquetas --- */
+.login-container label {
+  display: block;
+  text-align: left;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #555;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px; /* Bordes redondeados para los campos */
+  font-size: 16px;
+  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.login-container input:focus {
+  border-color: #1a73e8; /* Borde azul al enfocar */
+  box-shadow: 0 0 8px rgba(26, 115, 232, 0.3); /* Sombra azul al enfocar */
+  outline: none;
+}
+
+/* --- Botón --- */
+.login-btn, .register-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 700;
+  font-size: 18px;
+  color: white;
+  background-color: #1a73e8; /* Azul primario */
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.login-btn:hover, .register-btn:hover {
+  background-color: #155bb9;
+  transform: translateY(-2px);
+}
+
+/* --- Divisor --- */
+.divider {
+  text-align: center;
+  margin: 20px 0;
+  position: relative;
+  color: #999;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: #e0e0e0;
+  z-index: 0;
+}
+
+.divider span {
+  background-color: #ffffff;
+  padding: 0 10px;
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Enlace de registro --- */
+.registro-texto {
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.registro-texto a {
+  color: #1a73e8;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.registro-texto a:hover {
+  text-decoration: underline;
+}
+
+.hidden {
+  display: none;
+}
+
+/* ========================================
+ * Nuevas Clases de Diseño para Listas y Tablas
+ * ========================================
+ */
+.table-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.chart-box td form {
-  display: inline-flex;
-  justify-content: center;
+.table-header {
+  display: none;
+  font-weight: bold;
+  padding: 10px;
+  background-color: var(--accent-light);
+  color: var(--card);
+  border-radius: 8px;
+}
+
+/* Estilo para las tarjetas en las listas (reemplaza las filas de la tabla) */
+.list-card {
+  background-color: var(--card);
+  box-shadow: var(--shadow);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid var(--accent-light);
 }
 
-/* --- Tablas limpias y legibles --- */
-.chart-box table {
-  width: 100%;
-  table-layout: fixed;
-  word-wrap: break-word;
-  font-size: 14px;
-  border-collapse: collapse;
-  border-radius: 10px;
-  overflow: hidden;
-  background-color: rgba(255, 255, 255, 0.03);
+.list-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent);
 }
 
-.chart-box th,
-.chart-box td {
-  padding: 14px;
-  text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+.list-card span, .list-card input, .list-card select {
+  flex: 1;
+  word-break: break-all;
 }
 
-/* --- Estados visuales --- */
-.estado-verde {
-  color: lightgreen;
-  font-weight: bold;
+/* Flexbox para las columnas dentro de la tarjeta */
+.card-col {
+  flex-basis: 20%;
+  text-align: center;
 }
 
-.estado-naranja {
-  color: orange;
-  font-weight: bold;
+.card-col:first-child, .card-col-cat:first-child, .card-col-dom:first-child {
+  flex-basis: 10%;
 }
 
-.estado-rojo {
-  color: red;
-  font-weight: bold;
+.card-col-cat { flex-basis: 33.33%; text-align: center; }
+.card-col-dom { flex-basis: 25%; text-align: center; }
+
+/* Ajustes de flexbox y espaciado para las tablas de categorías/dominios */
+.categorias-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
 }
 
-/*Metas como titulo*/
-/* --- Tarjeta moderna cuadrada --- */
+@media (max-width: 768px) {
+  .categorias-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================
+ * Estilos para Logros
+ * ========================================
+ */
+.logros-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 20px;
+  padding-top: 15px;
+}
+
+.insignia {
+  text-align: center;
+  padding: 15px;
+  border-radius: 12px;
+  background-color: var(--card);
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+  border: 1px solid var(--accent-light);
+}
+
+.insignia img {
+  width: 50px;
+  height: 50px;
+  margin-bottom: 10px;
+}
+
+.insignia h3 {
+  font-size: 1rem;
+  color: var(--accent);
+  margin-bottom: 5px;
+}
+
+.insignia p {
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.insignia.locked {
+  filter: grayscale(100%) brightness(50%);
+  opacity: 0.7;
+}
+
+.insignia.locked:hover {
+  transform: none;
+  cursor: not-allowed;
+  box-shadow: var(--shadow);
+}
+
 .tile-box {
   align-items: center;  /* centra horizontalmente los elementos hijos */
   text-align: center;   /* centra texto dentro de los bloques */
@@ -510,200 +1275,4 @@ form button:hover {
   justify-content: space-between;
   gap: 15px;
   margin-bottom: 40px; 
-}
-
-.tile-box h3 {
-  text-align: center;
-  font-size: 16px;
-  font-weight: bold;
-  color: var(--text);
-}
-
-/* --- Formulario horizontal --- */
-.tile-form {
-  justify-content: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-
-.tile-form select,
-.tile-form input[type="number"] {
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: none;
-  background-color: var(--accent);
-  color: rgb(17, 26, 45);
-  width: 160px;
-  max-width: 100%;
-}
-
-.tile-form button {
-  padding: 8px 14px;
-  background-color: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.tile-form button:hover {
-  background-color: var(--accent);
-}
-
-/* Scroll interno para tablas largas */
-.chart-box table {
-  display: block;
-  max-height: 200px;
-  overflow-y: auto;
-  border-collapse: separate;
-}
-
-/* Mantener cabeceras fijas visualmente */
-.chart-box table thead,
-.chart-box table tbody,
-.chart-box table tr {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
-
-/* Mejorar contraste de filas */
-.chart-box table tbody tr:nth-child(even) {
-  background-color: rgba(255, 255, 255, 0.03);
-}
-
-/* --- Agregar separación extra entre sección de metas y de límites --- */
-.seccion-metas,
-.seccion-limites {
-  margin-bottom: 40px;
-}
-
-/* --- Centrando botones de acciones en tablas --- */
-.chart-box table td:last-child,
-.chart-box table th:last-child {
-  text-align: center;
-}
-
-
-.chart-box td form button {
-  margin: 0 4px;
-}
-
-/* Scroll interno en .tile-box para tablas largas */
-.tile-box table {
-  display: block;
-  max-height: 200px;
-  overflow-y: auto;
-  border-collapse: separate;
-}
-
-/* Mantener cabeceras fijas visualmente */
-.tile-box table thead,
-.tile-box table tbody,
-.tile-box table tr {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
-
-/* Mejorar contraste en filas */
-.tile-box table tbody tr:nth-child(even) {
-  background-color: rgba(255, 255, 255, 0.03);
-}
-
-.tile-button {
-  background-color: var(--accent);
-  color: white;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 12px;
-  font-weight: bold;
-  font-size: 15px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.tile-button:hover {
-  background-color: var(--accent);
-}
-
-/*logros e insignias*/
-
-/* 🔷 Contenedor grid */
-.logros-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 20px;
-  padding-top: 10px;
-}
-
-/* 🔸 Estilo general de tarjeta */
-.insignia {
-  padding: 15px;
-  border-radius: 16px;
-  text-align: center;
-  border: 2px solid #ddd;
-  transition: 0.3s;
-  background: white;
-  box-shadow: 0 0 8px rgba(0,0,0,0.05);
-}
-
-.insignia img {
-  width: 70px;
-  height: 70px;
-  object-fit: contain;
-  margin-bottom: 10px;
-}
-
-/* 🔰 Niveles visuales */
-.insignia.primerizo {
-  border-color: #7ed6df;
-  background: #dff9fb;
-}
-.insignia.intermedio {
-  border-color: #f6e58d;
-  background: #fef9c7;
-}
-.insignia.productivo {
-  border-color: #badc58;
-  background: #eafadb;
-}
-.insignia.super_pro {
-  border-color: #eb4d4b;
-  background: #ffcccc;
-}
-
-/* 🚫 Logros bloqueados */
-.insignia.locked {
-  background: var(--card) !important;
-  border-color: #aaa !important;
-  color: #777 !important;
-  opacity: 0.6;
-  filter: grayscale(1);
-}
-
-.insignia.locked h3,
-.insignia.locked p {
-  color: #777 !important;
-}
-
-/* 📝 Tipografía */
-.insignia h3 {
-  font-size: 15px;
-  margin: 8px 0 4px;
-  color: #333;
-}
-
-.insignia p {
-  font-size: 13px;
-  color: #666;
-}
-
-#formRegistro {
-  margin-top: 1em;
-  transition: all 0.3s ease;
 }

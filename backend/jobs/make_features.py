@@ -1,21 +1,3 @@
-
-#!/usr/bin/env python3
-"""
-make_features.py — Actualiza tablas de FEATURES desde la BD `registro`.
-
-- features_uso_hora(usuario_id, fecha, hora_num, minutos)
-- features_categoria_diaria(usuario_id, fecha, categoria, minutos)
-
-Modo de uso:
-  python make_features.py --db "mysql+mysqlconnector://root:base@localhost/tiempocheck_db" \
-                          --user 1 --since 2025-07-28 --until today
-
-  # Incremental (auto):
-  python make_features.py --db ... --user 1 --since auto --until today --lookback-days 1
-
-Sugerido: correr cada 15 min con cron/launchd.
-"""
-
 import os
 import sys
 import argparse

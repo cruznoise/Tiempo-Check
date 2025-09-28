@@ -11,7 +11,7 @@ fetch('/admin/api/logros')
         const div = document.createElement('div');
         div.className = `insignia ${logro.nivel} ${logro.desbloqueado ? '' : 'locked'}`;
         div.innerHTML = `
-          <img src="${logro.imagen_url}" alt="${logro.nombre}">
+          <img src="/static/icons/logro.png" alt="${logro.nombre}">
           <h3>${logro.nombre}</h3>
           <p>${logro.descripcion}</p>
         `;
@@ -126,3 +126,31 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 });
 
+async function fetchSugerenciasDetalle() {
+  const res = await fetch('/api/sugerencias_detalle');
+  if (!res.ok) return null;
+  return await res.json();
+}
+
+let cacheDetalle = null;
+document.addEventListener('click', async (e) => {
+  if (e.target.matches('[data-role="ver-explicacion"]')) {
+    const cat = e.target.getAttribute('data-categoria');
+    if (!cacheDetalle) cacheDetalle = await fetchSugerenciasDetalle();
+    const item = (cacheDetalle?.detalle || []).find(x => x.categoria === cat);
+    const texto = item ? 
+`Categoría: ${item.categoria}
+Promedio (14 días): ${item.promedio_14d.toFixed(2)} min
+Multiplicador: ${item.multiplicador.toFixed(2)}
+Nivel de confianza: ${item.nivel_confianza}
+Fórmula: ${item.formula}
+Sugerencia: ${item.sugerencia_minutos} min`
+    :
+`Aún no hay suficientes datos para explicar esta sugerencia.`;
+    document.getElementById('explicacion-texto').textContent = texto;
+    document.getElementById('modal-explicacion').style.display = 'block';
+  }
+  if (e.target.id === 'cerrar-explicacion') {
+    document.getElementById('modal-explicacion').style.display = 'none';
+  }
+});
