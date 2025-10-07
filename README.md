@@ -2,7 +2,8 @@
 
 **Versión actual:** `v3.1-stable`  
 **Fecha de lanzamiento:** 2025-10-07  
-**Autor:** Luis Ángel Cruz Tenorio (`@cruznoise`)  en colaboracion con Ana Maria Ambriz Gonzalez
+**Autor:** Luis Ángel Cruz Tenorio (`@cruznoise`)
+**Coautora:** en colaboracion con Ana Maria Ambriz Gonzalez
 **Licencia:** MIT  
 **Stack:** Python · Flask · MySQL · APScheduler · scikit-learn · Chart.js
 
