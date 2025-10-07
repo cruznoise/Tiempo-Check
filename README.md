@@ -129,5 +129,6 @@ ml/preds/<id>/     → predicciones diarias
 GitHub: [@cruznoise](https://github.com/cruznoise)  
 Desarrollo backend · Arquitectura ML · Integración de datos
 
+**Coautora**
 - Ana Maria Ambriz Gonzalez — Estudiante de Ingeniería en Comunicaciones y Electrónica · IPN ESIME Zacatenco
   Diseño de interfaz · UX/UI · Mejoras visuales y de experiencia de usuario
