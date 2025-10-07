@@ -231,56 +231,87 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Error al verificar alerta dominio:", err);
   }
 
-  // === Estado features (QA) ===
-  async function pintarEstado(dia) {
-    const qs = new URLSearchParams({ usuario_id: 1, dia });
+// === Estado features (QA) ===
+function isoHoyMX() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+async function pintarEstado(dia) {
+  const qs = new URLSearchParams({ usuario_id: 1, dia });
+
+  try {
     const [est, qa] = await Promise.all([
       fetch(`/admin/api/features_estado?${qs}`).then(r => r.json()),
       fetch(`/admin/api/features_qa?${qs}`).then(r => r.json())
     ]);
-    document.querySelector("#fd-count").textContent = est.diarias_count ?? '0';
-    document.querySelector("#fh-count").textContent = est.horarias_count ?? '0';
-    const badge = document.querySelector("#qa-badge");
-    if (qa.ok) {
-      badge.textContent = "QA OK";
-      badge.className = "badge badge-success";
-    } else {
-      badge.textContent = "QA DESCUADRE";
-      badge.className = "badge badge-danger";
-    }
-  }
-  function isoHoyMX() {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth()+1).padStart(2,'0');
-    const d = String(now.getDate()).padStart(2,'0');
-    return `${y}-${m}-${d}`;
-  }
-  await pintarEstado(isoHoyMX());
 
-  // === Predicciones ML ===
-  function minsToHM(m) {
-    const mm = Math.round(m);
-    const h = Math.floor(mm / 60);
-    const mi = mm % 60;
-    return (h > 0 ? `${h}h ` : "") + `${mi}m`;
+    const fd = document.querySelector("#fd-count");
+    const fh = document.querySelector("#fh-count");
+    const badge = document.querySelector("#qa-badge");
+
+    if (fd) fd.textContent = est.diarias_count ?? "0";
+    if (fh) fh.textContent = est.horarias_count ?? "0";
+
+    if (badge) {
+      if (qa.ok) {
+        badge.textContent = "QA OK";
+        badge.className = "badge bg-success";
+      } else {
+        badge.textContent = "QA DESCUADRE";
+        badge.className = "badge bg-danger";
+      }
+    }
+  } catch (err) {
+    console.warn("[WARN] No se pudo pintar estado:", err);
   }
+}
+
+await pintarEstado(isoHoyMX());
+
+// === Predicciones ML ===
+document.getElementById('btnPrediccionManana')?.addEventListener('click', cargarPredicciones);
+
+function minsToHM(m) {
+  const mm = Math.round(m);
+  const h = Math.floor(mm / 60);
+  const mi = mm % 60;
+  return (h > 0 ? `${h}h ` : "") + `${mi}m`;
+}
+
+async function cargarPredicciones() {
+  const ul = document.getElementById('ml-predict-list');
+  ul.innerHTML = '<li>⏳ Generando predicción...</li>';
+
   try {
     const r = await fetch('/api/ml/predict');
     const data = await r.json();
-    const ul = document.getElementById('ml-predict-list');
-    ul.innerHTML = '';
+
+    ul.innerHTML = ''; // limpiar
     (data.predicciones || []).forEach(p => {
       const li = document.createElement('li');
+      li.classList.add('list-group-item');
       li.textContent = `${p.categoria}: ${minsToHM(p.yhat_minutos)}`;
       ul.appendChild(li);
     });
+
     if (!data.predicciones || data.predicciones.length === 0) {
-      ul.innerHTML = '<li>Sin suficiente historial aún</li>';
+      ul.innerHTML = '<li class="list-group-item">Sin suficiente historial aún</li>';
+    } else {
+      const total = data.predicciones.reduce((a, b) => a + b.yhat_minutos, 0);
+      const totalLi = document.createElement('li');
+      totalLi.classList.add('list-group-item', 'fw-bold');
+      totalLi.textContent = `Total estimado: ${minsToHM(total)}`;
+      ul.appendChild(totalLi);
     }
   } catch (err) {
     console.error("Error en predicciones ML:", err);
+    ul.innerHTML = '<li class="list-group-item text-danger">Error al obtener predicción</li>';
   }
+}
 
   const guardado = localStorage.getItem("tema_usuario");
   const temaSelect = document.getElementById('selector-tema');

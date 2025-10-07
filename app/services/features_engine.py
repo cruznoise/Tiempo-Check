@@ -192,8 +192,7 @@ def calcular_persistir_features(usuario_id: int, dia: date) -> dict:
                 categoria=cat,
                 minutos=mins
             ))
-
-    # --- FeatureHoraria ---
+            
     for (h, cat), seg in acc_hora.items():
         mins = seg // 60
         objh = (

@@ -55,3 +55,10 @@ def job_ml_catchup(app, usuario_id: int, dias: int = 3):
                         print(f"[CATCHUP] Ya existe predicción {d} user={usuario_id}, skip")
         finally:
             conexion.close()
+
+def job_ml_train_cat(app, usuario_id: int):
+    with app.app_context():
+        from ml.pipeline import train_por_categoria
+        print(f"[JOB][ML] Entrenamiento por categoría iniciado → usuario {usuario_id}")
+        train_por_categoria(usuario_id)
+        print(f"[JOB][ML] Entrenamiento por categoría finalizado → usuario {usuario_id}")

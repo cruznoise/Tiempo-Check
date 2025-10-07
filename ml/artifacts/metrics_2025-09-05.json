@@ -1,0 +1,10 @@
+{
+  "usuario_id": 1,
+  "hist_days": 32,
+  "hist_requested": 60,
+  "holdout_days": 0,
+  "timestamp": "2025-09-05",
+  "rows_train": 0,
+  "rows_test": 0,
+  "note": "baseline-only (cold-start, <10 dias)"
+}

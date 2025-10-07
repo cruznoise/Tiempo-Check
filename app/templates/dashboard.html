@@ -104,11 +104,16 @@
           <p id="resumen-promedio">...</p>
         </div>
       </section>
-
       
+
       <div id="ml-predict-card" class="tile-box">
         <h3>Predicción de mañana (por categoría)</h3>
-        <ul id="ml-predict-list"></ul>
+        <button id="btnPrediccionManana" class="btn btn-primary mt-3">
+          Predicción de mañana (por categoría)
+        </button>
+
+        <ul id="ml-predict-list" class="list-group mt-2"></ul>
+
       </div>
 
 
@@ -149,6 +154,11 @@
 </div>
 
 <div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
+      <div id="toast-container"></div>
+      <section>
+        <h3>Alertas del Coach</h3>
+        <div id="coach-alertas"></div>
+      </section>
 
 
 <script type="application/json" id="categorias-json">
@@ -168,6 +178,7 @@
 </script>
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/coach_toast.js')}}"></script>
 
 </body>
 </html>

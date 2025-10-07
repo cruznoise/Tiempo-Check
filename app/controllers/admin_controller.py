@@ -684,32 +684,41 @@ def guardar_dominio():
         print("Error en /guardar:", e)
         return jsonify({"error": "Error al guardar"}), 500
 
-@bp.route('/registro', methods=['POST'])
+@bp.route("/registro", methods=["POST"])
 def registro():
-    nombre = request.form['nombre']
-    correo = request.form['correo']
-    contraseña = request.form['contraseña']
+    data = request.get_json() or {}
+    nombre = data.get("nombre")
+    correo = data.get("correo")
+    contraseña = data.get("contraseña")
 
     if not nombre or not correo or not contraseña:
-        flash(" Todos los campos son obligatorios.")
-        return redirect(url_for('app_base.login'))
+        return jsonify(success=False, message="Todos los campos son obligatorios."), 400
 
-    existente = db.session.execute(text("""
-        SELECT id FROM usuarios WHERE correo = :correo
-    """), {"correo": correo}).fetchone()
+    existente = db.session.execute(
+        text("SELECT id FROM usuarios WHERE correo = :correo"),
+        {"correo": correo}
+    ).fetchone()
 
     if existente:
-        flash("Ya existe un usuario con ese correo.")
-        return redirect("/login")
+        return jsonify(success=False, message="Ya existe un usuario con ese correo."), 400
 
-    db.session.execute(text("""
+    db.session.execute(
+        text("""
         INSERT INTO usuarios (nombre, correo, contraseña)
         VALUES (:nombre, :correo, :contraseña)
-    """), {"nombre": nombre, "correo": correo, "contraseña": contraseña})
+        """),
+        {"nombre": nombre, "correo": correo, "contraseña": contraseña}
+    )
     db.session.commit()
 
-    flash(" Registro exitoso. Ahora inicia sesión.")
-    return redirect(url_for('app_base.login'))
+    return jsonify(success=True, message="Registro exitoso.")
+
+
+@bp.route("/logout", methods=["GET"])
+def logout():
+    session.clear()
+    return redirect(url_for("app_base.login"))
+
 
 @bp.route('/api/sugerencias', methods=['GET'])
 def sugerencias():

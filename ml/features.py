@@ -39,8 +39,17 @@ def split_train_holdout(d: pd.DataFrame, holdout_days=7):
     return d.loc[~mask].copy(), d.loc[mask].copy()
 
 def latest_X_per_categoria(d: pd.DataFrame):
-    d = d.sort_values(["usuario_id","categoria","fecha"]).copy()
+    """
+    Devuelve el registro más reciente por usuario y categoría.
+    Corrige duplicados o categorías vacías ('Sin categoría').
+    """
+    d = d.copy()
+    d["categoria"] = d["categoria"].astype(str).fillna("Sin categoría")
+    d = d.sort_values(["usuario_id", "categoria", "fecha"], ascending=True)
+    d = d.drop_duplicates(subset=["usuario_id", "categoria", "fecha"], keep="last")
     feats = get_feature_cols(d)
-    idx = d.groupby(["usuario_id","categoria"])["fecha"].idxmax()
-    latest = d.loc[idx, ["usuario_id","categoria","fecha"] + feats].reset_index(drop=True)
+    idx = d.groupby(["usuario_id", "categoria"])["fecha"].idxmax()
+    latest = d.loc[idx, ["usuario_id", "categoria", "fecha"] + feats].reset_index(drop=True)
+    latest = latest.drop_duplicates(subset=["usuario_id", "categoria"], keep="last")
+
     return latest, feats

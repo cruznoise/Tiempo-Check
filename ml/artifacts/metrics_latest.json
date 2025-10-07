@@ -1,0 +1,11 @@
+{
+  "usuario_id": 1,
+  "mode": "baseline",
+  "hist_days": 55,
+  "hist_requested": 180,
+  "holdout_days": 0,
+  "timestamp": "2025-10-07",
+  "rows_train": 0,
+  "rows_test": 0,
+  "note": "baseline-only (hist_insuficiente: n_dias=55 < threshold=90)"
+}

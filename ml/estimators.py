@@ -68,7 +68,6 @@ class NaiveMovingAverage:
         """
         self.fe_version_ = fe_version
         df_sorted = df_fc.sort_values(["categoria", "fecha"])
-        # media móvil por categoría
         roll = (
             df_sorted
             .groupby("categoria")["minutos"]

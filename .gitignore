@@ -1,4 +1,4 @@
-# Python
+# Python / entorno
 venv/
 __pycache__/
 *.py[cod]
@@ -21,6 +21,7 @@ build/
 # Notebooks
 **/.ipynb_checkpoints/
 *-checkpoint.ipynb
+*.ipynb
 
 # Datos y artefactos (datasets/outputs locales)
 dataset/
@@ -34,10 +35,21 @@ ml/dataset/**/*.parquet
 *.csv.gz
 merged_*.parquet
 merged_*.csv.gz
-ml/artifacts/
+
+# ML artifacts (solo mantener metadatos)
+ml/artifacts/*.joblib
+ml/artifacts/backtesting/
+!ml/artifacts/backtesting_summary.json
+!ml/artifacts/model_selector.json
+
+# Archivos temporales o de pruebas
 app/ml/processed/
+tmp/
+__temp__/
+
 # Config local (sube un example en su lugar)
 config.py
+mysql_conn.py
 
 # Chrome extension builds
 tiempocheck_extension/dist/

@@ -117,7 +117,7 @@ def start_scheduler(app, usuario_id: int = 1, tz: str | None = None):
         for uid in _usuarios_activos():
             _SCHED.add_job(
                 func=job_coach_alertas,
-                trigger=CronTrigger(hour=0, minute=10, timezone=tz),
+                trigger=CronTrigger(minute=10, timezone=tz),
                 args=[app, uid],
                 id=f"coach_alertas_u{uid}",
                 replace_existing=True,
@@ -125,7 +125,7 @@ def start_scheduler(app, usuario_id: int = 1, tz: str | None = None):
                 max_instances=1,
                 misfire_grace_time=300,
             )
-            from app.schedule.ml_jobs import job_ml_train, job_ml_predict, job_ml_catchup
+            from app.schedule.ml_jobs import job_ml_train, job_ml_predict, job_ml_catchup, job_ml_train_cat
             _SCHED.add_job(
                 func=job_ml_train,
                 trigger=CronTrigger(day_of_week="sun", hour=0, minute=10, timezone=tz),
@@ -135,6 +135,17 @@ def start_scheduler(app, usuario_id: int = 1, tz: str | None = None):
                 replace_existing=True,
                 coalesce=True,
                 max_instances=1,
+            )
+            _SCHED.add_job(
+                func=job_ml_train_cat,
+                trigger=CronTrigger(day_of_week="sun", hour=0, minute=20, timezone=tz),
+                # trigger=CronTrigger(minute="*/1", timezone=tz),  #Lo mismo de arriba, solo se descomenta si es para hacer pruebas
+                args=[app, uid],
+                id=f"ml_train_cat_u{uid}",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+                misfire_grace_time=300,
             )
             _SCHED.add_job(
                 func=job_ml_predict,

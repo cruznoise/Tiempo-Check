@@ -1,0 +1,7 @@
+usuario_id,fecha_pred,categoria,yhat_minutos
+1,2025-09-24,Productividad,30.41
+1,2025-09-24,Trabajo,13.34
+1,2025-09-24,Ocio,10.58
+1,2025-09-24,Estudio,6.77
+1,2025-09-24,Redes Sociales,5.43
+1,2025-09-24,Herramientas,2.01

@@ -15,7 +15,7 @@ from sqlalchemy import func, and_, text
 
 logger = logging.getLogger(__name__)
 
-PRODUCTIVAS = {"productividad", "estudio", "herramientas", "trabajo"}  # ajusta según tus categorías
+PRODUCTIVAS = {"productividad", "estudio", "herramientas", "trabajo"}  
 
 def _categoria_id_por_nombre(nombre: str):
     row = db.session.execute(
