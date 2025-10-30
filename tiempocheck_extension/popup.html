@@ -9,31 +9,40 @@
 <body>
 
   <div class="popup-container">
-    <h1>Tiempo Check</h1>
+    <h1>TIEMPO CHECK</h1>
     <div class="stats">
       <p><strong>Sitio actual:</strong> <span id="current-site">---</span></p>
       <p><strong>Tiempo total:</strong> <span id="time-spent">0 min</span></p>
     </div>
   </div>
-  <div id="rachas-container">
-  <div class="racha" id="racha-metas">
-    <img src="apagada.PNG" class="racha-icon" id="icono-racha-metas" alt="Racha metas">
-    <span class="racha-texto">Dias de racha metas: <span id="contador-racha-metas">0</span> días</span>
-  </div>
-  <div class="racha" id="racha-limites">
-    <img src="apagada.PNG" class="racha-icon" id="icono-racha-limites" alt="Racha límites">
-    <span class="racha-texto">Dias de racha limites: <span id="contador-racha-limites">0</span> días</span>
-  </div>
-</div>
-
-    <div class="historial-container">
-      <div class="historial-texto">Historial de sitios</div>
-      <div class="historial-popup" id="popup-historial">
-        <h2>Historial de sitios</h2>
-          <ul id="site-list"></ul>
+  
+  <div class="streak-widget-container">
+    <div class="streak-header">
+      <div class="streak-icon">
+        <img src="prendida.PNG" alt="Racha" id="main-streak-icon">
+      </div>
+      <div class="streak-info">
+        <span class="streak-days" id="total-streak-days">0</span>
+        <span class="streak-label">DÍAS CONSECUTIVOS</span>
       </div>
     </div>
 
+    <div class="streak-calendar" id="streak-calendar-visual">
+    </div>
+
+    <div class="streak-details">
+        <p>Racha Metas: <strong id="contador-racha-metas">0</strong> días</p>
+        <p>Racha Límites: <strong id="contador-racha-limites">0</strong> días</p>
+    </div>
+  </div>
+  
+  <div class="historial-container">
+      <div class="historial-texto">Historial de sitios</div>
+      <div class="historial-popup" id="popup-historial">
+        <h2>Historial de sitios</h2> 
+        <ul id="site-list"></ul>
+      </div>
+  </div>
 
   <script src="popup.js"></script>
 </body>

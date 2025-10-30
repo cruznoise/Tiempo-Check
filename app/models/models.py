@@ -7,7 +7,7 @@ class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     correo = db.Column(db.String(100), unique=True, nullable=False)
-    contraseña = db.Column(db.String(100), nullable=False)
+    contrasena = db.Column(db.String(100), nullable=False)
 
 class Registro(db.Model):
     __tablename__ = 'registro'
@@ -32,12 +32,15 @@ class DominioCategoria(db.Model):
 
 class MetaCategoria(db.Model):
     __tablename__ = 'metas_categoria'
+
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.id'), nullable=False)
-    limite_minutos = db.Column(db.Integer, nullable=False)
-    fecha = db.Column(db.DateTime, default=datetime.utcnow)
-    cumplida = db.Column(db.Boolean, default=False) 
+    minutos_meta = db.Column(db.Integer, nullable=False) 
+    origen = db.Column(db.Enum('manual', 'coach', 'sistema'), default='manual', nullable=False)
+    fecha = db.Column(db.Date, default=datetime.utcnow) 
+    cumplida = db.Column(db.Boolean, default=False)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
     usuario = db.relationship('Usuario')
     categoria = db.relationship('Categoria')
@@ -107,6 +110,8 @@ class FeaturesCategoriaDiaria(db.Model):
 
     def __repr__(self):
         return f"<FCD {self.usuario_id} {self.fecha} {self.categoria}={self.minutos}>"
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 class AggVentanaCategoria(db.Model):
     __tablename__ = 'agg_ventana_categoria'

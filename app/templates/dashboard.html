@@ -7,49 +7,65 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body
-  data-uso-horario='{{ uso_horario|tojson }}'
-  data-uso-diario='{{ uso_diario|tojson }}'
-  data-categorias='{{ categorias|tojson }}'
-  data-datos='{{ datos|tojson }}'>
+  data-datos='{{ datos | tojson | safe }}'
+  data-categorias='{{ categorias | tojson | safe }}'
+  data-uso-horario='{{ uso_horario | tojson | safe }}'
+  data-uso-diario='{{ uso_diario | tojson | safe }}'>
+
   <div class="dashboard-container">
 
     <!-- Sidebar -->
     <aside class="sidebar">
-      <h2>¡Hola,<br>Angel!</h2>
+      <h2>¡Hola,<br>{{ nombre }}!</h2>
       <p>Este es tu resumen personal</p>
-      <nav>
-      <ul>
-        <li>
-          <a href="{{ url_for('controlador.dashboard') }}">
-            <img src="{{ url_for('static', filename='icons/home.svg') }}" alt="Home">
-          </a>
-        </li>
-        <li>
-          <a href="{{ url_for('admin_controller.vista_metas') }}">
-            <img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros">
-          </a>
-        </li>
-        <li>
-          <a href="{{ url_for('admin_controller.vista_configuracion') }}">
-            <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración">
-          </a>
-        </li>
-      </ul>
 
+      <nav>
+        <ul>
+          <li>
+            <a href="{{ url_for('controlador.dashboard') }}">
+              <img src="{{ url_for('static', filename='icons/home.svg') }}" alt="Home">
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('admin_controller.vista_metas') }}">
+              <img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros">
+            </a>
+          </li>
+          <li>
+            <a href="#" id="btnConfiguracion">
+              <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración">
+            </a>
+          </li>
+        </ul>
       </nav>
+
+      <div class="alerta-coach-container" id="alerta-coach-sidebar">
+        <div class="alerta-coach-titulo">
+          <p>Alertas del Coach</p>
+        </div>
+
+        <div class="loading-box" id="coach-loading-state">
+          <p>Cargando</p>
+          <p style="font-size: 0.8em; color: var(--accent-light);">Esperando datos del coach...</p>
+        </div>
+
+        <div id="coach-alerts-list"></div>
+      </div>
     </aside>
 
     <!-- Contenido principal -->
     <main class="content">
-      <header>
+
+      <header class="main-header">
         <h1>DASHBOARD</h1>
-        <p class="intro-text"> Este es un resumen personalizado de tu actividad digital.</p>
+        <p class="intro-text">Este es un resumen personalizado de tu actividad digital.</p>
       </header>
 
+      <!-- Barra de controles -->
       <section class="controls-bar">
         <div class="control-group">
-          <label for="rango">Rango de tiempo:</label>
-          <select id="rango">
+          <label for="rango-dashboard">Rango de tiempo:</label>
+          <select id="rango-dashboard">
             <option value="total">Total</option>
             <option value="hoy">Hoy</option>
             <option value="7dias">Últimos 7 días</option>
@@ -62,7 +78,7 @@
             <button id="filtrar">Aplicar</button>
           </div>
         </div>
-        
+
         <div class="control-group">
           <div class="panel-temas">
             <h3>Elige tu estilo visual</h3>
@@ -74,111 +90,175 @@
               <option value="retro-terminal">🧃 Retro Terminal</option>
             </select>
             <label class="toggle-container">
-              <input type="checkbox" id="modoDiaNoche">
+              <input type="checkbox" id="modoNocheToggle"> 
               <span class="slider"></span>
             </label>
-            <label for="modoDiaNoche" class="toggle-label">🌙 Modo noche</label>
+            <label for="modoNocheToggle" class="toggle-label">🌙 Modo noche</label>
           </div>
         </div>
       </section>
 
+      <!-- Barra resumen -->
       <section class="summary-bar">
-        <div class="summary-card">
+        <div class="summary-card widget-color">
           <h4>Tiempo total</h4>
           <p id="resumen-tiempo">...</p>
         </div>
-        <div class="summary-card">
+        <div class="summary-card widget-color">
           <h4>Día más activo</h4>
           <p id="resumen-dia">...</p>
         </div>
-        <div class="summary-card">
+        <div class="summary-card widget-color">
           <h4>Sitio más visitado</h4>
           <p id="resumen-sitio">...</p>
         </div>
-        <div class="summary-card">
+        <div class="summary-card widget-color">
           <h4>Categoría dominante</h4>
           <p id="resumen-categoria">...</p>
         </div>
-        <div class="summary-card">
+        <div class="summary-card widget-color">
           <h4>Promedio diario</h4>
           <p id="resumen-promedio">...</p>
         </div>
       </section>
-      
 
-      <div id="ml-predict-card" class="tile-box">
-        <h3>Predicción de mañana (por categoría)</h3>
-        <button id="btnPrediccionManana" class="btn btn-primary mt-3">
-          Predicción de mañana (por categoría)
-        </button>
+      <!-- Sección principal de gráficos -->
+      <section class="dashboard-grid">
+        <div class="main-charts">
+          
+          <!-- Fila 1 -->
+          <div class="chart-box box-categoria">
+            <h3>Distribución por categoría</h3>
+            <canvas id="graficaPastel"></canvas>
+          </div>
 
-        <ul id="ml-predict-list" class="list-group mt-2"></ul>
+          <div class="chart-box box-tiempo-sitio">
+            <h3>Tiempo por sitio web</h3>
 
-      </div>
+            <div class="chart-filter-inside">
+              <label for="min-range">Filtrar por minutos (mínimo):</label>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span id="min-value">0</span>
+                <input type="range" id="min-range" min="0" max="2000" step="50" value="0">
+              </div>
+            </div>
 
+            <div class="chart-canvas-wrapper">
+              <canvas id="grafica"></canvas>
+            </div>
+          </div>
 
-      <section class="graphs">
-        <div class="chart-box">
-          <h3>Tiempo por sitio web</h3>
-          <canvas id="grafica"></canvas>
-        </div>
+          <div id="ml-predict-card" class="panel-box box-prediccion">
+            <h3>Predicción de mañana (por día)</h3>
+            <ul id="ml-predict-list"></ul>
+          </div>
 
-        <div class="chart-box">
-          <h3>Distribución por categoría</h3>
-          <canvas id="graficaPastel"></canvas>
-        </div>
+          <!-- Fila 2 -->
+          <div class="chart-box box-horario">
+            <h3>Distribución de uso por hora</h3>
+            <canvas id="graficaHorario"></canvas>
+          </div>
 
-        <div class="chart-box">
-          <h3>Distribución de uso por hora</h3>
-          <canvas id="graficaHorario"></canvas>
-        </div>
+          <div class="chart-box box-tiempo-dia">
+            <h3>Tiempo total en pantalla por día</h3>
+            <canvas id="graficaLinea"></canvas>
+          </div>
 
-        <div class="chart-box">
-          <h3>Tiempo total en pantalla por día</h3>
-          <canvas id="graficaLinea"></canvas>
+          <div id="nueva-tabla-panel" class="panel-box box-nueva-tabla">
+            <h3>Nueva Tabla de Datos</h3>
+            <p>La nueva tabla de datos.</p>
+          </div>
         </div>
       </section>
+
+
     </main>
   </div>
 
-<!-- Modal de alerta por límite excedido -->
-<div id="alertaModal" class="modal-overlay hidden">
-  <div class="modal-contenido">
-    <h2>“TiempoCheck”</h2>
-    <p><span id="categoriaModal"></span> ¿Deseas continuar?</p>
-    <div class="botones">
-      <button onclick="cerrarModal()">Aceptar y cerrar</button>
-      <button onclick="ignorarAlerta()">Ignorar</button>
+  <!-- Menú flotante -->
+  <div id="menuFlotanteConfig" class="config-dropdown hidden">
+    <div class="tile-box menu-box">
+      <h2 class="menu-title">Configuración de la cuenta</h2>
+
+      <button onclick="window.location.href='/admin/categorias'" class="menu-button">
+        🗂️ Administrar dominios y categorías
+      </button>
+
+      <hr class="menu-separator">
+
+      <div class="menu-section">
+        <label for="rango-exportar">Rango de tiempo para exportar:</label> 
+        <select id="rango-exportar" class="menu-select"> 
+          <option value="3dias">Últimos 3 días</option>
+          <option value="15dias">Últimos 15 días</option>
+          <option value="mes">Último mes</option>
+          <option value="3meses">Últimos 3 meses</option>
+          <option value="todo" selected>Todo el tiempo</option>
+        </select>
+
+        <div class="menu-buttons-group">
+          <button id="bck_btn" class="menu-button-small">Descargar Backup Completo</button>
+          <button id="exportarCSV" class="menu-button-small">📄 Exportar CSV</button>
+          <button id="exportarJSON" class="menu-button-small">🧾 Exportar JSON</button>
+        </div>
+      </div>
+
+      <hr class="menu-separator">
+
+      <div class="menu-section">
+        <label>Restaurar cuenta (.JSON)</label>
+        <form id="form-restaurar" enctype="multipart/form-data" class="restore-form">
+          <input type="file" id="archivo-backup" name="backup" accept=".json" required>
+          <button type="submit" class="menu-button-small btn-restore">🔓 Restaurar Backup</button>
+        </form>
+      </div>
+
+      <hr class="menu-separator">
+
+      <div class="menu-section">
+        <label>Reiniciar cuenta</label>
+        <button id="btn-reseteo-total" class="menu-button btn-danger">Reiniciar Cuenta desde Cero</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
-      <div id="toast-container"></div>
-      <section>
-        <h3>Alertas del Coach</h3>
-        <div id="coach-alertas"></div>
-      </section>
+  <!-- Modal de alerta -->
+  <div id="alertaModal" class="modal-overlay hidden">
+    <div class="modal-contenido">
+      <h2>"TiempoCheck"</h2>
+      <p><span id="categoriaModal"></span> ¿Deseas continuar?</p>
+      <div class="botones">
+        <button onclick="cerrarModal()">Aceptar y cerrar</button>
+        <button onclick="ignorarAlerta()">Ignorar</button>
+      </div>
+    </div>
+  </div>
 
+  <!-- Toast container -->
+  <div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
 
-<script type="application/json" id="categorias-json">
-  {{ categorias | tojson | safe }}
-</script>
-<script>
+  <!-- JSON de categorías -->
+  <script type="application/json" id="categorias-json">
+    {{ categorias | tojson | safe }}
+  </script>
 
-  window.categorias = {};
-  try {
-    const el = document.getElementById('categorias-json');
-    if (el && el.textContent) {
-      window.categorias = JSON.parse(el.textContent);
+  <script>
+    window.categorias = {};
+    try {
+      const el = document.getElementById('categorias-json');
+      if (el && el.textContent) {
+        window.categorias = JSON.parse(el.textContent);
+      }
+    } catch (e) {
+      console.error('Error parseando categorias JSON:', e);
     }
-  } catch (e) {
-    console.error('Error parseando categorias JSON:', e);
-  }
-</script>
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-<script src="{{ url_for('static', filename='js/temas.js') }}"></script>
-<script src="{{ url_for('static', filename='js/coach_toast.js')}}"></script>
+  </script>
 
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/coach_toast.js')}}"></script>
+  <script src="{{ url_for('static', filename='js/reset_back.js') }}"></script>
 </body>
+
 </html>

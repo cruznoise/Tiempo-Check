@@ -1,9 +1,0 @@
-{
-  "usuario_id": 1,
-  "hist_days": 3,
-  "holdout_days": 0,
-  "timestamp": "2025-08-28",
-  "rows_train": 0,
-  "rows_test": 0,
-  "note": "baseline-only (cold-start, <10 dias)"
-}

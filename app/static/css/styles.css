@@ -1,92 +1,140 @@
-/* --- Reset básico --- */
+/* --- Reset básico (solo para contexto) --- */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
-
 /*Variables de Temas*/
-
+.summary-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  padding: 1rem;
+  background-color: var(--card); 
+  border-radius: 12px;
+  color: var(--text);
+  text-align: center;
+  flex: 1 1 180px;
+  /* CAMBIO CLAVE: Usa el borde para la sutil separación en el tema oscuro */
+  border: 1px solid var(--accent-light); 
+  box-shadow: var(--shadow);
+}
+.chart-box {
+  background-color: var(--card);
+  box-shadow: var(--shadow);
+  padding: 25px;
+  border-radius: 15px;
+  overflow: visible;
+  /* CAMBIO CLAVE: Usa el borde para la sutil separación */
+  border: 1px solid var(--accent-light); 
+}
 /* Tema Dark Minimal */
 .theme-dark-minimal {
-  --bg: #121212;
-  --text: #e0e0e0;
-  --card: #1e1e1e;
-  --accent: #bb86fc;
-  --accent-light: #70599B;
-  --accent-dark: #3700B3;
+  --bg: #051824;           /* Fondo: Gris Azulado Oscuro/Negro */
+  --text: #C9D0D8;         /* CAMBIO CLAVE: Texto Gris Claro (Mejor Contraste) */
+  --card: #162936;         /* Tarjeta: Un tono más claro que el fondo */
+  --accent: #27e9b5;       /* Acento: Turquesa Neón (Botones, Títulos) */
+  --accent-light: #3B5265; /* Acento suave: Gris Azulado Medio (Bordes sutiles) */
+  --accent-dark: #051824;  /* Acento oscuro: Mismo que el fondo (Para hover/active) */
   --font: 'Segoe UI', sans-serif;
-  --shadow: 0 4px 10px rgba(4, 4, 4, 0.4);
-  --chart-primary-color: #070707;
-  --chart-secondary-color: #03dac6;
-  --chart-accents: #3700b3, #03dac6, #6200ee, #cf6679, #9955ee;
-  --chart-text-color: #d6d3d3;
+  --shadow: 0 4px 15px rgba(0, 0, 0, 0.4); 
+
+  --chart-primary-color: #27e9b5; /* Turquesa Neón: Color dominante de las gráficas */
+  --chart-secondary-color: #3B5265; /* Gris Azulado Medio para segundos datos */
+  --chart-accents: #27e9b5, #3B5265, #162936, #051824;
+  --chart-text-color: #C9D0D8; /* CAMBIO CLAVE: Texto de gráficas también más claro */
+}
+
+/* Tema Claro (Default) */
+.day {
+    --text: #2c3e50;               /* Texto Oscuro */
+    --bg: #f4f7f6;                 /* Fondo Claro */
+    --card: #ffffff;               /* Tarjeta Blanca */
+    --accent: #3498db;             /* Azul de Acento */
+    --accent-light: #ecf0f1;       /* Gris muy claro (para bordes) */
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    /* VARIABLES PARA CHART.JS */
+    --chart-primary-color: #3498db;     /* Azul primario */
+    --chart-secondary-color: #2980b9;   /* Azul secundario */
+    --chart-text-color: #2c3e50;        /* Color de texto oscuro para ejes */
+    /* Colores para Pie Chart (Acentos) - Clave para tu solución */
+    --chart-accents: #3498db, #2ecc71, #f1c40f, #e74c3c, #9b59b6;
 }
 
 /* Tema Claro Profesional */
-.theme-claro-profesionald {
-  --bg: #f4f7f9;
-  --text: #333333;
-  --card: #ffffff;
-  --accent: #2e69f8;
-  --accent-light: #6ea4ff;
-  --accent-dark: #1f47a6;
+.theme-claro-profesionald{
+  --bg: #F5F7FA;           /* Fondo: Gris muy claro/casi blanco */
+  --text: #333333;         /* Texto: Gris oscuro */
+  --card: #FFFFFF;         /* Tarjeta: Blanco puro */
+  --accent: #1445a0;       /* Acento: Azul Rey (Botones, Títulos) */
+  --accent-light: #DAE5F7; /* Acento suave: Bordes, líneas divisorias */
+  --accent-dark: #3465C5;  /* Acento oscuro: Para hover/active */
   --font: 'Segoe UI', sans-serif;
-  --shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  --chart-primary-color: #2e69f8;
-  --chart-secondary-color: #a4c6ff;
-  --chart-accents: #2e69f8, #f8a531, #1ec04a, #ff708d, #8068e8;
-  --chart-text-color: #333333;
+  --shadow: 0 6px 15px rgba(0, 0, 0, 0.08); /* Sombra suave para levantar las tarjetas */
+
+  --chart-primary-color: #4A89FF; /* Azul: Color dominante de las gráficas */
+  --chart-secondary-color: #FFC107; /* Amarillo para el segundo dato */
+  --chart-accents: #4A89FF, #FFC107, #3465C5, #B0BEC5;
+  --chart-text-color: #555555;
 }
 
-/* Tema Vivid */
-.theme-color-vivid {
-  --bg: #5D2B96;
-  --text: #ffffff;
-  --card: #20B0B0;
-  --accent: #FDC72B;
-  --accent-light: #FD8328;
-  --accent-dark: #F84C4C;
-  --font: 'Segoe UI', sans-serif;
-  --shadow: 0 0 10px rgba(32, 176, 176, 0.5);
-  --chart-primary-color: #FDC72B;
-  --chart-secondary-color: #F84C4C;
-  --chart-accents: #5D2B96, #20B0B0, #FDC72B, #FD8328, #F84C4C;
-  --chart-text-color: #ffffff;
+/* * ========================================
+ * TEMA VIVID (VIBRANTE Y POP - CONTRASTE OPTIMIZADO)
+ * Se usan colores Azules/Cian y Fucsia para mejor contraste.
+ * ========================================
+ */
+.theme-color-vivid { 
+  --bg: #FFEB3B;           /* Fondo principal: Amarillo */
+  --text: #ffffff;         /* Texto general: Gris oscuro para legibilidad en el fondo amarillo */ 
+  --card: #D81B60;         /* Tarjeta principal: Fucsia (Vibrante) */ 
+  --sidebar-bg: #2979FF;   /* Sidebar: Azul Eléctrico (Mejor separación) */ 
+  --card-text: #FFEB3B;    /* Texto de tarjetas (sobre Fucsia): Amarillo (Alto contraste) */
+  --accent: #2979FF;       /* Acento: Azul Eléctrico (Botones) */ 
+  --accent-light: #00BCD4; /* Acento suave/Títulos: Cian */ 
+  --accent-dark: #FF7043;  /* Acento oscuro: Naranja (Hover) */ 
+  --font: 'Segoe UI', sans-serif; 
+  --shadow: 0 8px 25px rgba(0, 0, 0, 0.4); 
+
+  --chart-primary-color: #FF7043; /* Naranja para datos */ 
+  --chart-secondary-color: #00BCD4; /* Cian para segundos datos */ 
+  --chart-accents: #FF7043, #2979FF, #00BCD4, #D81B60; 
+  --chart-text-color: #FFEB3B; /* Texto de gráficas: Amarillo para contraste */
 }
+
+
 
 /* Tema Soft Pastel */
-.theme-soft-pastel {
- --bg: #EBEBEB;
-  --text: #4a4a4a;
-  --card: #E4D5E9;
-  --accent: #FFC0CB;
-  --accent-light: #A4D9F4;
-  --accent-dark: #FDFEAA;
+ .theme-soft-pastel {
+  --bg: #F3EBD8;           /* Fondo: Yucca White (Blanco cremoso) */
+  --text: #5E5E5E;         /* Texto: Gris oscuro (legible) */
+  --card: #F9D0CE;         /* Tarjeta: Pinktone (Rosa muy pálido) */
+  --accent: #F297A0;       /* Acento: Primrose Garden (Rosa Medio) - Títulos/Botones */
+  --accent-light: #B6BB79; /* Acento suave: Lime Lollipop (Verde suave para bordes/líneas) */
+  --accent-dark: #DB7093;  /* Acento oscuro: Rosa más oscuro (Para hover/active) */
   --font: 'Quicksand', sans-serif;
   --shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-  --chart-primary-color: #FFC0CB;
-  --chart-secondary-color: #A4D9F4;
-  --chart-accents: #E4D5E9, #FFC0CB, #A4D9F4, #FDFEAA, #B2D8BB;
-  --chart-text-color: #4a4a4a;
+
+  --chart-primary-color: #F297A0; /* Primrose Garden: Color dominante de la gráfica */
+  --chart-secondary-color: #B6BB79; /* Lime Lollipop */
+  --chart-accents: #F297A0, #B6BB79, #F3EBD8, #F9D0CE;
+  --chart-text-color: #5E5E5E;
 }
 
 /* Tema Retro Terminal */
 .theme-retro-terminal {
-  --bg: #E3D9C9;
-  --text: #6A3A35;
-  --card: #B09E7B; /* Un tono café más claro y unificado */
-  --accent: #CB4538;
-  --accent-light: #5B6645;
-  --accent-dark: #913931;
-  --font: 'Monospace', monospace;
-  --shadow: none;
-  --chart-primary-color: #CB4538;
-  --chart-secondary-color: #5B6645;
-  --chart-accents: #6A3A35, #B09E7B, #CB4538, #5B6645, #E3D9C9;
-  --chart-text-color: #6A3A35;
+  --bg: #000000;           /* Fondo: Negro Puro */
+  --text: #32CD32;         /* Texto: Lima Neón (Legible) */
+  --card: #111111;         /* Tarjeta: Negro muy oscuro (Sutilmente más claro) */
+  --accent: #32CD32;       /* Acento: Lima Neón (Títulos/Botones) */
+  --accent-light: #00FF00; /* Acento suave: Verde Neón Brillante (Líneas de interfaz) */
+  --accent-dark: #000000;  /* Acento oscuro: Mismo que el fondo (Para hover/active) */
+  --font: 'Monospace', monospace; /* Fuente de Terminal clásica */
+  --shadow: none; /* Sin sombra */
+  
+  --chart-primary-color: #32CD32; /* Lima Neón: Color dominante de la gráfica */
+  --chart-secondary-color: #00FF00; /* Verde Neón Brillante */
+  --chart-accents: #32CD32, #00FF00, #111111;
+  --chart-text-color: #32CD32;
 }
-
 
 /* * ========================================
  * Estilos Base y Layout
@@ -107,6 +155,7 @@ body {
   display: flex;
   height: 100vh;
   width: 100%;
+  background-color: transparent; /* Fuerza a que se muestre el fondo del body */
 }
 
 .content {
@@ -116,6 +165,8 @@ body {
   flex-direction: column;
   gap: 30px;
   overflow: auto;
+  /* CAMBIO CLAVE: Asegura que el fondo del contenido sea el mismo que el del body */
+  background-color: var(--bg); 
 }
 
 
@@ -126,7 +177,7 @@ body {
 
 /* Sidebar */
 .sidebar {
-  background-color: var(--card);
+  background-color: var(--sidebar-bg, var(--card)); 
   width: 220px;
   padding: 20px;
   display: flex;
@@ -154,19 +205,51 @@ body {
 .sidebar nav ul li a img {
   width: 30px;
   height: 30px;
-  filter: brightness(0) invert(var(--img-invert, 1));
+  /* El filtro base debe ser neutral, el tema lo ajusta */
+  filter: brightness(0) invert(var(--img-invert, 0));
   transition: transform 0.2s ease;
 }
 
+
+/* Inversión de iconos según el tema */
 .theme-dark-minimal .sidebar nav ul li a img { --img-invert: 0.9; }
 .theme-claro-profesionald .sidebar nav ul li a img { --img-invert: 0; }
 .theme-color-vivid .sidebar nav ul li a img { --img-invert: 0; }
 .theme-soft-pastel .sidebar nav ul li a img { --img-invert: 0; }
-.theme-retro-terminal .sidebar nav ul li a img { --img-invert: 0; }
 
 .sidebar nav ul li a:hover img {
   transform: scale(1.1);
-  filter: invert(30%) sepia(80%) saturate(200%) hue-rotate(240deg) brightness(1.2);
+  /* Color del hover consistente con el acento */
+  filter: invert(30%) sepia(80%) saturate(200%) hue-rotate(240deg) brightness(1.2); 
+}
+
+
+/* Fuerza el texto de la alerta a ser muy claro en el tema Dark Minimal */
+.theme-dark-minimal .alerta-coach-contenido p {
+    color: #E5E5E5; 
+}
+/* REGLAS ESPECÍFICAS PARA RETRO TERMINAL */
+.theme-retro-terminal .sidebar nav ul li a img { 
+  --img-invert: 1; /* Invertir a Blanco */
+  /* Forzamos el color a ser el verde neón, ya que el color de texto del enlace es muy débil */
+  filter: brightness(0) invert(var(--img-invert, 1)) sepia(100%) hue-rotate(80deg) saturate(300%);
+}
+
+.sidebar nav ul li a:hover img {
+  transform: scale(1.1);
+  /* Color del hover consistente con el acento */
+  filter: invert(30%) sepia(80%) saturate(200%) hue-rotate(240deg) brightness(1.2); 
+}
+
+/* --- Reglas de Sobreescritura para Títulos --- */
+.main-header h1 {
+  font-size: 28px;
+  color: var(--accent); /* Se adapta al acento principal de cada tema */
+}
+
+/* Título de Dashboard en Retro Terminal usa el color más brillante */
+.theme-retro-terminal .main-header h1 {
+  color: var(--accent-light);
 }
 
 /* Header principal */
@@ -177,8 +260,8 @@ body {
 }
 
 .main-header h1 {
-  font-size: 28px;
-  color: var(--accent);
+   font-size: 28px;
+  color: var(--accent-light);
 }
 
 /* Barra de controles */
@@ -189,7 +272,7 @@ body {
   flex-wrap: wrap;
   gap: 20px;
   padding: 1rem;
-  background-color: var(--card);
+  background-color: var(--card); /* Usa la variable --card */
   border-radius: 12px;
   box-shadow: var(--shadow);
   overflow: visible;
@@ -215,9 +298,10 @@ body {
 
 /* Componentes de formularios */
 select, input[type="date"], button {
+  /* **CORRECCIÓN:** Para que el botón de estilo visual se vea con el color de acento */
   padding: 6px 10px;
   background-color: var(--accent);
-  color: var(--text);
+  color: var(--card); /* Texto de botón en color de tarjeta para contraste */
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -227,13 +311,56 @@ button:hover {
   filter: brightness(1.1);
 }
 
-/* Secciones de gráficas */
-.graphs {
+/* === ESTRUCTURA DE GRID PARA DASHBOARD (Nuevo Layout) === */
+.dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  justify-content: center;
-  gap: 50px;
+  grid-template-columns: 3fr 1fr; /* 3 partes para gráficas, 1 parte para side-panels */
+  gap: 30px;
   overflow: visible;
+}
+
+.main-charts {
+  display: grid;
+  /* Dos columnas (una estrecha para pie charts, una ancha para bar/line charts) y dos filas */
+  grid-template-columns: 1fr 2fr; 
+  gap: 30px;
+}
+
+.side-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.panel-box {
+  background-color: var(--card);
+  box-shadow: var(--shadow);
+  padding: 25px;
+  border-radius: 15px;
+  height: 100%;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.panel-box h3, .chart-box h3 {
+  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--accent); /* Todos los títulos usan el color de acento */
+}
+
+/* Estilos para el contenido de los paneles */
+.panel-box ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+    text-align: left;
+}
+.panel-box ul li {
+    padding: 5px 0;
+    border-bottom: 1px dashed var(--accent-light);
 }
 
 .chart-box {
@@ -242,13 +369,6 @@ button:hover {
   padding: 25px;
   border-radius: 15px;
   overflow: visible;
-}
-
-.chart-box h3 {
-  margin-bottom: 15px;
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--accent);
 }
 
 .chart-box table {
@@ -275,7 +395,7 @@ canvas {
   gap: 1rem;
   margin: 2rem 0;
   padding: 1rem;
-  background-color: var(--card);
+  background-color: var(--card); /* Usa la variable --card */
   border-radius: 12px;
   box-shadow: var(--shadow);
 }
@@ -306,10 +426,18 @@ canvas {
 .summary-card p {
   font-size: 1.3rem;
   font-weight: bold;
-  color: var(--text);
+  color: var(--accent);
 }
 
-
+/* Media Query para pantallas pequeñas */
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr; /* Se apila todo en una columna */
+  }
+  .main-charts {
+    grid-template-columns: 1fr; /* Las gráficas también se apilan */
+  }
+}
 /* * ========================================
  * Componentes de Alertas y Login
  * ========================================
@@ -391,28 +519,19 @@ canvas {
 }
 
 .input-group {
-  position: relative;
   margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center; 
+  gap: 15px; 
 }
 
 .input-group-icon {
-  position: absolute;
-  left: 15px;
-  top: 100%;
-  transform: translateY(-50%);
   color: #ffffff;
   transition: color 0.3s ease;
 }
 
 .login-container input {
-  width: 100%;
-  padding: 0.85rem 1rem 0.85rem 3rem;
-  border-radius: 0.8rem;
-  border: 1px solid var(--accent-light);
-  background-color: #ffffff;
-  color: var(--text);
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
+  padding: 0.85rem 1rem 0.85rem 1rem; 
 }
 
 .login-container input::placeholder {
@@ -501,269 +620,60 @@ canvas {
   z-index: 999999 !important;
 }
 
-/* --- Estilos para el login --- */
-.login-container {
-  background-color: var(--card);
-  padding: 2.5rem;
-  border-radius: 1.5rem;
-  box-shadow: var(--shadow);
-  width: 100%;
-  max-width: 420px;
-  margin: 2rem auto;
-  transition: all 0.3s ease;
+/* Contenedor del Tooltip: Necesita posición relativa */
+.info-coach-tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help; /* Indica que es interactivo */
 }
 
-.login-container h2 {
-  text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  color: var(--accent);
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+/* El cuadro de texto del Tooltip: Inicialmente oculto */
+.coach-tooltip-text {
+    visibility: hidden;
+    width: 280px; 
+    
+    /* Propiedades visuales inspiradas en tooltips oscuros */
+    background-color: var(--card-darker, #2c2f33); /* Un color oscuro para contraste */
+    color: white;
+    border: 1px solid var(--accent-light, #6c757d);
+    
+    text-align: left;
+    border-radius: 8px;
+    padding: 15px;
+    
+    /* Posicionamiento para que aparezca ARRIBA y CENTRADO */
+    position: absolute;
+    z-index: 10000; /* Alto z-index para asegurar visibilidad */
+    bottom: 150%; /* Más alto para dejar espacio */
+    left: 50%;
+    transform: translateX(-50%); /* Centrado horizontalmente */
+    
+    /* Animación */
+    opacity: 0;
+    transition: opacity 0.3s, bottom 0.3s;
+    
+    font-size: 0.9em;
+    line-height: 1.4;
+    white-space: normal; /* Permite saltos de línea y ajuste de texto */
 }
 
-.input-group {
-  position: relative;
-  margin-bottom: 1.5rem;
+/* Mostrar el tooltip al pasar el ratón */
+.info-coach-tooltip:hover .coach-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    bottom: 120%; /* Mueve un poco hacia abajo al aparecer */
 }
 
-.input-group-icon {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text);
-  transition: color 0.3s ease;
-}
-
-.login-container input {
-  width: 100%;
-  padding: 0.85rem 1rem 0.85rem 3rem;
-  border-radius: 0.8rem;
-  border: 1px solid var(--accent-light);
-  background-color: var(--card);
-  color: var(--text);
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-}
-
-.login-container input::placeholder {
-  color: var(--text);
-  opacity: 0.6;
-}
-
-.login-container input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 10px var(--accent-light);
-  outline: none;
-}
-
-.input-group:focus-within .input-group-icon {
-  color: var(--accent);
-}
-
-.login-btn, .register-btn {
-  width: 100%;
-  padding: 0.85rem;
-  border-radius: 1rem;
-  border: none;
-  font-weight: 600;
-  font-size: 1rem;
-  color: white;
-  background-color: var(--accent);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.login-btn:hover, .register-btn:hover {
-  background-color: var(--accent-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-}
-
-.divider {
-  text-align: center;
-  margin: 1.5rem 0;
-  position: relative;
-  color: var(--text);
-}
-
-.divider span {
-  background-color: var(--card);
-  padding: 0 0.8rem;
-  font-weight: 500;
-  position: relative;
-  z-index: 1;
-}
-
-.divider::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  background-color: var(--accent-light);
-  z-index: 0;
-}
-
-.registro-texto {
-  text-align: center;
-  margin-top: 1rem;
-}
-
-.registro-texto a {
-  color: var(--accent);
-  font-weight: 600;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.registro-texto a:hover {
-  filter: brightness(1.2);
-}
-
-.hidden {
-  display: none;
-}
-
-/* --- SOLUCIÓN PARA LOS TOOLTIPS DE CHART.JS --- */
-.chartjs-tooltip {
-  opacity: 1 !important;
-  z-index: 999999 !important;
-}
-
-
-/* --- Estilos para el login --- */
-.login-container {
-  background-color: var(--card);
-  padding: 2.5rem;
-  border-radius: 1.5rem;
-  box-shadow: var(--shadow);
-  width: 100%;
-  max-width: 420px;
-  margin: 2rem auto;
-  transition: all 0.3s ease;
-}
-
-.login-container h2 {
-  text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  color: var(--accent);
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.input-group {
-  position: relative;
-  margin-bottom: 1.5rem;
-}
-
-.input-group-icon {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text);
-  transition: color 0.3s ease;
-}
-
-.login-container input {
-  width: 100%;
-  padding: 0.85rem 1rem 0.85rem 3rem;
-  border-radius: 0.8rem;
-  border: 1px solid var(--accent-light);
-  background-color: var(--card);
-  color: var(--text);
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-}
-
-.login-container input::placeholder {
-  color: var(--text);
-  opacity: 0.6;
-}
-
-.login-container input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 10px var(--accent-light);
-  outline: none;
-}
-
-.input-group:focus-within .input-group-icon {
-  color: var(--accent);
-}
-
-.login-btn, .register-btn {
-  width: 100%;
-  padding: 0.85rem;
-  border-radius: 1rem;
-  border: none;
-  font-weight: 600;
-  font-size: 1rem;
-  color: white;
-  background-color: var(--accent);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.login-btn:hover, .register-btn:hover {
-  background-color: var(--accent-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-}
-
-.divider {
-  text-align: center;
-  margin: 1.5rem 0;
-  position: relative;
-  color: var(--text);
-}
-
-.divider span {
-  background-color: var(--card);
-  padding: 0 0.8rem;
-  font-weight: 500;
-  position: relative;
-  z-index: 1;
-}
-
-.divider::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  background-color: var(--accent-light);
-  z-index: 0;
-}
-
-.registro-texto {
-  text-align: center;
-  margin-top: 1rem;
-}
-
-.registro-texto a {
-  color: var(--accent);
-  font-weight: 600;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.registro-texto a:hover {
-  filter: brightness(1.2);
-}
-
-.hidden {
-  display: none;
-}
-
-/* --- SOLUCIÓN PARA LOS TOOLTIPS DE CHART.JS --- */
-.chartjs-tooltip {
-  opacity: 1 !important;
-  z-index: 999999 !important;
+/* Flecha apuntando al ícono */
+.coach-tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%; /* En la parte inferior del tooltip box */
+    left: 50%;
+    margin-left: -8px; /* Media del ancho del borde para centrar */
+    border-width: 8px;
+    border-style: solid;
+    border-color: var(--card-darker, #2c2f33) transparent transparent transparent; /* Mismo color del fondo */
 }
 
 /* --- Estilos para el login --- */
@@ -898,6 +808,62 @@ canvas {
   z-index: 999999 !important;
 }
 
+/* Contenedor del Tooltip: Necesita posición relativa */
+.info-coach-tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help; /* Indica que es interactivo */
+}
+
+/* El cuadro de texto del Tooltip: Inicialmente oculto */
+.coach-tooltip-text {
+    visibility: hidden;
+    width: 280px; 
+    
+    /* Propiedades visuales inspiradas en tooltips oscuros */
+    background-color: var(--card-darker, #2c2f33); /* Un color oscuro para contraste */
+    color: white;
+    border: 1px solid var(--accent-light, #6c757d);
+    
+    text-align: left;
+    border-radius: 8px;
+    padding: 15px;
+    
+    /* Posicionamiento para que aparezca ARRIBA y CENTRADO */
+    position: absolute;
+    z-index: 10000; /* Alto z-index para asegurar visibilidad */
+    bottom: 150%; /* Más alto para dejar espacio */
+    left: 50%;
+    transform: translateX(-50%); /* Centrado horizontalmente */
+    
+    /* Animación */
+    opacity: 0;
+    transition: opacity 0.3s, bottom 0.3s;
+    
+    font-size: 0.9em;
+    line-height: 1.4;
+    white-space: normal; /* Permite saltos de línea y ajuste de texto */
+}
+
+/* Mostrar el tooltip al pasar el ratón */
+.info-coach-tooltip:hover .coach-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    bottom: 120%; /* Mueve un poco hacia abajo al aparecer */
+}
+
+/* Flecha apuntando al ícono */
+.coach-tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%; /* En la parte inferior del tooltip box */
+    left: 50%;
+    margin-left: -8px; /* Media del ancho del borde para centrar */
+    border-width: 8px;
+    border-style: solid;
+    border-color: var(--card-darker, #2c2f33) transparent transparent transparent; /* Mismo color del fondo */
+}
+
 /* --- Estilos para el login --- */
 .login-container {
   background-color: var(--card);
@@ -1022,6 +988,388 @@ canvas {
 
 .hidden {
   display: none;
+}
+
+/* --- SOLUCIÓN PARA LOS TOOLTIPS DE CHART.JS --- */
+.chartjs-tooltip {
+  opacity: 1 !important;
+  z-index: 999999 !important;
+}
+
+/* Contenedor del Tooltip: Necesita posición relativa */
+.info-coach-tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help; /* Indica que es interactivo */
+}
+
+/* El cuadro de texto del Tooltip: Inicialmente oculto */
+.coach-tooltip-text {
+    visibility: hidden;
+    width: 280px; 
+    
+    /* Propiedades visuales inspiradas en tooltips oscuros */
+    background-color: var(--card-darker, #2c2f33); /* Un color oscuro para contraste */
+    color: white;
+    border: 1px solid var(--accent-light, #6c757d);
+    
+    text-align: left;
+    border-radius: 8px;
+    padding: 15px;
+    
+    /* Posicionamiento para que aparezca ARRIBA y CENTRADO */
+    position: absolute;
+    z-index: 10000; /* Alto z-index para asegurar visibilidad */
+    bottom: 150%; /* Más alto para dejar espacio */
+    left: 50%;
+    transform: translateX(-50%); /* Centrado horizontalmente */
+    
+    /* Animación */
+    opacity: 0;
+    transition: opacity 0.3s, bottom 0.3s;
+    
+    font-size: 0.9em;
+    line-height: 1.4;
+    white-space: normal; /* Permite saltos de línea y ajuste de texto */
+}
+
+/* Mostrar el tooltip al pasar el ratón */
+.info-coach-tooltip:hover .coach-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    bottom: 120%; /* Mueve un poco hacia abajo al aparecer */
+}
+
+/* Flecha apuntando al ícono */
+.coach-tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%; /* En la parte inferior del tooltip box */
+    left: 50%;
+    margin-left: -8px; /* Media del ancho del borde para centrar */
+    border-width: 8px;
+    border-style: solid;
+    border-color: var(--card-darker, #2c2f33) transparent transparent transparent; /* Mismo color del fondo */
+}
+
+/* --- Estilos para el login --- */
+.login-container {
+  background-color: var(--card);
+  padding: 2.5rem;
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 420px;
+  margin: 2rem auto;
+  transition: all 0.3s ease;
+}
+
+.login-container h2 {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--accent);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.input-group-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text);
+  transition: color 0.3s ease;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 3rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--accent-light);
+  background-color: var(--card);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.login-container input::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.login-container input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-light);
+  outline: none;
+}
+
+.input-group:focus-within .input-group-icon {
+  color: var(--accent);
+}
+
+.login-btn, .register-btn {
+  width: 100%;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  background-color: var(--accent);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover, .register-btn:hover {
+  background-color: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+  color: var(--text);
+}
+
+.divider span {
+  background-color: var(--card);
+  padding: 0 0.8rem;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--accent-light);
+  z-index: 0;
+}
+
+.registro-texto {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.registro-texto a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.registro-texto a:hover {
+  filter: brightness(1.2);
+}
+
+.hidden {
+  display: none;
+}
+
+/* --- SOLUCIÓN PARA LOS TOOLTIPS DE CHART.JS --- */
+.chartjs-tooltip {
+  opacity: 1 !important;
+  z-index: 999999 !important;
+}
+
+/* Contenedor del Tooltip: Necesita posición relativa */
+.info-coach-tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help; /* Indica que es interactivo */
+}
+
+/* El cuadro de texto del Tooltip: Inicialmente oculto */
+.coach-tooltip-text {
+    visibility: hidden;
+    width: 280px; 
+    
+    /* Propiedades visuales inspiradas en tooltips oscuros */
+    background-color: var(--card-darker, #2c2f33); /* Un color oscuro para contraste */
+    color: white;
+    border: 1px solid var(--accent-light, #6c757d);
+    
+    text-align: left;
+    border-radius: 8px;
+    padding: 15px;
+    
+    /* Posicionamiento para que aparezca ARRIBA y CENTRADO */
+    position: absolute;
+    z-index: 10000; /* Alto z-index para asegurar visibilidad */
+    bottom: 150%; /* Más alto para dejar espacio */
+    left: 50%;
+    transform: translateX(-50%); /* Centrado horizontalmente */
+    
+    /* Animación */
+    opacity: 0;
+    transition: opacity 0.3s, bottom 0.3s;
+    
+    font-size: 0.9em;
+    line-height: 1.4;
+    white-space: normal; /* Permite saltos de línea y ajuste de texto */
+}
+
+/* Mostrar el tooltip al pasar el ratón */
+.info-coach-tooltip:hover .coach-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    bottom: 120%; /* Mueve un poco hacia abajo al aparecer */
+}
+
+/* Flecha apuntando al ícono */
+.coach-tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%; /* En la parte inferior del tooltip box */
+    left: 50%;
+    margin-left: -8px; /* Media del ancho del borde para centrar */
+    border-width: 8px;
+    border-style: solid;
+    border-color: var(--card-darker, #2c2f33) transparent transparent transparent; /* Mismo color del fondo */
+}
+
+/* --- Estilos para el login --- */
+.login-container {
+  background-color: var(--card);
+  padding: 2.5rem;
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 420px;
+  margin: 2rem auto;
+  transition: all 0.3s ease;
+}
+
+.login-container h2 {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--accent);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.input-group-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text);
+  transition: color 0.3s ease;
+}
+
+.login-container input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 3rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--accent-light);
+  background-color: var(--card);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.login-container input::placeholder {
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.login-container input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-light);
+  outline: none;
+}
+
+.input-group:focus-within .input-group-icon {
+  color: var(--accent);
+}
+
+.login-btn, .register-btn {
+  width: 100%;
+  padding: 0.85rem;
+  border-radius: 1rem;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  background-color: var(--accent);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover, .register-btn:hover {
+  background-color: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+  color: var(--text);
+}
+
+.divider span {
+  background-color: var(--card);
+  padding: 0 0.8rem;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--accent-light);
+  z-index: 0;
+}
+
+.registro-texto {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.registro-texto a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.registro-texto a:hover {
+  filter: brightness(1.2);
+}
+
+.hidden {
+  display: none;
+}
+
+/* --- SOLUCIÓN PARA LOS TOOLTIPS DE CHART.JS --- */
+.chartjs-tooltip {
+  opacity: 1 !important;
+  z-index: 999999 !important;
 }
 
 /* --- Estilos generales del Login--- */
@@ -1327,4 +1675,749 @@ body {
 }
 .severidad-low {
   border-left: 4px solid #28a745; /* verde */
+}
+/* * ========================================
+ * Estilos para Menú Desplegable de Configuración
+ * ========================================
+ */
+.config-dropdown {
+    /* Posicionamiento y Apariencia */
+    position: absolute; 
+    left: 260px; /* Nuevo valor: 220px del sidebar + 40px de padding/separación */
+    top: 20px; 
+    width: 350px; /* Lo hacemos un poco más ancho */
+    z-index: 9000;
+    
+    /* Diseño de Tarjeta Flotante */
+    background-color: var(--card);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px; /* Aumentamos el padding */
+    border: 1px solid var(--accent-light);
+    transform-origin: top left; /* Origen de la animación a la izquierda */
+    animation: fadeInScaleLeft 0.2s ease-out; 
+}
+@keyframes fadeInScaleLeft {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateX(-10px); /* Entra desde la izquierda */
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateX(0);
+    }
+}
+/* Mejora de apariencia general */
+.menu-box {
+    text-align: left; /* Alineamos todo el texto a la izquierda */
+    background: transparent; /* Quitamos el fondo tile-box extra */
+    box-shadow: none;
+    padding: 0;
+}
+
+.menu-title {
+    font-size: 1.5rem;
+    color: var(--accent);
+    margin-bottom: 20px;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* Botones y Selectores */
+.menu-button, .menu-button-small, .btn-restore, .btn-danger {
+    /* Aseguramos que los botones de menú tengan un fondo de acento sólido */
+    background-color: var(--accent-dark); /* Color más oscuro para que el texto blanco resalte */
+    color: white; 
+}
+
+/* Animación para aparecer */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.config-dropdown.hidden {
+    display: none;
+}
+
+/* Títulos y separadores */
+.menu-title {
+    font-size: 1.2rem;
+    color: var(--accent);
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.menu-section {
+    padding: 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.menu-section label {
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 5px;
+    font-size: 0.95rem;
+}
+
+.menu-separator {
+    border: 0;
+    height: 1px;
+    background-color: var(--accent-light);
+    margin: 10px 0;
+}
+
+/* Estilos de Botones y Selectores */
+.menu-button, .menu-select, .menu-button-small, .btn-restore, .btn-danger {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+/* Botón principal (Administrar / Reiniciar peligro) */
+.menu-button {
+    background-color: var(--accent);
+    color: var(--card); /* El texto es el color de la tarjeta */
+}
+.menu-button:hover {
+    filter: brightness(1.1);
+}
+
+/* Contenedor para botones pequeños (Exportar) */
+.menu-buttons-group {
+    display: flex;
+    gap: 10px;
+}
+.menu-button-small {
+    flex: 1;
+    background-color: var(--accent-light);
+    color: var(--text);
+    padding: 8px;
+    font-size: 0.9em;
+}
+.menu-button-small:hover {
+    filter: brightness(1.2);
+}
+
+/* Selectores de rango */
+.menu-select {
+    background-color: var(--card);
+    color: var(--text);
+    border: 1px solid var(--accent-light);
+    padding: 8px 10px;
+}
+
+/* Estilo para el botón de Reiniciar cuenta */
+.btn-danger {
+    background-color: #dc3545; /* Rojo de peligro */
+    color: white;
+}
+.btn-danger:hover {
+    background-color: #c82333;
+    transform: translateY(-1px);
+}
+
+/* Estilo para el input de archivo (Restaurar) */
+.restore-form input[type="file"] {
+    display: block;
+    width: 100%;
+    margin: 5px 0 10px 0;
+    border: 1px solid var(--accent-light);
+    border-radius: 6px;
+    padding: 5px;
+    background-color: var(--card);
+    color: var(--text);
+}
+/* ========================================
+ * ESTILOS ESPECÍFICOS PARA LA VISTA DE METAS (DISEÑO GRID)
+ * ========================================
+ */
+.metas-limites-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr 1fr; 
+  grid-template-rows: auto auto auto auto; 
+  gap: 20px;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 20px;
+}
+
+.tile-box {
+  background-color: var(--card); 
+  box-shadow: var(--shadow);
+  padding: 25px;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  color: var(--text); 
+  min-height: 150px; 
+}
+
+/* --- Posicionamiento de Bloques --- */
+
+.logros-panel {
+  grid-column: 1 / 2;
+  grid-row: 1 / 3; 
+}
+.sug-limits-panel {
+    grid-column: 1 / 2;
+    grid-row: 3 / 5; 
+    justify-content: flex-start; 
+}
+.add-goal-box { grid-column: 2 / 3; grid-row: 1 / 2; }
+.list-metas { grid-column: 3 / 4; grid-row: 1 / 2; }
+.status-box { grid-column: 2 / 4; grid-row: 2 / 3; } 
+.add-limit-box { grid-column: 2 / 3; grid-row: 3 / 4; }
+.list-limites { grid-column: 3 / 4; grid-row: 3 / 4; }
+.status-limit-box { grid-column: 2 / 4; grid-row: 4 / 5; } 
+
+
+/* --- Estilos de Apariencia de Contenido --- */
+
+/* Título principal "Metas y logros" */
+.logros-panel .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text); /* Debería ser el color de texto del tema */
+    margin-bottom: 5px;
+}
+/* Subtítulos de las cajas (Logros desbloqueables, Sugerencias) */
+.logros-panel .box-subtitle, .sug-limits-panel .box-subtitle {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text); 
+    margin-bottom: 10px;
+}
+.logros-panel .scroll-note {
+    font-size: 0.9em;
+    color: var(--accent-light);
+    margin-bottom: 15px;
+}
+
+/* Contenido con barra de desplazamiento para Logros */
+.scrollable-content {
+    overflow-y: auto; 
+    flex-grow: 1; 
+    padding-right: 10px; /* Esto empuja el contenido para que el scrollbar no lo tape */
+    
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+    &::-webkit-scrollbar-track {
+        background: transparent; /* Fondo transparente o muy sutil */
+    }
+    &::-webkit-scrollbar-thumb {
+        background-color: var(--accent-light, #6c757d); /* Un color que contraste suavemente */
+        border-radius: 10px;
+        border: 2px solid var(--card, #20232a); /* Borde para "flotar" sobre el fondo de la caja */
+    }
+  
+    &::-webkit-scrollbar-thumb:hover {
+        background-color: var(--accent, #007bff); /* Color más brillante al hacer hover */
+    }
+    scrollbar-width: thin; 
+    scrollbar-color: var(--accent-light, #6c757d) transparent;
+}
+/* --- Estilos para el Botón de Cálculo (DENTRO DE LA CAJITA) --- */
+
+.horizontal-scroll-wrapper {
+    /* Permite el desplazamiento horizontal */
+    overflow-x: auto; 
+    /* Oculta el desplazamiento vertical si no es necesario */
+    overflow-y: hidden; 
+    
+    /* Mantiene el wrapper al 100% del ancho del chart-box */
+    width: 100%; 
+    /* Para que el chart-box pueda dar espacio al scrollbar */
+    padding-bottom: 10px; 
+    
+    /* --- Estilización de la Barra de Desplazamiento Horizontal --- */
+
+    /* 1. Define la altura de la barra horizontal */
+    &::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    /* 2. Define el color de fondo (track) */
+    &::-webkit-scrollbar-track {
+        background: var(--card-darker, #2c2f33); 
+    }
+
+    /* 3. Define el estilo y color del "pulgar" (thumb) */
+    &::-webkit-scrollbar-thumb {
+        background-color: var(--accent-light, #6c757d); 
+        border-radius: 10px;
+        border: 1px solid var(--card, #20232a); /* Borde para visualización */
+    }
+    
+    /* 4. Estilo al pasar el ratón sobre el pulgar */
+    &::-webkit-scrollbar-thumb:hover {
+        background-color: var(--accent, #007bff); 
+    }
+    
+    /* 5. Para Firefox */
+    scrollbar-width: thin; 
+    scrollbar-color: var(--accent-light, #6c757d) var(--card-darker, #2c2f33);
+}
+/* === Scroll y slider interno dentro del chart-box de sitios === */
+.chart-box-scrollable {
+  position: relative;
+  overflow-y: auto;
+  max-height: 420px; /* Controla el alto visible */
+  padding-right: 10px;
+}
+
+/* Contenedor del filtro dentro de la gráfica */
+.chart-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: var(--card);
+  padding: 10px;
+  border-radius: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.chart-filter label {
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.chart-filter input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+
+.calculate-box {
+    align-self: flex-start;
+    /* Usa la variable de acento suave para el fondo de la caja */
+    background-color: var(--accent-light); 
+    padding: 10px 15px; 
+    border-radius: 8px;
+    margin-bottom: 15px; 
+    box-shadow: var(--shadow);
+}
+.calculate-btn {
+    background-color: transparent; 
+    color: var(--text); /* Color del texto del tema */
+    border: none;
+    padding: 0;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+}
+.calculate-btn:hover {
+    filter: brightness(1.2);
+}
+
+/* Asegura que los formularios usen los colores del tema */
+.tile-form select, .tile-form input, .tile-form button {
+  background-color: var(--accent-light); 
+  color: var(--text);
+  border: 1px solid var(--accent-light);
+}
+.tile-form button[type="submit"] {
+    background-color: var(--accent);
+    color: var(--card); 
+}
+
+/* ========================================
+ * Estilos para el Contenedor de Alertas del Coach (Sidebar)
+ * ========================================
+ */
+
+.alerta-coach-container {
+   margin-top: 20px;
+    padding: 10px;
+    background-color: var(--bg); /* Fondo sutil para contener las alertas */
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.alerta-coach-titulo {
+    /* Contenedor del título para mejor control */
+    padding: 5px 0;
+}
+
+.alerta-coach-titulo p {
+    font-size: 0.9rem;
+    font-weight: 700; /* Más peso para el título */
+    color: var(--accent); /* Título en color de acento */
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+/* Caja individual de la alerta */
+.alerta-coach-box {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    background-color: var(--card); 
+    border: 1px solid var(--accent-light);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.alerta-coach-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Sombra más pronunciada en hover */
+    border-color: var(--accent); /* Resaltar el borde */
+}
+
+/* Estilo del icono (La burbuja con el signo de exclamación) */
+.alerta-coach-icon {
+     min-width: 35px; 
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px; 
+    font-weight: bold;
+    color: white; 
+    position: relative; 
+    z-index: 10;
+    /* CAMBIO CLAVE: Usa el acento del tema para el color por defecto (ej. bajo/info) */
+    background-color: var(--accent); 
+}
+
+/* El "rabillo" de la burbuja */
+.alerta-coach-icon::after {
+    content: '';
+    position: absolute;
+    bottom: -8px; 
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg); 
+    width: 15px; 
+    height: 15px; 
+    background-color: inherit; 
+    border-bottom-right-radius: 3px; 
+    z-index: 9; 
+}
+
+/* Ajustes para el texto dentro del icono (el signo '!') */
+.alerta-coach-icon span {
+    font-size: 24px; /* Hacemos el signo más grande */
+    color: white; 
+    font-weight: 900; 
+    line-height: 1; 
+    font-family: 'Arial', sans-serif; 
+}
+
+/* Contenido de texto */
+.alerta-coach-contenido {
+    flex-grow: 1;
+}
+
+.alerta-coach-contenido p {
+    font-size: 0.9rem; /* Hacemos el texto un poco más grande */
+    color: var(--text); 
+    margin: 0;
+    line-height: 1.3;
+}
+
+/* -------------------------------------
+ * Estilos para el Estado de Carga (Loading)
+ * ------------------------------------- */
+
+.alerta-coach-container .loading-box {
+    padding: 15px; /* Más padding */
+    text-align: center;
+    color: var(--text);
+    background-color: var(--card); 
+    border-radius: 8px;
+    border: 1px solid var(--accent-light);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.alerta-coach-container .loading-box p:last-child {
+    font-size: 0.8em;
+    color: var(--accent-light);
+    margin-top: 5px;
+}
+
+/* --- Ajuste de espaciado en la Barra Lateral --- */
+.sidebar {
+  /* Controla el espaciado interno del sidebar */
+  padding: 20px; 
+  display: flex;
+  flex-direction: column;
+  /* Espacio entre los bloques principales del sidebar (título, nav, alertas) */
+  gap: 30px; 
+}
+
+/* Espacio debajo del subtítulo del sidebar */
+.sidebar p {
+    margin-bottom: 20px; /* Asegura un buen espacio antes de la navegación */
+}
+
+/* --- Ajuste de espaciado en los Formularios de Administración --- */
+/* Esta regla añade espacio entre el título H3 y el formulario tile-form */
+.admin-box h3 {
+  margin-bottom: 20px; 
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+/* Esta regla ya debe estar en tu CSS, pero la repetimos para claridad:
+   controla el espaciado interno de las cajas de administración. */
+.admin-box {
+  padding: 25px;
+}
+
+/* ========================================
+ * ESTILOS ESPECÍFICOS PARA LA VISTA DE ADMINISTRACIÓN (DISEÑO GRID)
+ * ========================================
+ */
+
+/* Contenedor principal para el diseño de 2x2 */
+.admin-grid-layout {
+  display: grid;
+  /* Dos columnas de igual tamaño (1fr 1fr) */
+  grid-template-columns: 1fr 1fr; 
+  /* Una fila para formularios (auto) y una fila flexible para las listas (1fr) */
+  grid-template-rows: auto 1fr; 
+  gap: 30px; /* Espacio entre las cajas */
+  width: 100%;
+  height: 100%;
+  padding-bottom: 20px;
+}
+
+/* Estilo base para todas las cajas (recuerda que usa variables como --card, --shadow, etc.) */
+.admin-box {
+  background-color: var(--card); 
+  box-shadow: var(--shadow);
+  padding: 25px;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+  min-height: 150px;
+  border: 1px solid var(--accent-light); /* Borde sutil para separación */
+}
+
+/* Estilo específico para las cajas de formulario (fila superior) */
+.admin-box.form-box {
+    justify-content: center; /* Centra el contenido verticalmente */
+    min-height: 120px;
+}
+
+/* Estilo específico para las cajas de lista (fila inferior) */
+.admin-box.list-box {
+    overflow: hidden; /* Importante para que el scrollable-content funcione */
+    /* Estas cajas caen automáticamente en la segunda fila del grid 1fr */
+}
+
+/* Contenido con barra de desplazamiento para las listas inferiores */
+.scrollable-list-content {
+    overflow-y: auto; 
+    flex-grow: 1; /* Permite que el contenido tome el espacio restante para el scroll */
+    padding-right: 10px; /* Espacio para que se vea la barra de desplazamiento */
+    margin-top: 15px; 
+}
+
+/* Estilo para cada fila dentro de las listas (reemplazando filas de tabla) */
+.list-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--accent-light); 
+}
+.list-item-row:last-child {
+    border-bottom: none;
+}
+
+/* Media Query para pantallas pequeñas (opcional, pero recomendado) */
+@media (max-width: 900px) {
+  .admin-grid-layout {
+    grid-template-columns: 1fr; /* Apila todo en una sola columna en móviles */
+    grid-template-rows: auto; 
+  }
+}
+
+/* --- Reglas de Sobreescritura para Títulos --- */
+/* (Ya existe en tu archivo, pero aseguramos el color correcto) */
+.main-header h1 {
+  font-size: 28px;
+  /* El color por defecto debe ser el texto, que es claro en temas oscuros */
+  color: var(--text); 
+}
+/* Forzar el color de acento brillante en Retro Terminal y Dark Minimal (para mejor look) */
+.theme-retro-terminal .main-header h1 {
+  /* Usamos el color de acento brillante del tema Retro Terminal */
+  color: var(--accent); 
+}
+.theme-dark-minimal .main-header h1 {
+  /* Usamos el acento Turquesa Neón del tema Dark Minimal */
+  color: var(--accent); 
+}
+/* Tema Claro Profesional usa --accent: #1445a0 (Azul oscuro) */
+.theme-claro-profesionald .main-header h1 {
+  color: var(--accent); /* Usar el azul oscuro */
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* Sombra sutil para "levantar" */
+}
+
+/* Aseguramos que el fondo del header sea transparente si no queremos un color extra */
+.main-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: transparent; /* Asegura que el color de fondo sea el del .content (var(--bg)) */
+  padding: 0;
+}
+
+/* --- Ajustes en las filas de lista (Dominios y Categorías) --- */
+
+.list-item-row {
+    display: flex;
+    justify-content: space-between; /* Distribuye el espacio entre los grupos */
+    align-items: center;
+    padding: 10px 0; /* Más espacio vertical */
+    border-bottom: 1px dashed var(--accent-light);
+}
+
+/* Estilo para el texto del dominio/categoría (el 'span') */
+.list-item-row span {
+    /* CAMBIO CLAVE: Asignar un ancho máximo para justificarlo a la izquierda */
+    /* Permite que el texto se trunque si es muy largo, dejando espacio a la derecha */
+    flex-basis: 50%; 
+    min-width: 150px;
+    padding-right: 15px;
+    font-size: 0.95rem;
+    color: var(--text);
+    /* Aseguramos que el texto largo se oculte si es necesario */
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis; 
+}
+
+/* Contenedor de las acciones (select + buttons) */
+.list-item-row form {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    /* CAMBIO CLAVE: Agrupamos las acciones a la derecha */
+    flex-shrink: 0; 
+}
+
+/* Mejorar el aspecto de los selectores en la lista */
+.list-item-row select {
+    padding: 6px 8px; 
+    border-radius: 6px;
+    border: 1px solid var(--accent-light);
+    background-color: var(--card); /* Fondo de tarjeta */
+    color: var(--text);
+    font-size: 0.85rem;
+    width: 130px; /* Ancho fijo para alineación */
+    text-align: left;
+}
+
+/* Botones de acción (Guardar/Eliminar) */
+.list-item-row button {
+    /* Ajustamos el tamaño para que sean uniformes y compactos */
+    padding: 6px 10px; 
+    font-size: 0.8rem; 
+    border-radius: 6px;
+    /* Sobreescribe los estilos inline del HTML */
+    width: auto !important; 
+}
+
+/* Alineación de los inputs en la caja de formulario superior */
+.admin-box.form-box .tile-form {
+    display: flex;
+    flex-direction: column; /* Apila inputs */
+    gap: 10px;
+    align-items: stretch; /* Estira los elementos al ancho completo */
+}
+
+.admin-box.form-box .tile-form input,
+.admin-box.form-box .tile-form select,
+.admin-box.form-box .tile-form button {
+    width: 100%;
+}
+
+/* === GRID principal del dashboard === */
+.dashboard-grid {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.main-charts {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  grid-auto-rows: 350px;
+  gap: 20px;
+  width: 100%;
+  max-width: var(--max-content-width, 1200px); /* se iguala al summary-bar */
+  margin: 0 auto;
+}
+
+/* Asignar posiciones específicas */
+.box-categoria { grid-column: 1; grid-row: 1; }
+.box-tiempo-sitio { grid-column: 2; grid-row: 1; }
+.box-prediccion { grid-column: 3; grid-row: 1; }
+
+.box-horario { grid-column: 1; grid-row: 2; }
+.box-tiempo-dia { grid-column: 2; grid-row: 2; }
+.box-nueva-tabla { grid-column: 3; grid-row: 2; }
+
+/* Ajustes visuales */
+.chart-box, .panel-box {
+  background-color: var(--card);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Mantener alturas estables */
+.chart-box canvas {
+  flex-grow: 1;
+  height: 100%;
+}
+
+/* === Filtro interno === */
+.chart-filter-inside {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: var(--card);
+  border: 1px solid var(--accent-light);
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: var(--shadow);
+  z-index: 5;
+  font-size: 0.85em;
+}
+
+.chart-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }

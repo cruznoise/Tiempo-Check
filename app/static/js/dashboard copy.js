@@ -1,10 +1,48 @@
-// === Dataset desde HTML ===
-const datos = JSON.parse(document.body.dataset.datos);
-const categorias = JSON.parse(document.body.dataset.categorias);
-const usoHorario = JSON.parse(document.body.dataset.usoHorario);
-const usoDiario = JSON.parse(document.body.dataset.usoDiario);
+// === Utils para dataset robusto ===
+function parseDatasetJSON(key, fallback = {}) {
+  try {
+    const raw = document.body.dataset[key];
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('parseDatasetJSON falló para', key, e);
+    return fallback;
+  }
+}
 
-// Referencias a los canvas de las gráficas
+const datos       = parseDatasetJSON('datos', []);         // array [{dominio,total}]
+let categoriasRaw = parseDatasetJSON('categorias', {});    // objeto {cat:min} o array [{categoria,minutos}]
+const usoHorario  = parseDatasetJSON('usoHorario', []);    // array [{hora,total}]
+const usoDiario   = parseDatasetJSON('usoDiario', []);     // array [{dia,total}]
+
+function normalizarCategorias(raw) {
+  let obj = {};
+  if (Array.isArray(raw)) {
+    obj = raw.reduce((acc, row) => {
+      const cat = row.categoria ?? 'Sin categoría';
+      acc[cat] = (acc[cat] || 0) + Number(row.minutos || 0);
+      return acc;
+    }, {});
+  } else if (raw && typeof raw === 'object') {
+    obj = { ...raw };
+  }
+
+  const aliases = ['SinCategoria', 'Sin categoria', 'sin categoria', 'sincategoria'];
+  let carry = 0;
+  for (const k of aliases) {
+    if (obj[k] != null) {
+      carry += Number(obj[k] || 0);
+      delete obj[k];
+    }
+  }
+  if (carry > 0) obj['Sin categoría'] = (obj['Sin categoría'] || 0) + carry;
+
+  return obj;
+}
+
+const categorias = normalizarCategorias(categoriasRaw);
+
+// === Referencias canvas ===
 const ctx = document.getElementById('grafica').getContext('2d');
 const ctxCat = document.getElementById('graficaPastel').getContext('2d');
 const ctxHorario = document.getElementById('graficaHorario').getContext('2d');
@@ -19,13 +57,11 @@ function crearGraficas() {
   const colorAccents = style.getPropertyValue('--chart-accents').split(',').map(s => s.trim());
   const textColor = style.getPropertyValue('--text');
 
-  // Destruir instancias previas para evitar duplicados
   if (grafica) grafica.destroy();
   if (graficaPastel) graficaPastel.destroy();
   if (graficaHorario) graficaHorario.destroy();
   if (graficaLinea) graficaLinea.destroy();
 
-  // Opciones de Tooltip personalizadas
   const tooltipOptions = {
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     titleColor: '#fff',
@@ -34,17 +70,11 @@ function crearGraficas() {
     borderWidth: 1,
     borderRadius: 8,
     displayColors: false,
-    bodyFont: {
-      size: 14
-    },
-    titleFont: {
-      size: 16,
-      weight: 'bold'
-    },
+    bodyFont: { size: 14 },
+    titleFont: { size: 16, weight: 'bold' },
     padding: 12
   };
 
-  // === Gráfica por dominio (Barras) ===
   grafica = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -59,32 +89,21 @@ function crearGraficas() {
     },
     options: {
       responsive: true,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
+      interaction: { mode: 'index', intersect: false },
       scales: {
-        x: {
-          ticks: { maxRotation: 90, minRotation: 45, autoSkip: false, color: textColor },
-          grid: { color: 'rgba(255, 255, 255, 0.1)' }
-        },
-        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: 'rgba(255, 255, 255, 0.1)' } }
+        x: { ticks: { maxRotation: 90, minRotation: 45, autoSkip: false, color: textColor }, grid: { color: 'rgba(255,255,255,0.1)' } },
+        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: 'rgba(255,255,255,0.1)' } }
       },
       plugins: {
         legend: { labels: { color: textColor } },
         tooltip: {
           ...tooltipOptions,
-          callbacks: {
-            footer: (context) => {
-              return 'Estos son los sitios donde pasaste más tiempo en el periodo seleccionado. El análisis te puede ayudar a detectar hábitos repetitivos o páginas que demandan mucha atención.';
-            }
-          }
+          callbacks: { footer: () => 'Estos son los sitios donde pasaste más tiempo.' }
         }
       }
     }
   });
 
-  // === Gráfica por categoría (Pastel) ===
   graficaPastel = new Chart(ctxCat, {
     type: 'pie',
     data: {
@@ -92,31 +111,22 @@ function crearGraficas() {
       datasets: [{
         label: 'Tiempo por categoría (min)',
         data: Object.values(categorias),
-        backgroundColor: colorAccents,
+        backgroundColor: ['#3700b3', '#03dac6', '#6200ee', '#cf6679', '#9955ee'],
         borderWidth: 1
       }]
     },
     options: {
       responsive: true,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
       plugins: {
         legend: { labels: { color: textColor } },
         tooltip: {
           ...tooltipOptions,
-          callbacks: {
-            footer: (context) => {
-              return 'Esta gráfica agrupa los sitios por categorías generales. Así puedes visualizar el equilibrio (o desequilibrio) entre actividades de ocio, redes, productividad, educación, etc.';
-            }
-          }
+          callbacks: { footer: () => 'Agrupa los sitios por categorías generales.' }
         }
       }
     }
   });
 
-  // === Gráfica de uso por hora (Línea) ===
   graficaHorario = new Chart(ctxHorario, {
     type: 'line',
     data: {
@@ -132,29 +142,18 @@ function crearGraficas() {
     },
     options: {
       responsive: true,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
+      interaction: { mode: 'index', intersect: false },
       scales: {
-        y: { beginAtZero: true, title: { display: true, text: 'Minutos', color: textColor }, ticks: { color: textColor }, grid: { color: 'rgba(255, 255, 255, 0.1)' } },
-        x: { title: { display: true, text: 'Hora del día', color: textColor }, ticks: { color: textColor }, grid: { color: 'rgba(255, 255, 255, 0.1)' } }
+        y: { beginAtZero: true, title: { display: true, text: 'Minutos', color: textColor }, ticks: { color: textColor } },
+        x: { title: { display: true, text: 'Hora del día', color: textColor }, ticks: { color: textColor } }
       },
       plugins: {
         legend: { labels: { color: textColor } },
-        tooltip: {
-          ...tooltipOptions,
-          callbacks: {
-            footer: (context) => {
-              return 'Aquí se representa el tiempo total que pasas frente a la pantalla según la hora del día. Este gráfico te ayuda a visualizar en qué momentos eres más propenso a usar el dispositivo, lo que puede ser útil para planificar tus hábitos.';
-            }
-          }
-        }
+        tooltip: { ...tooltipOptions }
       }
     }
   });
 
-  // === Gráfica por día (Línea) ===
   graficaLinea = new Chart(ctxLinea, {
     type: 'line',
     data: {
@@ -169,93 +168,163 @@ function crearGraficas() {
     },
     options: {
       responsive: true,
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
+      interaction: { mode: 'index', intersect: false },
       scales: {
-        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: 'rgba(255, 255, 255, 0.1)' } },
-        x: { ticks: { color: textColor }, grid: { color: 'rgba(255, 255, 255, 0.1)' } }
+        y: { beginAtZero: true, ticks: { color: textColor } },
+        x: { ticks: { color: textColor } }
       },
       plugins: {
         legend: { labels: { color: textColor } },
-        tooltip: {
-          ...tooltipOptions,
-          callbacks: {
-            footer: (context) => {
-              return 'Aquí se muestra tu tiempo total frente a la pantalla por día. Identifica si tus hábitos están subiendo o bajando. Ideal para reconocer días con mayor distracción o foco.';
-            }
-          }
-        }
+        tooltip: { ...tooltipOptions }
       }
     }
   });
 }
 
-// Escuchar el evento personalizado de temas
 document.body.addEventListener('temaCambiado', crearGraficas);
 
-// Inicializar gráficas al cargar la página y configurar otros scripts
-document.addEventListener("DOMContentLoaded", () => {
-    crearGraficas();
+document.addEventListener("DOMContentLoaded", async () => {
+  crearGraficas();
 
-    // === Filtro de rango de tiempo ===
-    document.getElementById('rango').addEventListener('change', () => {
-        const seleccion = document.getElementById('rango').value;
-        document.getElementById('fechas').style.display = (seleccion === 'entre') ? 'block' : 'none';
-        if (seleccion !== 'entre') {
-            window.location.href = `/dashboard?rango=${seleccion}`;
-        }
+  const rangoSel = document.getElementById('rango');
+  rangoSel.addEventListener('change', () => {
+    const seleccion = rangoSel.value;
+    document.getElementById('fechas').style.display = (seleccion === 'entre') ? 'block' : 'none';
+    if (seleccion !== 'entre') window.location.href = `/dashboard?rango=${seleccion}`;
+  });
+
+  document.getElementById('filtrar').addEventListener('click', () => {
+    const desde = document.getElementById('desde').value;
+    const hasta = document.getElementById('hasta').value;
+    if (desde && hasta) window.location.href = `/dashboard?rango=entre&desde=${desde}&hasta=${hasta}`;
+  });
+
+  try {
+    const res = await fetch('/resumen');
+    const data = await res.json();
+    document.getElementById('resumen-tiempo').textContent = `${data.tiempo_total} minutos`;
+    document.getElementById('resumen-dia').textContent = `${data.dia_mas_activo} (${data.tiempo_dia_top} min)`;
+    document.getElementById('resumen-sitio').textContent = `${data.sitio_mas_visitado} (${data.tiempo_sitio_top} min)`;
+    document.getElementById('resumen-categoria').textContent = `${data.categoria_dominante} (${data.tiempo_categoria_top} min)`;
+    document.getElementById('resumen-promedio').textContent = `${data.promedio_diario} min/día`;
+  } catch (err) {
+    console.error("Error al cargar resumen:", err);
+  }
+
+  // === Modal alertas ===
+  function mostrarModal(mensaje) {
+    document.getElementById('categoriaModal').textContent = mensaje;
+    document.getElementById('alertaModal').classList.remove('hidden');
+  }
+  window.cerrarModal = () => document.getElementById('alertaModal').classList.add('hidden');
+  window.ignorarAlerta = () => document.getElementById('alertaModal').classList.add('hidden');
+
+  const currentDomain = window.location.hostname;
+  try {
+    const resp = await fetch('/admin/api/alerta_dominio', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dominio: currentDomain })
     });
-    document.getElementById('filtrar').addEventListener('click', () => {
-        const desde = document.getElementById('desde').value;
-        const hasta = document.getElementById('hasta').value;
-        if (desde && hasta) {
-            window.location.href = `/dashboard?rango=entre&desde=${desde}&hasta=${hasta}`;
-        }
+    const data = await resp.json();
+    if (data.alerta) mostrarModal(data.mensaje);
+  } catch (err) {
+    console.error("Error al verificar alerta dominio:", err);
+  }
+
+// === Estado features (QA) ===
+function isoHoyMX() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+async function pintarEstado(dia) {
+  const qs = new URLSearchParams({ usuario_id: 1, dia });
+
+  try {
+    const [est, qa] = await Promise.all([
+      fetch(`/admin/api/features_estado?${qs}`).then(r => r.json()),
+      fetch(`/admin/api/features_qa?${qs}`).then(r => r.json())
+    ]);
+
+    const fd = document.querySelector("#fd-count");
+    const fh = document.querySelector("#fh-count");
+    const badge = document.querySelector("#qa-badge");
+
+    if (fd) fd.textContent = est.diarias_count ?? "0";
+    if (fh) fh.textContent = est.horarias_count ?? "0";
+
+    if (badge) {
+      if (qa.ok) {
+        badge.textContent = "QA OK";
+        badge.className = "badge bg-success";
+      } else {
+        badge.textContent = "QA DESCUADRE";
+        badge.className = "badge bg-danger";
+      }
+    }
+  } catch (err) {
+    console.warn("[WARN] No se pudo pintar estado:", err);
+  }
+}
+
+await pintarEstado(isoHoyMX());
+
+// === Predicciones ML ===
+document.getElementById('btnPrediccionManana')?.addEventListener('click', cargarPredicciones);
+
+function minsToHM(m) {
+  const mm = Math.round(m);
+  const h = Math.floor(mm / 60);
+  const mi = mm % 60;
+  return (h > 0 ? `${h}h ` : "") + `${mi}m`;
+}
+
+async function cargarPredicciones() {
+  const ul = document.getElementById('ml-predict-list');
+  ul.innerHTML = '<li>⏳ Generando predicción...</li>';
+
+  try {
+    const r = await fetch('/api/ml/predict');
+    const data = await r.json();
+
+    ul.innerHTML = ''; // limpiar
+    (data.predicciones || []).forEach(p => {
+      const li = document.createElement('li');
+      li.classList.add('list-group-item');
+      li.textContent = `${p.categoria}: ${minsToHM(p.yhat_minutos)}`;
+      ul.appendChild(li);
     });
 
-    // === Resumen de actividad ===
-    fetch('/resumen')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('resumen-tiempo').textContent = `${data.tiempo_total} minutos`;
-            document.getElementById('resumen-dia').textContent = `${data.dia_mas_activo} (${data.tiempo_dia_top} min)`;
-            document.getElementById('resumen-sitio').textContent = `${data.sitio_mas_visitado} (${data.tiempo_sitio_top} min)`;
-            document.getElementById('resumen-categoria').textContent = `${data.categoria_dominante} (${data.tiempo_categoria_top} min)`;
-            document.getElementById('resumen-promedio').textContent = `${data.promedio_diario} min/día`;
-        })
-        .catch(err => {
-            console.error("Error al cargar resumen:", err);
-        });
-
-    // === Modal alerta por categoría ===
-    function mostrarModal(mensaje) {
-        document.getElementById('categoriaModal').textContent = mensaje;
-        document.getElementById('alertaModal').classList.remove('hidden');
+    if (!data.predicciones || data.predicciones.length === 0) {
+      ul.innerHTML = '<li class="list-group-item">Sin suficiente historial aún</li>';
+    } else {
+      const total = data.predicciones.reduce((a, b) => a + b.yhat_minutos, 0);
+      const totalLi = document.createElement('li');
+      totalLi.classList.add('list-group-item', 'fw-bold');
+      totalLi.textContent = `Total estimado: ${minsToHM(total)}`;
+      ul.appendChild(totalLi);
     }
+  } catch (err) {
+    console.error("Error en predicciones ML:", err);
+    ul.innerHTML = '<li class="list-group-item text-danger">Error al obtener predicción</li>';
+  }
+}
 
-    function cerrarModal() {
-        document.getElementById('alertaModal').classList.add('hidden');
+  const guardado = localStorage.getItem("tema_usuario");
+  const temaSelect = document.getElementById('selector-tema');
+  const modoToggle = document.getElementById('modoDiaNoche');
+  if (guardado) {
+    const [temaClass, modoClass] = guardado.split(" ");
+    document.body.classList.forEach(cls => {
+      if (cls.startsWith("theme-") || cls === "day" || cls === "night") document.body.classList.remove(cls);
+    });
+    document.body.classList.add(temaClass, modoClass);
+    if (temaSelect && modoToggle) {
+      temaSelect.value = temaClass.replace("theme-", "");
+      modoToggle.checked = modoClass === "night";
     }
-
-    function ignorarAlerta() {
-        document.getElementById('alertaModal').classList.add('hidden');
-    }
-
-    // === Lógica para obtener el dominio actual y enviar la alerta ===
-    const currentDomain = window.location.hostname;
-
-    fetch('/admin/api/alerta_dominio', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dominio: currentDomain })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.alerta) {
-            mostrarModal(data.mensaje);
-        }
-    })
-    .catch(err => console.error("Error al verificar alerta:", err));
-}); 
+  }
+});

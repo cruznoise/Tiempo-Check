@@ -4,6 +4,7 @@ import re
 from datetime import date, timedelta
 from typing import Dict, List, Tuple
 import unicodedata
+import pandas as pd
 from app.extensions import db
 from sqlalchemy import and_, func
 from app.models.models import Registro, FeatureDiaria, FeatureHoraria, DominioCategoria, Categoria, AggVentanaCategoria, AggEstadoDia, AggKpiRango, FeaturesCategoriaDiaria
@@ -217,7 +218,35 @@ def calcular_persistir_features(usuario_id: int, dia: date) -> dict:
     rows = FeatureDiaria.query.filter_by(usuario_id=usuario_id, fecha=dia).all()
     print(f"[DEBUG][POST-COMMIT] {dia} → rows_in_db={len(rows)}")
 
-    return {"ok": 1, "diarias": len(acc_diario), "horarias": len(acc_hora)}
+    dias_hist = 30
+    fecha_inicio = dia - timedelta(days=dias_hist)
+    rows_hist = (
+        FeaturesCategoriaDiaria.query
+        .filter(FeaturesCategoriaDiaria.usuario_id == usuario_id)
+        .filter(FeaturesCategoriaDiaria.fecha >= fecha_inicio)
+        .filter(FeaturesCategoriaDiaria.fecha <= dia)
+        .all()
+    )
+
+    if rows_hist:
+        df_hist = pd.DataFrame([
+            {
+                "fecha": r.fecha,
+                "categoria": r.categoria,
+                "minutos": r.minutos,
+            }
+            for r in rows_hist
+        ])
+    else:
+        df_hist = pd.DataFrame()
+
+    return {
+        "ok": 1,
+        "diarias": len(acc_diario),
+        "horarias": len(acc_hora),
+        "hist": df_hist
+    }
+
 def recalcular_rango(usuario_id: int, desde: date, hasta: date) -> Dict[str, int]:
     print(f"[DEBUG] Entrando a recalcular_rango {desde} → {hasta}")
 
@@ -234,3 +263,29 @@ def recalcular_rango(usuario_id: int, desde: date, hasta: date) -> Dict[str, int
         d += timedelta(days=1)
     return {"ok": 1, "diarias": tot_diarias, "horarias": tot_horarias}
     
+def load_fc_diaria(usuario_id: int, start: date | None = None, end: date | None = None) -> pd.DataFrame:
+    """
+    Carga las features diarias por categoría del usuario desde la tabla FeaturesCategoriaDiaria.
+    Si se dan fechas, filtra por rango.
+    """
+    q = db.session.query(FeaturesCategoriaDiaria).filter_by(usuario_id=usuario_id)
+    if start:
+        q = q.filter(FeaturesCategoriaDiaria.fecha >= start)
+    if end:
+        q = q.filter(FeaturesCategoriaDiaria.fecha <= end)
+
+    rows = q.order_by(FeaturesCategoriaDiaria.fecha).all()
+    if not rows:
+        print("[WARN] No se encontraron registros en FeaturesCategoriaDiaria")
+        return pd.DataFrame()
+
+    df = pd.DataFrame([
+        {
+            "usuario_id": r.usuario_id,
+            "fecha": r.fecha,
+            "categoria": r.categoria,
+            "minutos": r.minutos,
+        }
+        for r in rows
+    ])
+    return df

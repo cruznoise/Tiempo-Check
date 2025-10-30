@@ -3,7 +3,9 @@ from zoneinfo import ZoneInfo
 from app.coach.engine import run_coach
 from app.services.coach_alerta import generar_alertas_exceso
 import os
-
+from app.extensions import db
+from app.models.models_coach import CoachSugerencia
+from app.controllers.coach_controller import registrar_meta_coach
 
 TZ = ZoneInfo("America/Mexico_City")
 
@@ -20,7 +22,6 @@ def coach_short(app, usuario_id:int):
 
 def coach_daily(app, usuario_id:int):
     with app.app_context():
-    # corre después del cierre diario de agregados
         d = _hoy()
         run_coach(usuario_id, d)
         print(f"[SCHED][coach_daily] user={usuario_id} d={d}")
@@ -41,3 +42,30 @@ def job_coach_alertas(app, usuario_id: int):
         d = _hoy() - timedelta(days=1)  # generar para el día que terminó
         res = generar_alertas_exceso(usuario_id=usuario_id, dia=d)
         print(f"[SCHED][coach_alertas] pid={os.getpid()} {d} user={usuario_id} -> {res}")
+
+
+
+def job_coach_autometas(app, usuario_id:int=1):
+    """Genera metas automáticas a partir de sugerencias pendientes (meta_personalizada)."""
+    with app.app_context():
+        sugerencias = (CoachSugerencia.query
+            .filter(CoachSugerencia.usuario_id == usuario_id,
+                    CoachSugerencia.tipo == "meta_personalizada",
+                    CoachSugerencia.status == "new")
+            .order_by(CoachSugerencia.creado_en.desc())
+            .all())
+        ok, err = 0, 0
+        for s in sugerencias:
+            try:
+                payload = s.action_payload or {}
+                minutos = float(payload.get("minutos_predichos", 0))
+                fecha = payload.get("fecha")
+                registrar_meta_coach(usuario_id, s.categoria, minutos, fecha)
+                s.status = "acted"
+                db.session.commit()
+                ok += 1
+            except Exception as e:
+                db.session.rollback()
+                print(f"[COACH][AUTO][ERR] {e}")
+                err += 1
+        print(f"[COACH][AUTO] metas aplicadas={ok} errores={err}")
