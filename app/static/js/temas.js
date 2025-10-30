@@ -1,7 +1,9 @@
+// temas.js
 
 document.addEventListener("DOMContentLoaded", () => {
   const temaSelect = document.getElementById('selector-tema');
-  const modoToggle = document.getElementById('modoDiaNoche');
+  // Se usa el ID del HTML N
+  const modoToggle = document.getElementById('modoNocheToggle'); 
   const guardado = localStorage.getItem("tema_usuario");
 
   if (guardado) {
@@ -37,6 +39,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       localStorage.setItem("tema_usuario", nuevaClase);
       console.log("🎨 Tema guardado y aplicado:", nuevaClase);
+      
+      // Disparar evento para que Chart.js se actualice (Mejora clave)
+      const event = new CustomEvent('temaCambiado');
+      document.body.dispatchEvent(event);
     }
 
     // Registrar la función globalmente para uso externo (como botones)

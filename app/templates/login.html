@@ -4,25 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TiempoCheck - Login</title>
-
-    <!-- Fuentes e íconos -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Estilos propios -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
     <div class="login-container">
-        <!-- Sección de Login -->
         <div id="login-section">
             <h2>Iniciar Sesión</h2>
-            <div class="alert alert-danger d-none" id="error-msg"></div>
+            <div class="alert alert-danger d-none" id="error-msg"></div> 
             <form id="login-form"> 
-                <div class="input-group"> <!-- cr-->
+                <div class="input-group"> 
                     <span class="input-group-icon"><i class="fas fa-envelope"></i></span>
                     <input type="text" id="correo" name="correo" placeholder="Ingresa tu correo" required>
                 </div>
@@ -36,31 +29,27 @@
             <p class="registro-texto">¿Nuevo usuario? <a href="#" id="mostrarRegistro">Regístrate</a></p>
         </div>
 
-        <!-- Sección de Registro -->
         <div id="registro-section" class="hidden">
             <h2>Regístrate</h2>
             <form method="POST" action="{{ url_for('admin_controller.registro') }}" id="formRegistro">
                 <div class="input-group">
                     <span class="input-group-icon"><i class="fas fa-user"></i></span>
-                    <input type="text" name="nombre" placeholder="Tu nombre" required>
+                    <input type="text" name="nombre_reg" placeholder="Tu nombre" required>
                 </div>
                 <div class="input-group">
                     <span class="input-group-icon"><i class="fas fa-envelope"></i></span>
-                    <input type="email" name="correo" placeholder="Correo" required>
+                    <input type="email" name="correo_reg" placeholder="Correo" required> 
                 </div>
                 <div class="input-group">
                     <span class="input-group-icon"><i class="fas fa-lock"></i></span>
-                    <input type="password" name="contraseña" placeholder="Contraseña" required>
+                    <input type="password" name="contraseña_reg" placeholder="Contraseña" required> 
                 </div>
                 <button type="submit" class="register-btn">Registrarse</button>
-                <div class="alert alert-danger d-none" id="error-msg"></div>
-
             </form>
             <p class="registro-texto">¿Ya tienes cuenta? <a href="#" id="mostrarLogin">Inicia sesión</a></p>
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/login.js') }}"></script>

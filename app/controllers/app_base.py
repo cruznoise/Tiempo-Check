@@ -24,12 +24,12 @@ def login():
 
     data = request.get_json(silent=True) or {}
     correo = data.get('correo') or request.form.get('correo')
-    contraseña = data.get('contraseña') or request.form.get('contraseña')
+    contrasena = data.get('contraseña') or request.form.get('contraseña')
 
-    if not correo or not contraseña:
+    if not correo or not contrasena:
         return jsonify({'success': False, 'error': 'Faltan datos'}), 400
 
-    usuario = Usuario.query.filter_by(correo=correo, contraseña=contraseña).first()
+    usuario = Usuario.query.filter_by(correo=correo, contrasena=contrasena).first()
 
     if usuario:
         session['usuario_id'] = usuario.id
@@ -265,8 +265,6 @@ def dashboard():
         except Exception:
 
             estado_metas = []
-
-        # ---------- Estado de LÍMITES (si tienes tabla limites_categoria) ----------
         estado_limites = []
         try:
             limites_rows = db.session.execute(text("""

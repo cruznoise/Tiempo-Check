@@ -1,189 +1,176 @@
 import os
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.jobstores.memory import MemoryJobStore
-from apscheduler.events import (
-    EVENT_JOB_EXECUTED, EVENT_JOB_ERROR, EVENT_JOB_MISSED, EVENT_JOB_MAX_INSTANCES,
-)
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
+from flask import current_app
+from app.schedule.features_jobs import job_features_diarias
+from app.schedule.agg_jobs import job_agg_close_day
+from app.schedule.ml_jobs import (
+    job_ml_train,
+    job_ml_train_cat,
+    job_ml_predict,
+)
+from app.schedule.ml_jobs import job_ml_train_daily
+from app.schedule.ml_jobs import job_ml_predict_multi
+from app.schedule.ml_jobs import job_ml_eval_weekly
 from app.schedule.coach_jobs import job_coach_alertas
-from .features_jobs import job_features_horarias, job_features_diarias, job_catchup
-from app.schedule.agg_jobs import job_agg_short, job_agg_close_day, job_agg_catchup 
 from app.schedule.rachas_jobs import job_rachas
-from app.schedule.coach_jobs import coach_short, coach_daily, coach_catchup
-from app.models import Usuario
+from .ml_jobs import job_ml_eval_daily
 
-_SCHED = None  
+_SCHED = None 
 
-TZ = ZoneInfo("America/Mexico_City")
+def _is_reloader_child(app) -> bool:
+    return (app.debug and os.environ.get("WERKZEUG_RUN_MAIN") == "true") or (not app.debug)
+
+def get_scheduler(app) -> BackgroundScheduler:
+    """
+    Crea/obtiene el BackgroundScheduler singleton guardado en app.extensions["scheduler"].
+    Úsalo en runtime normal (tienes acceso a 'app').
+    """
+    if "scheduler" not in app.extensions:
+        tz = app.config.get("TZ", "America/Mexico_City")
+        app.extensions["scheduler"] = BackgroundScheduler(timezone=tz)
+    return app.extensions["scheduler"]
+
+def get_scheduler_global():
+    """
+    Acceso auxiliar para CLI/tests:
+    intenta current_app.extensions["scheduler"] y cae a _SCHED si no hay contexto.
+    """
+    try:
+        return current_app.extensions.get("scheduler")
+    except Exception:
+        return _SCHED
 
 def _usuarios_activos():
-    return [u.id for u in Usuario.query.limit(50).all()]
+    """Devuelve IDs de usuarios activos en el sistema."""
+    from app.models import Usuario
+    try:
+        return [u.id for u in Usuario.query.all()]
+    except Exception:
+        return [1]
 
-def _listener(event):
-    if event.code == EVENT_JOB_EXECUTED:
-        print(f"[SCHED][OK]    job_id={event.job_id} at={event.scheduled_run_time}")
-    elif event.code == EVENT_JOB_ERROR:
-        ex = getattr(event, "exception", None)
-        print(f"[SCHED][ERROR] job_id={event.job_id} ex={ex!r}")
-        tb = getattr(event, "traceback", None)
-        if tb:
-            print(tb)
-    elif event.code == EVENT_JOB_MISSED:
-        print(f"[SCHED][MISSED] job_id={event.job_id} scheduled={event.scheduled_run_time}")
-    elif event.code == EVENT_JOB_MAX_INSTANCES:
-        print(f"[SCHED][SKIP]  job_id={event.job_id} still running at scheduled={event.scheduled_run_time}")
-
-def get_scheduler():
-    """Permite a los endpoints /admin/api/features_health leer los jobs."""
-    return _SCHED
-
-
-def start_scheduler(app, usuario_id: int = 1, tz: str | None = None):
+def start_scheduler(app):
     """
-    Arranca el scheduler con frecuencias tomadas de app.config.
-    (La factory ya evita el doble arranque con WERKZEUG_RUN_MAIN.)
+    Inicia el scheduler principal de TiempoCheck.
+    Se asegura de no duplicar jobs en modo debug ni crear conflictos entre procesos.
     """
-    global _SCHED
+    debug = app.debug
+    is_child = (debug and os.environ.get("WERKZEUG_RUN_MAIN") == "true") or (not debug)
+    if not is_child:
+        print("[SCHED][SKIP] Dev reloader (proceso primario).")
+        return
 
-    tz = tz or app.config.get("TZ", "America/Mexico_City")
-    tz = ZoneInfo(tz)
-    print(f"[SCHED][START] tz={tz} usuario_id={usuario_id}")
-
-    if _SCHED is None:
-        _SCHED = BackgroundScheduler(
-            jobstores={"default": MemoryJobStore()},
-            timezone=tz,
-            job_defaults={"coalesce": True, "misfire_grace_time": 60, "max_instances": 1},
-        )
-        _SCHED.add_listener(
-            _listener,
-            EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_MISSED | EVENT_JOB_MAX_INSTANCES,
-        )
-
-    every_min   = int(app.config.get("JOB_FH_MINUTES", 1))
-    close_hour  = int(app.config.get("JOB_CLOSE_HOUR", 0))
-    close_min   = int(app.config.get("JOB_CLOSE_MINUTE", 5))
-    cu_hours    = int(app.config.get("JOB_CATCHUP_HOURS", 1))
-    cu_lookback = int(app.config.get("JOB_CATCHUP_LOOKBACK", 3))
-
-    agg_every_min   = int(app.config.get("JOB_AGG_SHORT_MINUTES", 15))
-    agg_close_hour  = int(app.config.get("JOB_AGG_CLOSE_HOUR", 0))
-    agg_close_min   = int(app.config.get("JOB_AGG_CLOSE_MINUTE", 10))
-    agg_cu_hours    = int(app.config.get("JOB_AGG_CATCHUP_HOURS", 6))
-    agg_cu_lookback = int(app.config.get("JOB_AGG_CATCHUP_LOOKBACK", 30))
-
-    _SCHED.add_job(
-        job_features_horarias, trigger="interval",
-        minutes=every_min,
-        kwargs={"app": app, "usuario_id": usuario_id},
-        id="features_horarias", replace_existing=True, jitter=5,
-        next_run_time=datetime.now(tz),
-    )
-    _SCHED.add_job(
-        job_features_diarias, trigger="cron",
-        hour=close_hour, minute=close_min,
-        kwargs={"app": app, "usuario_id": usuario_id},
-        id="features_diarias", replace_existing=True, jitter=10,
-    )
-    _SCHED.add_job(
-        job_catchup, trigger="interval",
-        hours=cu_hours,
-        kwargs={"app": app, "usuario_id": usuario_id, "dias_atras": cu_lookback},
-        id="features_catchup", replace_existing=True,
-    )
-    _SCHED.add_job(
-        job_agg_short, trigger="interval",
-        minutes=agg_every_min,
-        kwargs={"app": app, "usuario_id": usuario_id},
-        id="agg_short", replace_existing=True, jitter=5,
-        next_run_time=datetime.now(tz),
-    )
-    _SCHED.add_job(
-        job_agg_close_day, trigger="cron",
-        hour=agg_close_hour, minute=agg_close_min,
-        kwargs={"app": app, "usuario_id": usuario_id},
-        id="agg_close_day", replace_existing=True, jitter=10,
-    )
-    _SCHED.add_job(
-        job_agg_catchup, trigger="interval",
-        hours=agg_cu_hours,
-        kwargs={"app": app, "usuario_id": usuario_id, "dias": agg_cu_lookback},
-        id="agg_catchup", replace_existing=True,
-    )
+    sched = get_scheduler(app)
+    if getattr(sched, "started", False):
+        print("[SCHED] ya estaba corriendo")
+        return
 
     with app.app_context():
-        for uid in _usuarios_activos():
-            _SCHED.add_job(
+        usuarios = _usuarios_activos()
+
+        for uid in usuarios:
+            sched.add_job(
+                func=job_features_diarias,
+                trigger=CronTrigger(minute="*/30", timezone=sched.timezone),
+                args=[app, uid],
+                id=f"features_diarias_u{uid}",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
+
+            sched.add_job(
+                func=job_agg_close_day,
+                trigger=CronTrigger(hour=0, minute=5, timezone=sched.timezone),
+                args=[app, uid],
+                id=f"agg_close_u{uid}",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
+
+            sched.add_job(
+                func=job_ml_train_daily,
+                trigger=CronTrigger(day_of_week="sun", hour=0, minute=5, timezone=sched.timezone),
+                args=[app, uid],
+                id=f"ml_train_weekly_u{uid}",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
+
+            sched.add_job(
+                func=job_ml_predict_multi,
+                trigger=CronTrigger(hour=0, minute=20, timezone=sched.timezone),
+                args=[app, uid],
+                id=f"ml_predict_multi_u{uid}",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
+
+            sched.add_job(
                 func=job_coach_alertas,
-                trigger=CronTrigger(minute=10, timezone=tz),
+                trigger=CronTrigger(hour=0, minute=25, timezone=sched.timezone),
                 args=[app, uid],
                 id=f"coach_alertas_u{uid}",
                 replace_existing=True,
                 coalesce=True,
                 max_instances=1,
-                misfire_grace_time=300,
             )
-            from app.schedule.ml_jobs import job_ml_train, job_ml_predict, job_ml_catchup, job_ml_train_cat
-            _SCHED.add_job(
-                func=job_ml_train,
-                trigger=CronTrigger(day_of_week="sun", hour=0, minute=10, timezone=tz),
-                #trigger=CronTrigger(minute="*/1", timezone=tz), #Se comenta esta linea por que es para pruebas
-                args=[app, uid],
-                id=f"ml_train_u{uid}",
-                replace_existing=True,
-                coalesce=True,
-                max_instances=1,
-            )
-            _SCHED.add_job(
-                func=job_ml_train_cat,
-                trigger=CronTrigger(day_of_week="sun", hour=0, minute=20, timezone=tz),
-                # trigger=CronTrigger(minute="*/1", timezone=tz),  #Lo mismo de arriba, solo se descomenta si es para hacer pruebas
-                args=[app, uid],
-                id=f"ml_train_cat_u{uid}",
-                replace_existing=True,
-                coalesce=True,
-                max_instances=1,
-                misfire_grace_time=300,
-            )
-            _SCHED.add_job(
-                func=job_ml_predict,
-                trigger=CronTrigger(hour=0, minute=15, timezone=tz),
-                #trigger=CronTrigger(minute="*/1", timezone=tz),
-                args=[app, uid],
-                id=f"ml_predict_u{uid}",
-                replace_existing=True,
-                coalesce=True,
-                max_instances=1,
-            )
-            _SCHED.add_job(
-                func=job_ml_catchup,
-                trigger=CronTrigger(hour=1, minute=0, timezone=tz),
-                args=[app, uid],
-                kwargs={"dias": 3},
-                id=f"ml_catchup_u{uid}",
-                replace_existing=True,
-                coalesce=True,
-                max_instances=1,
-                misfire_grace_time=300,
-            )
-            _SCHED.add_job(
+
+            sched.add_job(
                 func=job_rachas,
-                trigger=CronTrigger(hour=23, minute=59, timezone=tz),  
+                trigger=CronTrigger(hour=23, minute=59, timezone=sched.timezone),
                 args=[app, uid],
-                id=f"rachas_u{uid}",
+                id=f"rachas_cierre_u{uid}",
                 replace_existing=True,
                 coalesce=True,
                 max_instances=1,
-                misfire_grace_time=300,
             )
 
+            sched.add_job(
+                func=job_ml_eval_daily,
+                trigger=CronTrigger(hour=23, minute=45, timezone=sched.timezone),
+                args=[app, uid],
+                id=f"ml_eval_daily_u{uid}",
+                replace_existing=True,
+                coalesce=True,
+                max_instances=1,
+            )
 
-    if not _SCHED.running:
-        _SCHED.start()
-        print("[SCHED][OK] scheduler iniciado (features/agregados/coach)")
+            sched.add_job(
+                func=job_ml_eval_weekly,
+                trigger="cron",
+                day_of_week="sun",
+                hour=23,
+                minute=59,
+                timezone=sched.timezone,
+                args=[app],
+                id="ml_eval_weekly",
+                replace_existing=True,
+            )
+
+            print(f"[SCHED][LOAD] Jobs registrados para user={uid}")
+
+        sched.start()
+        register_scheduler(app, sched)
+        sched.started = True
+
+        global _SCHED
+        _SCHED = sched
+
+        print("[SCHED][OK] scheduler iniciado")
+
+    return sched
+
+
+def register_scheduler(app, scheduler):
+    """Guarda el scheduler en current_app.extensions."""
+    if hasattr(app, 'extensions'):
+        app.extensions['scheduler'] = scheduler
+        print("[SCHED][LINK] scheduler registrado en app.extensions")
     else:
-        print("[SCHED] ya estaba corriendo")
-
-    return _SCHED
+        print("[SCHED][WARN] app.extensions no disponible")

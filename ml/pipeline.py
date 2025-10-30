@@ -4,13 +4,14 @@ from pathlib import Path
 
 import pandas as pd
 from joblib import dump, load
-
+import os
+import sys 
 from ml.data import load_fc_diaria
-from ml.features import make_lagged, get_feature_cols, split_train_holdout, latest_X_per_categoria
+from ml.features import make_lagged, get_feature_cols, split_train_holdout, latest_X_per_categoria, build_features_for_day
 from ml.estimators import NaiveLast, MA7, RFReg
 from ml.metrics import mae, rmse, smape, _best_baseline, log_metrics
-from ml.models import BaselineHybrid, RandomForestWrapper
-from ml.utils import canon_cat_filename, ensure_dir
+from ml.models import BaselineHybrid, RandomForestWrapper, load_model_for_categoria
+from ml.utils import canon_cat_filename, ensure_dir, guardar_predicciones
 from ml.scripts.build_model_selector import build_model_selector 
 import numpy as np
 import unicodedata
@@ -18,6 +19,7 @@ import re as _re
 import sqlalchemy as sa
 from app.extensions import db
 import json
+import joblib
 
 
 def _strip_accents(s: str) -> str:
@@ -52,36 +54,43 @@ def clamp_and_round(y, rnd=2):
 
 def _bootstrap_flask_context():
     """
-    Empuja un app_context para que SQLAlchemy (db) funcione desde CLI.
-    Intenta varios paths comunes de factory u objeto app.
+    Empuja un app_context para que SQLAlchemy (db) funcione desde CLI o scheduler.
+    Si detecta TIEMPOCHECK_ML_MODE=1, inicia un contexto mínimo para SQLAlchemy
+    sin arrancar el servidor Flask ni ejecutar boot_catchup.
     """
+
+    is_ml_mode = os.environ.get("TIEMPOCHECK_ML_MODE") == "1"
+
+    if is_ml_mode:
+        print("[PIPELINE][MODE] Modo ML detectado — inicializando contexto mínimo Flask.")
+        try:
+            from app import create_app
+            app = create_app()
+            ctx = app.app_context()
+            ctx.push()
+            print("[PIPELINE][CTX] Contexto mínimo Flask activado para SQLAlchemy.")
+            return ctx
+        except Exception as e:
+            print(f"[PIPELINE][ERR] No se pudo iniciar contexto mínimo: {e}")
+            return None
+
     try:
         from flask import current_app
-        _ = current_app.name 
+        _ = current_app.name
         return None
     except Exception:
         pass
 
-    app = None
     try:
         from app import create_app
         app = create_app()
-    except Exception:
-        try:
-            from app.app import create_app
-            app = create_app()
-        except Exception:
-            try:
-                from app.app import app as _app  
-                app = _app
-            except Exception as e:
-                raise RuntimeError(
-                    "No pude inicializar Flask. Expone create_app() en app/__init__.py "
-                    "o en app/app.py, o un objeto app en app/app.py."
-                ) from e
-
-    app.app_context().push()
-    return app
+        ctx = app.app_context()
+        ctx.push()
+        print("[PIPELINE][CTX] Contexto Flask creado (modo normal).")
+        return ctx
+    except Exception as e:
+        print(f"[PIPELINE][ERR] No se pudo crear contexto Flask: {e}")
+        return None
 
 
 ARTIF_DIR = Path("ml/artifacts")
@@ -107,11 +116,10 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
     threshold = min(hist_days, max(10, int(0.5 * hist_days)))
     ts = date.today().isoformat()
 
-    # ---------------- Baseline case ----------------
     if df.empty or n_dias < threshold:
         from ml.estimators import BaselineHybrid
         X_cols = get_feature_cols(d) if (d is not None and len(getattr(d, "index", [])) > 0) else \
-                 ["min_t-1","MA7","dow","is_weekend","day","days_to_eom"]
+                     ["min_t-1","MA7","dow","is_weekend","day","days_to_eom"]
 
         bundle = {"model": BaselineHybrid(), "features": X_cols, "mode": "baseline"}
         model_path = ARTIF_DIR / f"model_{ts}_baseline.joblib"
@@ -152,7 +160,7 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
 
     # ---------------- RandomForest case ----------------
     X_cols = get_feature_cols(d) or \
-             [c for c in ["min_t-1","MA7","dow","is_weekend","day","days_to_eom"] if c in d.columns]
+                 [c for c in ["min_t-1","MA7","dow","is_weekend","day","days_to_eom"] if c in d.columns]
 
     if not X_cols:
         raise RuntimeError("No hay columnas de features útiles para entrenar.")
@@ -262,25 +270,47 @@ def train_por_categoria(usuario_id: int, hist_days: int = 180):
         d = make_lagged(sub)
         X_cols = get_feature_cols(d)
         train_df, test_df = split_train_holdout(d, holdout_days=7)
-        Xtr, ytr = train_df[X_cols], train_df["minutos"]
+        Xtr = train_df[X_cols].astype(float)
+        ytr = train_df["minutos"].astype(float)
 
         rf = RFReg()
         rf.fit(Xtr, ytr)
+        rf.feature_names_in_ = list(Xtr.columns)
 
-        # --- ML-003 & ML-005 fixes ---
         cat_name = canon_cat_filename(cat)
         outdir = ARTIF_DIR / cat_name
         ensure_dir(outdir)
         artifact_path = outdir / f"rf_{cat_name}.joblib"
         dump(rf, artifact_path)
         print(f"[OK] Guardado modelo RF para {cat} → {artifact_path}")
+        
+        from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+        import json
 
-    # --- ML-005 fix: actualizar automáticamente el selector ---
+        ypred = rf.predict(train_df[X_cols])
+        import numpy as np
+
+        mae = float(mean_absolute_error(ytr, ypred))
+        mse = float(mean_squared_error(ytr, ypred))
+        rmse = float(np.sqrt(mse))
+        r2 = float(r2_score(ytr, ypred))
+
+        metrics = {"MAE": mae, "RMSE": rmse, "R2": r2}
+
+
+        dump(rf, artifact_path)
+        with open(outdir / "metrics.json", "w") as f:
+            json.dump(metrics, f, indent=2)
+
+        print(f"[OK] Guardado modelo RF para {cat} → {artifact_path}")
+        print(f"[METRICS] {cat} → {metrics}")
+
     try:
         build_model_selector()
         print("[ML-005] model_selector.json actualizado correctamente.")
     except Exception as e:
         print(f"[WARN][ML-005] No se pudo actualizar model_selector.json: {e}")
+
 
 def _load_latest_model():
     if not LATEST.exists():
@@ -290,7 +320,7 @@ def _load_latest_model():
         return load(cands[-1])
     return load(LATEST)
 
-print("[TEST] ml/pipeline.py cargado correctamente ✅")
+print("[TEST] ml/pipeline.py cargado correctamente ")
 
 def predict(usuario_id: int, fecha: date | None = None, save_csv: bool = False):
     """
@@ -414,6 +444,79 @@ def predict(usuario_id: int, fecha: date | None = None, save_csv: bool = False):
 
     return result
 
+def predict_multi_horizon(usuario_id, fecha_base, horizontes=[1, 2, 3]):
+    """
+    Genera predicciones para múltiples horizontes (T+1..T+N) y las guarda en ml/preds/
+    """
+    all_preds = []
+    fecha_base = pd.to_datetime(fecha_base)
+
+    for h in horizontes:
+        fecha_pred = fecha_base + timedelta(days=h)
+        print(f"[ML][MULTI] Generando predicciones {fecha_pred.date()} (h={h})")
+        df_features = build_features_for_day(usuario_id, fecha_base)
+        if df_features.empty:
+            print(f"[WARN][MULTI] Sin features para usuario={usuario_id}, salto día {fecha_pred.date()}")
+            continue
+
+        for _, row in df_features.iterrows():
+            categoria = canon_cat(row["categoria"])
+            X = row.drop(labels=["categoria"]).to_frame().T
+            X = (
+                X.apply(pd.to_numeric, errors="coerce")
+                  .replace([np.inf, -np.inf], np.nan)
+                  .fillna(0.0)
+            )
+            try:
+                modelo = load_model_for_categoria(categoria)
+                
+                def _audit_X(X: pd.DataFrame | np.ndarray, feature_cols: list[str] | None = None, tag: str = "X"):
+                    import numpy as np, pandas as pd
+                    if isinstance(X, pd.DataFrame):
+                        print(f"[AUDIT][{tag}] DF shape={X.shape}")
+                        print(f"[AUDIT][{tag}] cols={list(X.columns)}")
+                        print(f"[AUDIT][{tag}] head(3)=\n{X.head(3)}")
+                        print(f"[AUDIT][{tag}] NaN total={int(X.isna().sum().sum())}")
+                        ninf = np.isinf(X.values).sum()
+                        print(f"[AUDIT][{tag}] Inf total={int(ninf)}")
+                        sample_cols = list(X.columns[:5])
+                        print(f"[AUDIT][{tag}] describe({sample_cols})=\n{X[sample_cols].describe()}")
+                    else:
+                        arr = np.asarray(X)
+                        print(f"[AUDIT][{tag}] ND shape={arr.shape}")
+                        print(f"[AUDIT][{tag}] NaN={int(np.isnan(arr).sum())} Inf={int(np.isinf(arr).sum())}")
+                        if feature_cols:
+                            print(f"[AUDIT][{tag}] feature_cols(len={len(feature_cols)}): {feature_cols[:10]}...")
+
+                feature_cols = getattr(modelo, "feature_names_in_", None)
+                if feature_cols is not None:
+                    X = X.reindex(columns=list(feature_cols), fill_value=0.0)
+                _audit_X(X, feature_cols, tag=f"{fecha_pred.date()}_X") # <--- CAMBIO de tag
+
+                pred = modelo.predict(X)
+                yhat_raw = float(pred[0]) if isinstance(pred, (list, tuple, np.ndarray)) else float(pred)
+                yhat = float(clamp_and_round(max(yhat_raw, 0.0), rnd=2))
+            except Exception as e:
+                print(f"[ERROR][MULTI] {categoria}: {e}")
+                continue
+
+            all_preds.append({
+                "usuario_id": usuario_id,
+                "fecha_pred": fecha_pred.date().isoformat(),
+                "horizonte": f"T+{h}",
+                "categoria": categoria,
+                "yhat_minutos": yhat, 
+                "modelo": modelo.__class__.__name__,
+            })
+
+    if all_preds:
+        df_out = pd.DataFrame(all_preds)
+        guardar_predicciones(df_out, tipo="multi")
+        return df_out
+    else:
+        print(f"[ML][MULTI] No se generaron predicciones para usuario={usuario_id}")
+        return pd.DataFrame()
+
 def main():
     _bootstrap_flask_context()
     parser = argparse.ArgumentParser(description="Pipeline V3.1 (train/predict/train_cat)")
@@ -429,6 +532,10 @@ def main():
     p_train_cat = sub.add_parser("train_cat")
     p_train_cat.add_argument("--usuario", type=int, required=True)
     p_train_cat.add_argument("--hist", type=int, default=180)
+    p_multi = sub.add_parser("multi")
+    p_multi.add_argument("--usuario", type=int, required=True)
+    p_multi.add_argument("--fecha", type=str, default=None)
+    p_multi.add_argument("--save-csv", action="store_true")
 
     args = parser.parse_args()
 
@@ -445,7 +552,13 @@ def main():
         print(f"[CMD] Entrenamiento por categoría para usuario {args.usuario}")
         train_por_categoria(args.usuario, hist_days=args.hist)
         print("[DONE] Entrenamiento por categoría completado.")
-
+    elif args.cmd == "multi":
+        f = date.fromisoformat(args.fecha) if args.fecha else date.today()
+        df = predict_multi_horizon(args.usuario, fecha_base=f)
+        if df is None or getattr(df, "empty", False) or len(df) == 0:
+            print("[WARN][MULTI] No se generaron predicciones (preds vacío).")
+            sys.exit(1)
+        print(json.dumps(df.to_dict(orient="records"), ensure_ascii=False, indent=2)) # <--- CAMBIO
 
 
 SELECTOR_FILE = Path("ml/artifacts/model_selector.json")
@@ -456,48 +569,77 @@ if SELECTOR_FILE.exists():
 else:
     MODEL_SELECTOR = {}
 
-def get_model_for_categoria(categoria: str) -> str:
+def get_model_for_categoria(categoria: str):
     """
-    Devuelve el modelo elegido para la categoría.
-    Si no existe en el selector → usa BaselineHybrid.
+    Devuelve un modelo listo para usar para la categoría indicada.
+    Compatible con las dos convenciones de guardado:
+      - ml/artifacts/<categoria>/rf_<categoria>.joblib
+      - ml/artifacts/<categoria>_rf.joblib
+    Si no se encuentra, usa BaselineHybrid como fallback.
     """
-    return MODEL_SELECTOR.get(categoria, "BaselineHybrid")
+    categoria_norm = categoria.lower().replace(" ", "_")
+    base_dir = Path("ml/artifacts") / categoria_norm
+
+    if base_dir.exists() and base_dir.is_dir():
+        for file in base_dir.glob(f"rf_{categoria_norm}.joblib"):
+            try:
+                print(f"[MODEL][{categoria}] Cargando modelo desde {file}")
+                return joblib.load(file)
+            except Exception as e:
+                print(f"[MODEL][ERR] No se pudo cargar {file}: {e}")
+
+    rf_path = Path("ml/artifacts") / f"{categoria}_rf.joblib"
+    if rf_path.exists():
+        print(f"[MODEL][{categoria}] Cargando modelo desde {rf_path}")
+        return joblib.load(rf_path)
+
+    print(f"[MODEL][{categoria}] Usando BaselineHybrid (fallback)")
+    return BaselineHybrid()
+
 
 def predict_categoria(categoria: str, features, df_hist=None) -> float:
-    """
-    Aplica el modelo correcto según la categoría y devuelve la predicción.
-    Si no hay modelo RF, usa BaselineHybrid entrenado con el histórico real (últimos 7 valores).
-    """
+    import numpy as np
+    import pandas as pd
+
     modelo = get_model_for_categoria(categoria)
 
-    # Asegurar que features sea lista de valores
-    if isinstance(features, dict):
-        features = list(features.values())
-    elif hasattr(features, "iloc"):
-        features = list(features.iloc[0].values)
-
-    # --- Si existe modelo RandomForest entrenado ---
-    if modelo == "RandomForest":
-        try:
-            model = RandomForestWrapper.load(categoria)
-            pred = model.predict(features)
-            return float(pred)
-        except FileNotFoundError:
-            print(f"[WARN] RF no encontrado para {categoria}, usando BaselineHybrid.")
-        except Exception as e:
-            print(f"[ERROR RF] {categoria}: {e}")
-
-    # --- Fallback: BaselineHybrid con histórico real ---
-    if df_hist is not None and len(df_hist) > 0:
-        # Usar últimos 7 valores
-        serie = df_hist.tail(7)
-        bh = BaselineHybrid().fit(serie)
-        pred = bh.predict()
-        print(f"[BASELINE] {categoria}: media={bh.mean_7d:.2f}, trend={bh.trend:.2f}, pred={pred:.2f}")
-        return float(pred)
+    if isinstance(features, (float, int, np.floating)):
+        X = np.array([[float(features)]])
+    elif isinstance(features, dict):
+        if hasattr(modelo, "feature_names_in_"):
+            cols = list(modelo.feature_names_in_)
+            X = pd.DataFrame([{k: features.get(k, 0.0) for k in cols}])[cols].astype(float)
+        else:
+            X = np.array([list(features.values())], dtype=float)
+    elif isinstance(features, pd.DataFrame):
+        X = features
+        if hasattr(modelo, "feature_names_in_"):
+            X = X.reindex(columns=list(modelo.feature_names_in_), fill_value=0.0).astype(float)
+    elif isinstance(features, pd.Series):
+        X = pd.DataFrame([features.values], columns=list(features.index)).astype(float)
+        if hasattr(modelo, "feature_names_in_"):
+            X = X.reindex(columns=list(modelo.feature_names_in_), fill_value=0.0)
     else:
-        print(f"[WARN] Sin histórico válido para {categoria}, devolviendo 0.0")
-        return 0.0
+        X = np.array([[0.0]], dtype=float)
+
+    if isinstance(modelo, BaselineHybrid):
+        if df_hist is not None and len(df_hist) > 0:
+            serie = pd.Series(df_hist).astype(float).tail(7)
+            bh = BaselineHybrid().fit(serie)
+            pred = bh.predict()
+            print(f"[BASELINE] {categoria}: media={bh.mean_7d:.2f}, trend={bh.trend:.2f}, pred={pred:.2f}")
+            return float(pred)
+        else:
+            print(f"[WARN] Sin histórico válido para {categoria}, devolviendo 0.0")
+            return 0.0
+        
+    yhat = modelo.predict(X)
+
+    if isinstance(yhat, (list, np.ndarray, pd.Series)) and len(yhat) > 1:
+        return np.array(yhat, dtype=float)
+
+    return float(yhat[0]) if hasattr(yhat, "__len__") else float(yhat)
+
 
 if __name__ == "__main__":
     main()

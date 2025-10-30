@@ -35,6 +35,10 @@ ml/dataset/**/*.parquet
 *.csv.gz
 merged_*.parquet
 merged_*.csv.gz
+scripts/
+database/
+migrations/
+test_coach_job.py
 
 # ML artifacts (solo mantener metadatos)
 ml/artifacts/*.joblib
@@ -50,6 +54,30 @@ __temp__/
 # Config local (sube un example en su lugar)
 config.py
 mysql_conn.py
-
+.gitignore
 # Chrome extension builds
 tiempocheck_extension/dist/
+
+# --- Archivos generados de ML y evaluaciones ---
+ml/preds/
+ml/artifacts/
+ml/ml/artifacts/
+ml/debug_traces/
+ml/data_for_training/
+ml/eval_*/ 
+ml/pipeline_eval*.py
+ml/train_weekly.py
+ml/reporting.py
+ml/utils_audit.py
+
+# --- Archivos de salida o métricas ---
+*.csv
+*.json
+*.png
+*.joblib
+*.pkl
+
+# --- Archivos temporales o copias ---
+*copy.*
+*.ipynb_checkpoints/
+backup_*

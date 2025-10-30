@@ -33,7 +33,8 @@ class CoachSugerencia(db.Model):
     cuerpo         = db.Column(db.Text)
     action_type    = db.Column(db.String(32))
     action_payload = db.Column(MySQLJSON)
-    status         = db.Column(db.String(16), nullable=False, default="new")  # new|acted|dismissed
+    expires_at     = db.Column(db.DateTime, nullable=True) 
+    status         = db.Column(db.String(16), nullable=False, default="new")  
     creado_en      = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
 
 class CoachAccionLog(db.Model):

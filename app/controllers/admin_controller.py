@@ -104,9 +104,7 @@ def vista_metas():
     usuario_id = session['usuario_id']
 
     categorias = db.session.query(Categoria).all()
-
     metas = db.session.query(MetaCategoria).filter_by(usuario_id=usuario_id).all()
-
     limites = db.session.query(LimiteCategoria).filter_by(usuario_id=usuario_id).all()
 
     hoy = date.today()
@@ -121,23 +119,23 @@ def vista_metas():
     uso_actual = defaultdict(int)
     for categoria_id, total in registros:
         uso_actual[categoria_id] = round(total / 60)  
-
     estado_metas = []
     for m in metas:
         nombre = next((c.nombre for c in categorias if c.id == m.categoria_id), 'Desconocida')
         usado = uso_actual.get(m.categoria_id, 0)
-        cumplida = usado >= m.limite_minutos
+        cumplida = usado >= m.minutos_meta
 
-        m.cumplida = 1 if cumplida else 0
+        m.cumplida = bool(cumplida)
 
         estado_metas.append({
             'categoria': nombre,
-            'meta': m.limite_minutos,
+            'meta': m.minutos_meta,
             'usado': usado,
-            'cumplida': cumplida
+            'cumplida': cumplida,
+            'origen': getattr(m, 'origen', 'manual')  
         })
 
-    db.session.commit()
+    # db.session.commit() # se comenta por que aun no se guardan estados de metas para analisis con ML
 
     verificar_logros_dinamicos(usuario_id)
 
@@ -164,6 +162,7 @@ def vista_metas():
         estado_metas=estado_metas,
         estado_limites=estado_limites
     )
+
 
 
 @bp.route('/metas', methods=['POST'])
@@ -684,40 +683,56 @@ def guardar_dominio():
         print("Error en /guardar:", e)
         return jsonify({"error": "Error al guardar"}), 500
 
+import traceback
+
 @bp.route("/registro", methods=["POST"])
 def registro():
-    data = request.get_json() or {}
-    nombre = data.get("nombre")
-    correo = data.get("correo")
-    contraseña = data.get("contraseña")
+    try:
+        data = request.get_json() or {}
+        print(" DATA RECIBIDA:", data)
+        nombre = data.get("nombre")
+        correo = data.get("correo")
+        contrasena = data.get("contrasena")
 
-    if not nombre or not correo or not contraseña:
-        return jsonify(success=False, message="Todos los campos son obligatorios."), 400
+        if not nombre or not correo or not contrasena:
+            print(" Falta algún campo:", nombre, correo, contrasena)
+            return jsonify(success=False, message="Todos los campos son obligatorios."), 400
 
-    existente = db.session.execute(
-        text("SELECT id FROM usuarios WHERE correo = :correo"),
-        {"correo": correo}
-    ).fetchone()
+        existente = db.session.execute(
+            text("SELECT id FROM usuarios WHERE correo = :correo"),
+            {"correo": correo}
+        ).fetchone()
+        if existente:
+            print(" Ya existe usuario con ese correo:", correo)
+            return jsonify(success=False, message="Ya existe un usuario con ese correo."), 400
 
-    if existente:
-        return jsonify(success=False, message="Ya existe un usuario con ese correo."), 400
+        db.session.execute(
+            text("""
+            INSERT INTO usuarios (nombre, correo, contrasena)
+            VALUES (:nombre, :correo, :contrasena)
+            """),
+            {"nombre": nombre, "correo": correo, "contrasena": contrasena}
+        )
+        db.session.commit()
 
-    db.session.execute(
-        text("""
-        INSERT INTO usuarios (nombre, correo, contraseña)
-        VALUES (:nombre, :correo, :contraseña)
-        """),
-        {"nombre": nombre, "correo": correo, "contraseña": contraseña}
-    )
-    db.session.commit()
-
-    return jsonify(success=True, message="Registro exitoso.")
+        return jsonify(success=True, message="Registro exitoso.")
+    except Exception as e:
+        print("ERROR REGISTRO:", e)
+        traceback.print_exc()   
+        db.session.rollback()
+        return jsonify(success=False, message="Error interno: " + str(e)), 500
 
 
 @bp.route("/logout", methods=["GET"])
 def logout():
     session.clear()
     return redirect(url_for("app_base.login"))
+
+"""
+"ATENCION, ESTE ENDPOINT FUNCIONA, SIN EMBARGO POR MEJORAS EN EL SISTEMA, SE ENCUENTRA SUSPENDIDO
+EN CASO DE QUE EL ENDPOINT API/ML/PREDICT_MULTI NO FUNCIONE, USAR ESTE ENDPOINT, AMBOS CUMPLEN CON
+LA FUNCION DE SUGRERIR METAS, SIN EMBARGO EL COACH TRABAJA DE FORMA 'INTELIGENTE'POR LO QUE SU IMPLEMENTACION
+PRETENDE SER MAS EFECTIVA Y PERSONALIZADA"
 
 
 @bp.route('/api/sugerencias', methods=['GET'])
@@ -761,7 +776,7 @@ def sugerencias():
             proporcion = s["sugerencia_meta"] / total_sugerido
             s["sugerencia_meta"] = int(proporcion * LIMITE_DIARIO)
 
-    return jsonify(sugerencias_resultado)
+    return jsonify(sugerencias_resultado)"""
 
 @bp.route("/admin/api/features_hoy", methods=["GET"])
 def api_features_hoy():
@@ -871,17 +886,14 @@ def coach_alertas_list():
     if "usuario_id" not in session:
         return jsonify({"error": "No autenticado"}), 401
     usuario_id = session["usuario_id"]
-
     fecha = request.args.get("fecha")
     desde = request.args.get("desde")
     hasta = request.args.get("hasta")
-
     q = CoachAlerta.query.filter_by(usuario_id=usuario_id)
     if fecha:
         q = q.filter(CoachAlerta.fecha == fecha)
     elif desde and hasta:
         q = q.filter(CoachAlerta.fecha >= desde, CoachAlerta.fecha <= hasta)
-
     q = q.order_by(CoachAlerta.fecha.desc(), CoachAlerta.creado_en.desc())
     data = [{
         "fecha": str(r.fecha),

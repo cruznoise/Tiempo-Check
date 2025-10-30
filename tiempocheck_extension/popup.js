@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } else {
       iniciarPopup();
-      cargarRachas();
+      cargarRachas(); // Llama a la función de carga de rachas con endpoint actualizado
     }
   });
 });
@@ -89,24 +89,111 @@ function formatTime(seconds) {
   }
 }
 
-// === RACHAS: CONSULTA AL BACKEND ===
-fetch("http://localhost:5000/admin/api/estado_rachas", { credentials: 'include' })
-  .then(async res => {
-    const contentType = res.headers.get("content-type");
-    if (!res.ok || !contentType.includes("application/json")) {
-      throw new Error("Respuesta no válida o sin sesión");
-    }
-    return res.json();
-  })
-  .then(data => {
-    const rachaMetas = data.metas || { activa: false, dias: 0 };
-    document.getElementById("contador-racha-metas").textContent = rachaMetas.dias;
-    document.getElementById("icono-racha-metas").src =
-      rachaMetas.activa ? "prendida.PNG" : "apagada.PNG";
+// === RACHAS: CONSULTA AL BACKEND Y GENERACIÓN DEL WIDGET ===
+function cargarRachas() {
+    const calendarContainer = document.getElementById('streak-calendar-visual');
+    const totalStreakDisplay = document.getElementById('total-streak-days');
+    const mainIcon = document.getElementById('main-streak-icon');
+    
+    // 1. GENERACIÓN DEL TEMPLATE SEMANAL (Vacío)
+    const daysOfWeek = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    
+    calendarContainer.innerHTML = '';
+    daysOfWeek.forEach((label, index) => {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'day-item';
+        // Usamos el índice de 0 a 6 para identificar el día
+        dayDiv.innerHTML = `
+            <span class="day-status" data-status="pending" data-day-index="${index}"></span>
+            <span class="day-label">${label}</span>
+        `;
+        calendarContainer.appendChild(dayDiv); 
+    });
+    
+    // 2. OBTENER Y PROCESAR DATOS REALES (ENDPOINT ACTUALIZADO)
+    fetch("http://localhost:5000/admin/api/estado_rachas", { credentials: 'include' })
+    .then(async res => {
+      const contentType = res.headers.get("content-type");
+      if (!res.ok || !contentType.includes("application/json")) {
+        // En caso de error o falta de sesión, usamos datos por defecto
+        throw new Error("Respuesta no válida o sin sesión. Usando 0 días.");
+      }
+      return res.json();
+    })
+    .then(data => {
+        const rachaMetas = data.metas || { activa: false, dias: 0 };
+        const rachaLimites = data.limites || { activa: false, dias: 0 };
 
-    const rachaLimites = data.limites || { activa: false, dias: 0 };
-    document.getElementById("contador-racha-limites").textContent = rachaLimites.dias;
-    document.getElementById("icono-racha-limites").src =
-      rachaLimites.activa ? "prendida.PNG" : "apagada.PNG";
-  })
-  .catch(err => console.error("❌ Error al cargar rachas:", err));
+        // El total de la racha es el MÍNIMO, ya que ambos deben cumplirse
+        const totalStreak = Math.max(rachaMetas.dias, rachaLimites.dias);
+        
+        // 3. Actualizar contadores y racha total
+        document.getElementById("contador-racha-metas").textContent = rachaMetas.dias;
+        document.getElementById("contador-racha-limites").textContent = rachaLimites.dias;
+        totalStreakDisplay.textContent = totalStreak;
+
+        // 4. Actualizar icono principal
+        const iconContainer = mainIcon.parentElement; // El div.streak-icon
+        if (totalStreak > 0) {
+            mainIcon.src = "prendida.PNG"; 
+            iconContainer.classList.remove('off');
+        } else {
+            mainIcon.src = "apagada.PNG"; 
+            iconContainer.classList.add('off');
+        }
+
+        // 5. Actualizar visualización semanal
+        // Si el backend proporciona historial_semanal (array de 7 días)
+        if (data.historial_semanal && Array.isArray(data.historial_semanal) && data.historial_semanal.length === 7) {
+            const dayStatusElements = document.querySelectorAll('.streak-calendar .day-status');
+            
+            data.historial_semanal.forEach((dayData, index) => {
+                const dayElement = dayStatusElements[index];
+                
+                if (dayData.completed_both) { 
+                    // Día con META Y LÍMITE cumplidos
+                    dayElement.setAttribute('data-status', 'completed');
+                    dayElement.textContent = '✓';
+                } else if (dayData.today) {
+                    // Día actual
+                    dayElement.setAttribute('data-status', 'active');
+                    dayElement.textContent = ''; 
+                } else {
+                    // Día pendiente o no cumplido
+                    dayElement.setAttribute('data-status', 'pending');
+                    dayElement.textContent = ''; 
+                }
+            });
+        } else {
+            // Si el historial semanal no está disponible, marcamos el día actual como 'active'
+            const today = new Date().getDay(); // 0 (Sun) - 6 (Sat)
+            // Ajustamos el índice (0=Lun, 6=Dom)
+            const todayIndex = (today === 0) ? 6 : today - 1; 
+            const todayElement = document.querySelector(`.streak-calendar .day-status[data-day-index="${todayIndex}"]`);
+            if (todayElement) {
+                todayElement.setAttribute('data-status', 'active');
+                todayElement.textContent = '';
+            }
+        }
+        
+        console.log("✅ Rachas cargadas correctamente:", data);
+        
+    })
+    .catch(err => {
+        console.error("❌ Error al cargar rachas:", err);
+        // Fallback para mostrar 0 días si hay error
+        totalStreakDisplay.textContent = "0";
+        document.getElementById("contador-racha-metas").textContent = "0";
+        document.getElementById("contador-racha-limites").textContent = "0";
+        mainIcon.src = "apagada.PNG";
+        mainIcon.parentElement.classList.add('off');
+        
+        // Marcar día actual como activo aunque haya error
+        const today = new Date().getDay();
+        const todayIndex = (today === 0) ? 6 : today - 1;
+        const todayElement = document.querySelector(`.streak-calendar .day-status[data-day-index="${todayIndex}"]`);
+        if (todayElement) {
+            todayElement.setAttribute('data-status', 'active');
+        }
+    });
+}

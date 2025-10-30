@@ -1,3 +1,5 @@
+// dashboard.js 
+
 // === Utils para dataset robusto ===
 function parseDatasetJSON(key, fallback = {}) {
   try {
@@ -10,7 +12,8 @@ function parseDatasetJSON(key, fallback = {}) {
   }
 }
 
-const datos       = parseDatasetJSON('datos', []);         // array [{dominio,total}]
+const ALL_DATOS = parseDatasetJSON('datos', []); // array [{dominio,total}]
+let datos = [...ALL_DATOS];
 let categoriasRaw = parseDatasetJSON('categorias', {});    // objeto {cat:min} o array [{categoria,minutos}]
 const usoHorario  = parseDatasetJSON('usoHorario', []);    // array [{hora,total}]
 const usoDiario   = parseDatasetJSON('usoDiario', []);     // array [{dia,total}]
@@ -50,19 +53,65 @@ const ctxLinea = document.getElementById('graficaLinea').getContext('2d');
 
 let grafica, graficaPastel, graficaHorario, graficaLinea;
 
+function filtrarDatosPorRango(rango) {
+  let min = 0;
+  let max = Infinity;
+
+  switch (rango) {
+    case 'top1000':
+      min = 1000;
+      break;
+    case 'rango500_999':
+      min = 500;
+      max = 999;
+      break;
+    case 'rango150_499':
+      min = 150;
+      max = 499;
+      break;
+    case 'rango0_149':
+      max = 149; 
+      break;
+    case 'todos':
+    default:
+      min = 0;
+      max = Infinity;
+      break;
+  }
+
+  if (rango !== 'slider') {
+    datos = ALL_DATOS.filter(d => d.total >= min && d.total <= max);
+  }
+
+  const sliderMax = document.getElementById('slider-top-sites').value;
+  if (sliderMax) {
+      datos.sort((a, b) => b.total - a.total); // Asegurar el orden descendente
+      datos = datos.slice(0, parseInt(sliderMax, 10));
+  }
+}
+
 function crearGraficas() {
   const style = getComputedStyle(document.body);
-  const colorPrimary = style.getPropertyValue('--chart-primary-color');
-  const colorSecondary = style.getPropertyValue('--chart-secondary-color');
-  const colorAccents = style.getPropertyValue('--chart-accents').split(',').map(s => s.trim());
-  const textColor = style.getPropertyValue('--text');
+  
+  // LECTURA AJUSTADA DE VARIABLES DE TEMA
+  // Usamos .trim() para asegurar que no haya espacios al inicio o final del valor de la variable CSS.
+  const colorPrimary = style.getPropertyValue('--chart-primary-color').trim();
+  const colorSecondary = style.getPropertyValue('--chart-secondary-color').trim();
+  
+  // Lectura del color del texto para ejes y leyendas (CORRECCIÓN: Se usa --chart-text-color si existe, sino --text)
+  const textColor = style.getPropertyValue('--chart-text-color').trim() || style.getPropertyValue('--text').trim();
+  
+  // Lectura de los acentos para la gráfica de pastel (se espera una cadena CSV)
+  const pieAccents = style.getPropertyValue('--chart-accents').split(',').map(s => s.trim());
 
+  // Asegurar la destrucción de gráficas existentes antes de crear las nuevas
   if (grafica) grafica.destroy();
   if (graficaPastel) graficaPastel.destroy();
   if (graficaHorario) graficaHorario.destroy();
   if (graficaLinea) graficaLinea.destroy();
 
   const tooltipOptions = {
+    // Usamos colores fijos para el tooltip ya que el fondo es oscuro para mejor legibilidad
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     titleColor: '#fff',
     bodyColor: '#fff',
@@ -74,7 +123,7 @@ function crearGraficas() {
     titleFont: { size: 16, weight: 'bold' },
     padding: 12
   };
-
+  // 1. Gráfica de Barras (Tiempo por sitio web)
   grafica = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -91,8 +140,16 @@ function crearGraficas() {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       scales: {
-        x: { ticks: { maxRotation: 90, minRotation: 45, autoSkip: false, color: textColor }, grid: { color: 'rgba(255,255,255,0.1)' } },
-        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: 'rgba(255,255,255,0.1)' } }
+        x: { 
+          ticks: { maxRotation: 90, minRotation: 45, autoSkip: false, color: textColor }, 
+          // Ajuste de color de grid para que sea sutil en cualquier tema
+          grid: { color: 'rgba(255,255,255,0.1)' } 
+        },
+        y: { 
+          beginAtZero: true, 
+          ticks: { color: textColor }, 
+          grid: { color: 'rgba(255,255,255,0.1)' } 
+        }
       },
       plugins: {
         legend: { labels: { color: textColor } },
@@ -104,6 +161,26 @@ function crearGraficas() {
     }
   });
 
+  // === FILTRO DINÁMICO POR MINUTOS ===
+const rangeInput = document.getElementById('min-range');
+const minValue = document.getElementById('min-value');
+
+if (rangeInput && grafica) {
+  const datosOriginales = [...datos]; // guarda copia completa
+
+  rangeInput.addEventListener('input', () => {
+    const minLimit = parseInt(rangeInput.value);
+    minValue.textContent = minLimit;
+
+    const filtrados = datosOriginales.filter(d => d.total >= minLimit);
+    grafica.data.labels = filtrados.map(d => d.dominio);
+    grafica.data.datasets[0].data = filtrados.map(d => d.total);
+    grafica.update('none'); // 'none' evita animaciones bruscas
+  });
+}
+
+
+  // 2. Gráfica de Pastel (Distribución por categoría)
   graficaPastel = new Chart(ctxCat, {
     type: 'pie',
     data: {
@@ -111,7 +188,8 @@ function crearGraficas() {
       datasets: [{
         label: 'Tiempo por categoría (min)',
         data: Object.values(categorias),
-        backgroundColor: ['#3700b3', '#03dac6', '#6200ee', '#cf6679', '#9955ee'],
+        // CORRECCIÓN CLAVE: USAMOS EL ARRAY DE COLORES LEÍDO DEL TEMA
+        backgroundColor: pieAccents, 
         borderWidth: 1
       }]
     },
@@ -127,6 +205,7 @@ function crearGraficas() {
     }
   });
 
+  // 3. Gráfica de Línea (Distribución de uso por hora)
   graficaHorario = new Chart(ctxHorario, {
     type: 'line',
     data: {
@@ -144,8 +223,15 @@ function crearGraficas() {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       scales: {
-        y: { beginAtZero: true, title: { display: true, text: 'Minutos', color: textColor }, ticks: { color: textColor } },
-        x: { title: { display: true, text: 'Hora del día', color: textColor }, ticks: { color: textColor } }
+        y: { 
+          beginAtZero: true, 
+          title: { display: true, text: 'Minutos', color: textColor }, 
+          ticks: { color: textColor } 
+        },
+        x: { 
+          title: { display: true, text: 'Hora del día', color: textColor }, 
+          ticks: { color: textColor } 
+        }
       },
       plugins: {
         legend: { labels: { color: textColor } },
@@ -154,6 +240,7 @@ function crearGraficas() {
     }
   });
 
+  // 4. Gráfica de Línea (Tiempo total en pantalla por día)
   graficaLinea = new Chart(ctxLinea, {
     type: 'line',
     data: {
@@ -186,19 +273,47 @@ document.body.addEventListener('temaCambiado', crearGraficas);
 document.addEventListener("DOMContentLoaded", async () => {
   crearGraficas();
 
-  const rangoSel = document.getElementById('rango');
-  rangoSel.addEventListener('change', () => {
-    const seleccion = rangoSel.value;
-    document.getElementById('fechas').style.display = (seleccion === 'entre') ? 'block' : 'none';
-    if (seleccion !== 'entre') window.location.href = `/dashboard?rango=${seleccion}`;
-  });
+  // === Lógica de filtros de rango del Dashboard (FILTRO PRINCIPAL) ===
+  // Buscamos 'rango-dashboard' para evitar el conflicto de IDs
+  const rangoSelDashboard = document.getElementById('rango-dashboard'); 
+  if(rangoSelDashboard) {
+    rangoSelDashboard.addEventListener('change', () => {
+      const seleccion = rangoSelDashboard.value;
+      const fechasDiv = document.getElementById('fechas');
+      if(fechasDiv) fechasDiv.style.display = (seleccion === 'entre') ? 'block' : 'none';
+      if (seleccion !== 'entre') window.location.href = `/dashboard?rango=${seleccion}`;
+    });
 
-  document.getElementById('filtrar').addEventListener('click', () => {
-    const desde = document.getElementById('desde').value;
-    const hasta = document.getElementById('hasta').value;
-    if (desde && hasta) window.location.href = `/dashboard?rango=entre&desde=${desde}&hasta=${hasta}`;
-  });
+    const filtrarBtn = document.getElementById('filtrar');
+    if(filtrarBtn) {
+      filtrarBtn.addEventListener('click', () => {
+        const desde = document.getElementById('desde').value;
+        const hasta = document.getElementById('hasta').value;
+        if (desde && hasta) window.location.href = `/dashboard?rango=entre&desde=${desde}&hasta=${hasta}`;
+      });
+    }
+  }
 
+  // === Lógica para el Menú Desplegable de Configuración ===
+  const btnConfig = document.getElementById('btnConfiguracion');
+  const menuConfig = document.getElementById('menuFlotanteConfig');
+
+  if (btnConfig && menuConfig) {
+    btnConfig.addEventListener('click', (e) => {
+      e.preventDefault(); 
+      e.stopPropagation(); 
+      menuConfig.classList.toggle('hidden');
+    });
+
+    // Cierra el menú si se hace clic fuera de él
+    document.addEventListener('click', (e) => {
+      if (!menuConfig.contains(e.target) && !btnConfig.contains(e.target) && !menuConfig.classList.contains('hidden')) {
+        menuConfig.classList.add('hidden');
+      }
+    });
+  }
+
+  // === Fetch resumen ===
   try {
     const res = await fetch('/resumen');
     const data = await res.json();
@@ -231,91 +346,78 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Error al verificar alerta dominio:", err);
   }
 
-// === Estado features (QA) ===
-function isoHoyMX() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
+  // === Estado features (QA) ===
+  async function pintarEstado(dia) {
+    const qs = new URLSearchParams({ usuario_id: 1, dia });
+    try {
+      const [est, qa] = await Promise.all([
+        fetch(`/admin/api/features_estado?${qs}`).then(r => r.json()),
+        fetch(`/admin/api/features_qa?${qs}`).then(r => r.json())
+      ]);
+      const fdCount = document.querySelector("#fd-count");
+      if(fdCount) fdCount.textContent = est.diarias_count ?? '0';
+      const fhCount = document.querySelector("#fh-count");
+      if(fhCount) fhCount.textContent = est.horarias_count ?? '0';
 
-async function pintarEstado(dia) {
-  const qs = new URLSearchParams({ usuario_id: 1, dia });
-
-  try {
-    const [est, qa] = await Promise.all([
-      fetch(`/admin/api/features_estado?${qs}`).then(r => r.json()),
-      fetch(`/admin/api/features_qa?${qs}`).then(r => r.json())
-    ]);
-
-    const fd = document.querySelector("#fd-count");
-    const fh = document.querySelector("#fh-count");
-    const badge = document.querySelector("#qa-badge");
-
-    if (fd) fd.textContent = est.diarias_count ?? "0";
-    if (fh) fh.textContent = est.horarias_count ?? "0";
-
-    if (badge) {
-      if (qa.ok) {
-        badge.textContent = "QA OK";
-        badge.className = "badge bg-success";
-      } else {
-        badge.textContent = "QA DESCUADRE";
-        badge.className = "badge bg-danger";
+      const badge = document.querySelector("#qa-badge");
+      if (badge) {
+          if (qa.ok) {
+            badge.textContent = "QA OK";
+            badge.className = "badge badge-success";
+          } else {
+            badge.textContent = "QA DESCUADRE";
+            badge.className = "badge badge-danger";
+          }
       }
+    } catch (err) {
+      console.warn("[WARN] No se pudo pintar estado:", err);
     }
-  } catch (err) {
-    console.warn("[WARN] No se pudo pintar estado:", err);
   }
-}
+  
+  function isoHoyMX() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth()+1).padStart(2,'0');
+    const d = String(now.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  
+  // Aseguramos que solo se pinte el estado si existen los elementos
+  if (document.querySelector("#fd-count")) {
+      await pintarEstado(isoHoyMX());
+  }
 
-await pintarEstado(isoHoyMX());
-
-// === Predicciones ML ===
-document.getElementById('btnPrediccionManana')?.addEventListener('click', cargarPredicciones);
-
-function minsToHM(m) {
-  const mm = Math.round(m);
-  const h = Math.floor(mm / 60);
-  const mi = mm % 60;
-  return (h > 0 ? `${h}h ` : "") + `${mi}m`;
-}
-
-async function cargarPredicciones() {
-  const ul = document.getElementById('ml-predict-list');
-  ul.innerHTML = '<li>⏳ Generando predicción...</li>';
-
+  // === Predicciones ML ===
+  function minsToHM(m) {
+    const mm = Math.round(m);
+    const h = Math.floor(mm / 60);
+    const mi = mm % 60;
+    return (h > 0 ? `${h}h ` : "") + `${mi}m`;
+  }
+  
   try {
     const r = await fetch('/api/ml/predict');
     const data = await r.json();
-
-    ul.innerHTML = ''; // limpiar
-    (data.predicciones || []).forEach(p => {
-      const li = document.createElement('li');
-      li.classList.add('list-group-item');
-      li.textContent = `${p.categoria}: ${minsToHM(p.yhat_minutos)}`;
-      ul.appendChild(li);
-    });
-
-    if (!data.predicciones || data.predicciones.length === 0) {
-      ul.innerHTML = '<li class="list-group-item">Sin suficiente historial aún</li>';
-    } else {
-      const total = data.predicciones.reduce((a, b) => a + b.yhat_minutos, 0);
-      const totalLi = document.createElement('li');
-      totalLi.classList.add('list-group-item', 'fw-bold');
-      totalLi.textContent = `Total estimado: ${minsToHM(total)}`;
-      ul.appendChild(totalLi);
+    const ul = document.getElementById('ml-predict-list');
+    if (ul) {
+      ul.innerHTML = '';
+      (data.predicciones || []).forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = `${p.categoria}: ${minsToHM(p.yhat_minutos)}`;
+        ul.appendChild(li);
+      });
+      if (!data.predicciones || data.predicciones.length === 0) {
+        ul.innerHTML = '<li>Sin suficiente historial aún</li>';
+      }
     }
   } catch (err) {
     console.error("Error en predicciones ML:", err);
-    ul.innerHTML = '<li class="list-group-item text-danger">Error al obtener predicción</li>';
   }
-}
 
+  // === Carga de tema inicial ===
   const guardado = localStorage.getItem("tema_usuario");
   const temaSelect = document.getElementById('selector-tema');
-  const modoToggle = document.getElementById('modoDiaNoche');
+  const modoToggle = document.getElementById('modoNocheToggle');
   if (guardado) {
     const [temaClass, modoClass] = guardado.split(" ");
     document.body.classList.forEach(cls => {

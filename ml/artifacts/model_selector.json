@@ -1,8 +1,0 @@
-{
-  "Herramientas": "RandomForest",
-  "Ocio": "RandomForest",
-  "Productividad": "BaselineHybrid",
-  "Redes Sociales": "BaselineHybrid",
-  "Sin categoría": "RandomForest",
-  "Trabajo": "BaselineHybrid"
-}

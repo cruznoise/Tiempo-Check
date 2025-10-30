@@ -1,26 +1,30 @@
 from app.mysql_conn import get_mysql
 from datetime import date
 
-def actualizar_rachas(usuario_id: int):
+def actualizar_rachas(usuario_id: int, fecha: date = None):
+    """
+    Actualiza las rachas del usuario para una fecha específica.
+    Si no se proporciona fecha, usa hoy.
+    Compatible con boot_catchup para procesar fechas históricas.
+    """
     conexion = get_mysql()
     with conexion.cursor(dictionary=True, buffered=True) as cursor:
-        hoy = date.today()
+        dia = fecha if fecha is not None else date.today()
 
-        # --- Racha de METAS ---
         cursor.execute("""
             SELECT COUNT(*) AS total FROM registro
             WHERE usuario_id = %s AND DATE(fecha) = %s
-        """, (usuario_id, hoy))
+        """, (usuario_id, dia))
         hubo_uso = cursor.fetchone()['total'] > 0
         cursor.fetchall()
 
         if not hubo_uso:
-            return  # No hacemos nada si no usó navegador hoy
+            return 
 
         cursor.execute("""
             SELECT COUNT(*) AS total FROM metas_categoria
             WHERE usuario_id = %s AND cumplida = 1 AND DATE(fecha) = %s
-        """, (usuario_id, hoy))
+        """, (usuario_id, dia))
         cumplio_meta = cursor.fetchone()['total'] > 0
         cursor.fetchall()
 
@@ -40,20 +44,19 @@ def actualizar_rachas(usuario_id: int):
                     UPDATE rachas_usuario
                     SET dias_consecutivos = %s, activa = %s, ultima_fecha = %s
                     WHERE id = %s
-                """, (nuevo_conteo, activar, hoy, racha['id']))
+                """, (nuevo_conteo, activar, dia, racha['id']))
             else:
                 cursor.execute("""
                     UPDATE rachas_usuario
                     SET dias_consecutivos = 0, activa = FALSE, ultima_fecha = %s
                     WHERE id = %s
-                """, (hoy, racha['id']))
+                """, (dia, racha['id']))
         else:
             cursor.execute("""
                 INSERT INTO rachas_usuario (usuario_id, tipo, dias_consecutivos, activa, ultima_fecha)
                 VALUES (%s, 'metas', %s, %s, %s)
-            """, (usuario_id, 1 if cumplio_meta else 0, False, hoy))
+            """, (usuario_id, 1 if cumplio_meta else 0, False, dia))
 
-        # --- Racha de LIMITES ---
         cursor.execute("""
             SELECT dc.categoria_id, SUM(r.tiempo) AS usado, MAX(l.limite_minutos) AS limite
             FROM limite_categoria l
@@ -62,7 +65,7 @@ def actualizar_rachas(usuario_id: int):
             WHERE l.usuario_id = %s AND DATE(r.fecha) = %s
             GROUP BY dc.categoria_id
             HAVING usado > limite
-        """, (usuario_id, hoy))
+        """, (usuario_id, dia))
         excedio_limite = cursor.fetchone() is not None
         cursor.fetchall()
 
@@ -82,18 +85,25 @@ def actualizar_rachas(usuario_id: int):
                     UPDATE rachas_usuario
                     SET dias_consecutivos = %s, activa = %s, ultima_fecha = %s
                     WHERE id = %s
-                """, (nuevo_conteo, activar, hoy, racha['id']))
+                """, (nuevo_conteo, activar, dia, racha['id']))
             else:
                 cursor.execute("""
                     UPDATE rachas_usuario
                     SET dias_consecutivos = 0, activa = FALSE, ultima_fecha = %s
                     WHERE id = %s
-                """, (hoy, racha['id']))
+                """, (dia, racha['id']))
         else:
             estado = not excedio_limite
             cursor.execute("""
                 INSERT INTO rachas_usuario (usuario_id, tipo, dias_consecutivos, activa, ultima_fecha)
                 VALUES (%s, 'limites', %s, %s, %s)
-            """, (usuario_id, 1 if estado else 0, False, hoy))
+            """, (usuario_id, 1 if estado else 0, False, dia))
 
         conexion.commit()
+        
+        return {
+            "fecha": dia,
+            "hubo_uso": hubo_uso,
+            "cumplio_meta": cumplio_meta,
+            "excedio_limite": excedio_limite
+        }

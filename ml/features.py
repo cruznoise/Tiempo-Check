@@ -1,4 +1,7 @@
 import pandas as pd
+import numpy as np
+from app.models.models import FeaturesCategoriaDiaria
+from app.extensions import db
 
 def _calendar_feats(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
@@ -53,3 +56,36 @@ def latest_X_per_categoria(d: pd.DataFrame):
     latest = latest.drop_duplicates(subset=["usuario_id", "categoria"], keep="last")
 
     return latest, feats
+
+def build_features_for_day(usuario_id, fecha):
+    """
+    Prepara el registro más reciente de features por categoría para el usuario.
+    Retorna un DataFrame con las columnas necesarias para predicción.
+    """
+
+    rows = (
+        db.session.query(FeaturesCategoriaDiaria)
+        .filter_by(usuario_id=usuario_id)
+        .filter(FeaturesCategoriaDiaria.fecha <= fecha)
+        .all()
+    )
+
+    if not rows:
+        print(f"[WARN] No hay features históricas para usuario={usuario_id}")
+        return pd.DataFrame(columns=["categoria"])
+
+    df = pd.DataFrame([r.as_dict() for r in rows])
+    df = df.sort_values(["usuario_id", "categoria", "fecha"])
+    from ml.features import make_lagged, latest_X_per_categoria
+    df_lagged = make_lagged(df)
+    latest, feats = latest_X_per_categoria(df_lagged)
+    latest = latest[["categoria"] + feats].copy()
+    if feats:
+        latest[feats] = (
+            latest[feats]
+            .apply(pd.to_numeric, errors="coerce")
+            .replace([np.inf, -np.inf], np.nan)
+            .fillna(0.0)
+        )
+    latest["categoria"] = latest["categoria"].astype(str)
+    return latest

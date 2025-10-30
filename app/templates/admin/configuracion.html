@@ -30,7 +30,7 @@
 
     <!-- Botón a categorias.html -->
     <button onclick="window.location.href='/admin/categorias'" class="tile-button">
-      🗂️ Administrar dominios y categorías
+       Administrar dominios y categorías
     </button>
 
     <!-- Exportar datos -->
@@ -47,7 +47,7 @@
       <div style="margin-top: 15px;">
         <button id="bck_btn" class="tile-button">Descargar Backup Completo</button>
         <button id="exportarCSV" class="tile-button">📄 Exportar CSV</button>
-        <button id="exportarJSON" class="tile-button" style="margin-left: 10px;">🧾 Exportar JSON</button>
+        <button id="exportarJSON" class="tile-button" style="margin-left: 10px;"> Exportar JSON</button>
       </div>
     </div>
     <!-- Subir backup-->
@@ -55,7 +55,7 @@
       <label style="max-width: 500px; padding: 30px; text-align: center;"> Restaurar cuenta (.JSON)</label>
       <form id="form-restaurar" enctype="multipart/form-data">
         <input type="file" id="archivo-backup" name="backup" accept=".json" required>
-        <button type="submit">🔁 Restaurar Backup</button>
+        <button type="submit"> Restaurar Backup</button>
       </form>
 
      </div>
@@ -75,7 +75,6 @@
 </main>
 </div>
 
-  <!-- Script para exportar -->
   <script src="{{ url_for('static', filename='js/reset_back.js') }}"></script>
   <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
   <script src="{{ url_for('static', filename='js/logout.js') }}"></script>

@@ -16,8 +16,8 @@
   --accent-light: #70599B;
   --accent-dark: #3700B3;
   --font: 'Segoe UI', sans-serif;
-  --shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-  --chart-primary-color: #bb86fc;
+  --shadow: 0 4px 10px rgba(4, 4, 4, 0.4);
+  --chart-primary-color: #070707;
   --chart-secondary-color: #03dac6;
   --chart-accents: #3700b3, #03dac6, #6200ee, #cf6679, #9955ee;
   --chart-text-color: #d6d3d3;
@@ -398,9 +398,9 @@ canvas {
 .input-group-icon {
   position: absolute;
   left: 15px;
-  top: 50%;
+  top: 100%;
   transform: translateY(-50%);
-  color: var(--text);
+  color: #ffffff;
   transition: color 0.3s ease;
 }
 
@@ -409,25 +409,25 @@ canvas {
   padding: 0.85rem 1rem 0.85rem 3rem;
   border-radius: 0.8rem;
   border: 1px solid var(--accent-light);
-  background-color: var(--card);
+  background-color: #ffffff;
   color: var(--text);
   font-size: 0.95rem;
   transition: all 0.3s ease;
 }
 
 .login-container input::placeholder {
-  color: var(--text);
+  color: #ffffff;
   opacity: 0.6;
 }
 
 .login-container input:focus {
-  border-color: var(--accent);
+  border-color: var(--text);
   box-shadow: 0 0 10px var(--accent-light);
   outline: none;
 }
 
 .input-group:focus-within .input-group-icon {
-  color: var(--accent);
+  color: #ffffff;
 }
 
 .login-btn, .register-btn {
@@ -438,7 +438,7 @@ canvas {
   font-weight: 600;
   font-size: 1rem;
   color: white;
-  background-color: var(--accent);
+  background-color: #ffffff;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -1261,4 +1261,70 @@ body {
   transform: none;
   cursor: not-allowed;
   box-shadow: var(--shadow);
+}
+
+.tile-box {
+  align-items: center;  /* centra horizontalmente los elementos hijos */
+  text-align: center;   /* centra texto dentro de los bloques */
+  background-color: var(--accent);
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 40px; 
+}
+
+
+#toast-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.toast {
+  background: #222;
+  color: #fff;
+  padding: 12px 14px;
+  margin-top: 8px;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  max-width: 320px;
+  font-size: 14px;
+  line-height: 1.4;
+  animation: fadeIn 0.3s ease, fadeOut 0.5s ease 5.5s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-10px); }
+}
+
+
+.alerta-card {
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.severidad-high {
+  border-left: 4px solid #dc3545; /* rojo */
+}
+.severidad-mid {
+  border-left: 4px solid #ffc107; /* amarillo */
+}
+.severidad-low {
+  border-left: 4px solid #28a745; /* verde */
 }
