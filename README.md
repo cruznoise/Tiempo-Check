@@ -1,7 +1,7 @@
 #  TiempoCheck — “Tu asistente de hábitos digitales inteligentes”
 
-**Versión actual:** `v3.1-stable`  
-**Fecha de lanzamiento:** 2025-10-07  
+**Versión actual:** `v3.2 Unofficial`  
+**Fecha de lanzamiento:** 2025-10-30  
 **Autor:** Luis Ángel Cruz Tenorio (`@cruznoise`)
 **Coautora:** Ana Maria Ambriz Gonzalez
 
@@ -17,43 +17,79 @@ El sistema monitorea tus actividades por categoría (Trabajo, Ocio, Estudio, etc
 
 ---
 
-##  Novedades en `v3.1-stable`
+## Pruebas funcionales en `v3.2 Unofficial`
 
-- **Selector automático de modelo por categoría** (`ml/artifacts/model_selector.json`).
-- **Entrenamiento modular**: cada categoría entrena su propio modelo RF (`train_por_categoria()`).
-- **Fallback inteligente con `BaselineHybrid`** cuando no hay modelo entrenado.
-- **Predicciones diarias limpias y reproducibles**, servidas por el endpoint `/api/ml/predict`.
-- **Interfaz mejorada**: botón *“Predicción de mañana (por categoría)”* en el Dashboard.
-- **Nuevo `.gitignore`** optimizado y estructura ML consolidada (`ml/models/`, `ml/scripts/`, `ml/artifacts/`).
+Durante esta versión se validaron:
+- Ejecución completa de jobs automáticos y boot_catchup.
+- Predicción diaria sin errores en API `/api/ml/predict`.
+- Persistencia correcta de features y métricas.
+- Visualización dinámica en el dashboard.
+- Integración funcional con la extensión del navegador.
 
 ---
 
 ##  Arquitectura general
 
 ```bash
-TiempoCheck/
-├── app/                     # Backend Flask (rutas, controladores, jobs APScheduler)
-│   ├── routes/
-│   ├── schedule/
-│   ├── services/
-│   ├── static/
-│   └── templates/
+TiempoCheck v3.2
+├── Frontend (Extension Chrome)
+│   ├── content_script.js
+│   ├── background.js
+│   └── popup.js/html/css
 │
-├── ml/                      # Módulo de Machine Learning
-│   ├── models/              # Modelos BaselineHybrid y RandomForest
-│   ├── scripts/             # Scripts auxiliares de mantenimiento y validación
-│   ├── artifacts/           # Artefactos entrenados y selector de modelos
-│   ├── preds/               # Predicciones generadas por usuario/fecha
-│   ├── data.py              # Carga de features
-│   ├── pipeline.py          # Entrenamiento / predicción principal
-│   └── utils.py             # Funciones auxiliares (canon_cat, paths, etc.)
+├── Backend (Flask App)
+│   ├── Controllers (rutas y lógica web)
+│   ├── Models (SQLAlchemy)
+│   ├── Services (lógica de negocio)
+│   ├── Schedule (jobs automáticos)
+│   └── Coach (sistema de recomendaciones)
 │
-├── docs/                    # Documentación y reportes técnicos
-├── backup_tiempocheck.sql   # Dump SQL de respaldo (estructura DB)
-├── CHANGELOG_v3.1-stable.md # Registro de cambios actual
-└── README.md
+├── ML Pipeline (independiente pero acoplado)
+│   ├── Dataset generation
+│   ├── Feature engineering
+│   ├── Model training
+│   ├── Prediction service
+│   └── Artifacts management
+│
+└── Database (MySQL)
+    ├── usuarios
+    ├── categorias
+    ├── actividades
+    ├── tiempos
+    ├── metas
+    └── features_*
 ```
+##  Estructura de carpetas
 
+```bash
+TiempoCheck v3.2
+├── Frontend (Extension Chrome)
+│   ├── content_script.js
+│   ├── background.js
+│   └── popup.js/html/css
+│
+├── Backend (Flask App)
+│   ├── Controllers (rutas y lógica web)
+│   ├── Models (SQLAlchemy)
+│   ├── Services (lógica de negocio)
+│   ├── Schedule (jobs automáticos)
+│   └── Coach (sistema de recomendaciones)
+│
+├── ML Pipeline (independiente pero acoplado)
+│   ├── Dataset generation
+│   ├── Feature engineering
+│   ├── Model training
+│   ├── Prediction service
+│   └── Artifacts management
+│
+└── Database (MySQL)
+    ├── usuarios
+    ├── categorias
+    ├── actividades
+    ├── tiempos
+    ├── metas
+    └── features_*
+```
 ---
 
 ##  Instalación y ejecución
@@ -112,8 +148,8 @@ ml/preds/<id>/     → predicciones diarias
 |----------|---------|------------------|
 | **v3.0** |  Cerrada | Baseline reproducible (RandomForest + BaselineHybrid) |
 | **v3.1** |  Estable | Selector automático y recomendaciones simples |
-| **v3.2** |  En desarrollo | Predicciones extendidas (T+1..T+3) + UI de adopción |
-| **v3.3** |  Planeada | Coach inteligente con metas dinámicas |
+| **v3.2** |  Cerrada | Predicciones extendidas (T+1..T+3) + UI de adopción |
+| **v3.3** |  En desarrollo | Coach inteligente con metas dinámicas, correción de errores y version final |
 
 ---
 
@@ -126,11 +162,11 @@ ml/preds/<id>/     → predicciones diarias
 ---
 
 ##  Autoria
-**Autor principal**
--Luis Ángel Cruz Tenorio — Estudiante de Ingeniería en Comunicaciones y Electrónica · IPN ESIME Zacatenco  
-GitHub: [@cruznoise](https://github.com/cruznoise)  
-Desarrollo backend · Arquitectura ML · Integración de datos
 
-**Coautora**
+- Luis Ángel Cruz Tenorio — Estudiante de Ingeniería en Comunicaciones y Electrónica · IPN ESIME Zacatenco  
+  GitHub: [@cruznoise](https://github.com/cruznoise)  
+  Desarrollo backend · Arquitectura ML · Integración de datos
+
 - Ana Maria Ambriz Gonzalez — Estudiante de Ingeniería en Comunicaciones y Electrónica · IPN ESIME Zacatenco
-  Diseño de interfaz · UX/UI · Mejoras visuales y de experiencia de usuario
+  Diseño de interfaz · UX/UI · Mejoras visuales y de experiencia de usuario · Documentación oficial 
+  
