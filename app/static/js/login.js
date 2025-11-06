@@ -34,11 +34,28 @@ $(document).ready(function() {
     });
   });
 
-  // === Manejo de registro (Endpoint Mantenido) ===
+  // ------------------------------------
+  // MANEJO DEL REGISTRO (CON NUEVOS CAMPOS)
+  // ------------------------------------
   $('#formRegistro').on('submit', function(e) {
     e.preventDefault();
-    // Se usa el mismo errorMsg para mostrar alertas de registro
-    const errorMsgRegistro = $('#error-msg-registro').length ? $('#error-msg-registro') : errorMsg;
+    
+    // Recolectar datos, incluyendo los nuevos campos de perfil
+    const nombre = $('input[name="nombre"]').val();
+    const correo = $('input[name="correo"]').val();
+    const contraseña = $('input[name="contraseña"]').val();
+    const dedicacion = $('select[name="dedicacion"]').val();
+    const horario = $('select[name="horario"]').val();
+    const dias_trabajo = $('select[name="dias_trabajo"]').val();
+    
+    // Validación para asegurar que se seleccionaron las opciones
+    if (!dedicacion || !horario || !dias_trabajo) {
+        errorMsg
+            .text("⚠ Por favor, selecciona tu dedicación, horario y días de trabajo.")
+            .removeClass("d-none")
+            .fadeIn();
+        return;
+    }
 
     $.ajax({
       // Endpoint Mantenido
@@ -50,7 +67,10 @@ $(document).ready(function() {
         // Se usa el nombre de campo 'correo' que usa el HTMLN estandarizado
         correo: $('input[name="correo_reg"]').val(), 
         // Se usa el nombre de campo 'contraseña' que usa el HTMLN estandarizado
-        contrasena: $('input[name="contraseña_reg"]').val() 
+        contrasena: $('input[name="contraseña_reg"]').val(), 
+        dedicacion: $('input[name="dedicacion"]').val(),
+        horario: $('input[name="horario"]').val(),
+        dias_trabajo: $('input[name="dias_trabajo"]').val()
       }),
       success: function(res) {
         if (res.success) {

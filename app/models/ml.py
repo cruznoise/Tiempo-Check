@@ -1,6 +1,24 @@
 from datetime import datetime
 from app.extensions import db
 
+class MLModelo(db.Model):
+    __tablename__ = 'ml_modelos'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    nombre = db.Column(db.String(100), nullable=False)
+    tipo = db.Column(db.String(50), nullable=False)
+    version = db.Column(db.String(20))
+    fecha_entrenamiento = db.Column(db.DateTime, nullable=False)
+    accuracy = db.Column(db.Float)
+    precision_score = db.Column(db.Float)
+    recall = db.Column(db.Float)
+    f1_score = db.Column(db.Float)
+    num_ejemplos = db.Column(db.Integer)
+    parametros = db.Column(db.Text)
+    ruta_archivo = db.Column(db.String(255))
+    activo = db.Column(db.Boolean, default=True) 
+
 class MlMetric(db.Model):
     __tablename__ = "ml_metrics"
     id = db.Column(db.Integer, primary_key=True)
@@ -18,17 +36,14 @@ class MlMetric(db.Model):
     artifact_path = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
 
-class MlPrediccionFuture(db.Model):
-    __tablename__ = "ml_predicciones_future"
-
+class MLPrediccionFuture(db.Model):
+    __tablename__ = 'ml_predicciones_future'
+    
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, nullable=False)
-    fecha_pred = db.Column(db.Date, nullable=False)
+    fecha_pred = db.Column(db.Date, nullable=False)  # ← Nota: es fecha_pred, no fecha_prediccion
     categoria = db.Column(db.String(100), nullable=False)
     yhat_minutos = db.Column(db.Float, nullable=False)
     modelo = db.Column(db.String(50), nullable=False)
     version_modelo = db.Column(db.String(20))
-    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def __repr__(self):
-        return f"<PredFuture {self.usuario_id} {self.fecha_pred} {self.categoria}>"
+    fecha_creacion = db.Column(db.DateTime)

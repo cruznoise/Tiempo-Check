@@ -10,6 +10,15 @@ eng = AgregadosEngine()
 def _hoy():
     return datetime.now(TZ).date()
 
+def job_agg_short(app, usuario_id: int):
+    """
+    Corre frecuente. Actualiza ventanas (7/14/30d) y KPIs para 'hoy'.
+    """
+    with app.app_context():
+        f = _hoy()
+        eng.calcular_ventanas_usuario(usuario_id, f)
+        eng.calcular_kpis_usuario(usuario_id, f)
+        print(f"[SCHED][agg_short] {f} user={usuario_id}")
 def job_agg_close_day(app=None, usuario_id: int = 1, fecha: date = None):
     """
     Job diario: ejecuta los cálculos de agregados para el usuario en la fecha indicada.
@@ -34,4 +43,17 @@ def job_agg_close_day(app=None, usuario_id: int = 1, fecha: date = None):
         except Exception as e:
             print(f"[SCHED][ERR][agg_close_day] user={usuario_id} fecha={fecha} → {e}")
             return None
-
+def job_agg_catchup(app, usuario_id: int, dias: int = 30):
+    """
+    Corre en fondo cada N horas para rellenar huecos recientes.
+    """
+    with app.app_context():
+        ffin = _hoy()
+        fini = ffin - timedelta(days=dias)
+        cur = fini
+        while cur <= ffin:
+            eng.calcular_estado_dia_usuario(usuario_id, cur)
+            eng.calcular_ventanas_usuario(usuario_id, cur)
+            cur += timedelta(days=1)
+        eng.calcular_kpis_usuario(usuario_id, ffin)
+        print(f"[SCHED][agg_catchup] {fini}→{ffin} user={usuario_id}")

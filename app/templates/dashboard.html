@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard - ProcrastiGuard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard-modern.css') }}">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body
@@ -56,15 +58,16 @@
     <!-- Contenido principal -->
     <main class="content">
 
-      <header class="main-header">
-        <h1>DASHBOARD</h1>
+      <!-- Header Moderno -->
+      <header class="main-header-modern">
+        <h1>📊 DASHBOARD</h1>
         <p class="intro-text">Este es un resumen personalizado de tu actividad digital.</p>
       </header>
 
-      <!-- Barra de controles -->
-      <section class="controls-bar">
-        <div class="control-group">
-          <label for="rango-dashboard">Rango de tiempo:</label>
+      <!-- Barra de controles moderna -->
+      <section class="controls-bar-modern">
+        <div class="control-group-modern">
+          <label for="rango-dashboard"><i class="fas fa-calendar-alt"></i> Rango de tiempo:</label>
           <select id="rango-dashboard">
             <option value="total">Total</option>
             <option value="hoy">Hoy</option>
@@ -79,9 +82,9 @@
           </div>
         </div>
 
-        <div class="control-group">
-          <div class="panel-temas">
-            <h3>Elige tu estilo visual</h3>
+        <div class="control-group-modern">
+          <div class="panel-temas-modern">
+            <h3>🎨 Tema</h3>
             <select id="selector-tema">
               <option value="dark-minimal">🕶️ Dark Minimal</option>
               <option value="claro-profesionald">🌞 Claro Profesional</option>
@@ -98,49 +101,64 @@
         </div>
       </section>
 
-      <!-- Barra resumen -->
-      <section class="summary-bar">
-        <div class="summary-card widget-color">
+      <!-- Grid moderno con widget de perfil -->
+      <div class="dashboard-modern">
+        <div class="perfil-grid-container">
+          {% include 'widget_perfil.html' %}
+        </div>
+      </div>
+              
+      <!-- Barra resumen moderna -->
+      <section class="summary-bar-modern">
+        <div class="summary-card-modern">
+          <div class="card-icon"><i class="fas fa-clock"></i></div>
           <h4>Tiempo total</h4>
           <p id="resumen-tiempo">...</p>
         </div>
-        <div class="summary-card widget-color">
+        <div class="summary-card-modern">
+          <div class="card-icon"><i class="fas fa-calendar-day"></i></div>
           <h4>Día más activo</h4>
           <p id="resumen-dia">...</p>
         </div>
-        <div class="summary-card widget-color">
+        <div class="summary-card-modern">
+          <div class="card-icon"><i class="fas fa-globe"></i></div>
           <h4>Sitio más visitado</h4>
           <p id="resumen-sitio">...</p>
         </div>
-        <div class="summary-card widget-color">
+        <div class="summary-card-modern">
+          <div class="card-icon"><i class="fas fa-folder"></i></div>
           <h4>Categoría dominante</h4>
           <p id="resumen-categoria">...</p>
         </div>
-        <div class="summary-card widget-color">
+        <div class="summary-card-modern">
+          <div class="card-icon"><i class="fas fa-chart-line"></i></div>
           <h4>Promedio diario</h4>
           <p id="resumen-promedio">...</p>
         </div>
       </section>
 
-      <!-- Sección principal de gráficos -->
-      <section class="dashboard-grid">
-        <div class="main-charts">
+      <!-- Sección principal de gráficos modernos -->
+      <section class="dashboard-grid-modern">
           
           <!-- Fila 1 -->
-          <div class="chart-box box-categoria">
-            <h3>Distribución por categoría</h3>
+          <div class="chart-box-modern box-categoria">
+            <h3><i class="fas fa-chart-pie"></i> Distribución por categoría</h3>
             <canvas id="graficaPastel"></canvas>
           </div>
 
-          <div class="chart-box box-tiempo-sitio">
-            <h3>Tiempo por sitio web</h3>
+          <div class="chart-box-modern box-tiempo-sitio">
+            <h3><i class="fas fa-chart-bar"></i> Tiempo por sitio web</h3>
 
-            <div class="chart-filter-inside">
-              <label for="min-range">Filtrar por minutos (mínimo):</label>
-              <div style="display:flex; align-items:center; gap:10px;">
-                <span id="min-value">0</span>
-                <input type="range" id="min-range" min="0" max="2000" step="50" value="0">
-              </div>
+            <div class="chart-filter-inside-modern">
+              <label for="filtro-minutos">Filtrar sitios por tiempo mínimo:</label>
+              <select id="filtro-minutos">
+                <option value="0">Todos los sitios</option>
+                <option value="50">Más de 50 minutos</option>
+                <option value="100">Más de 100 minutos</option>
+                <option value="200">Más de 200 minutos</option>
+                <option value="500">Más de 500 minutos</option>
+                <option value="1000">Más de 1000 minutos</option>
+              </select>
             </div>
 
             <div class="chart-canvas-wrapper">
@@ -148,27 +166,24 @@
             </div>
           </div>
 
-          <div id="ml-predict-card" class="panel-box box-prediccion">
-            <h3>Predicción de mañana (por día)</h3>
-            <ul id="ml-predict-list"></ul>
+          <div id="ml-predict-card" class="panel-box-modern box-prediccion">
+            <h3><i class="fas fa-crystal-ball"></i> Predicción de mañana (por día)</h3>
+            <ul id="ml-predict-list" class="prediction-list"></ul>
           </div>
 
           <!-- Fila 2 -->
-          <div class="chart-box box-horario">
-            <h3>Distribución de uso por hora</h3>
+          <div class="chart-box-modern box-horario">
+            <h3><i class="fas fa-clock"></i> Distribución de uso por hora</h3>
             <canvas id="graficaHorario"></canvas>
           </div>
 
-          <div class="chart-box box-tiempo-dia">
-            <h3>Tiempo total en pantalla por día</h3>
+          <div class="chart-box-modern box-tiempo-dia">
+            <h3><i class="fas fa-chart-line"></i> Tiempo total en pantalla por día</h3>
             <canvas id="graficaLinea"></canvas>
           </div>
 
-          <div id="nueva-tabla-panel" class="panel-box box-nueva-tabla">
-            <h3>Nueva Tabla de Datos</h3>
-            <p>La nueva tabla de datos.</p>
+          <div id="nueva-tabla-panel" class="panel-box-modern box-nueva-tabla">
           </div>
-        </div>
       </section>
 
 
@@ -236,6 +251,17 @@
 
   <!-- Toast container -->
   <div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
+  
+  {% include 'modal_anomalia.html' %}
+  
+  <!-- Sistema de Alertas en Tiempo Real -->
+  <div id="alertas-container"></div>
+     
+
+  {% include 'modal_clasificacion.html' %}
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/clasificacion.css') }}">
+  <script src="{{ url_for('static', filename='js/clasificacion_feedback.js') }}"></script>
 
   <!-- JSON de categorías -->
   <script type="application/json" id="categorias-json">
@@ -255,10 +281,15 @@
   </script>
 
   <!-- Scripts -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/anomalias.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/alertas.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/perfil.css') }}">
+  <script src="{{ url_for('static', filename='js/perfil_widget.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/anomalias.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/alertas_tiempo_real.js') }}"></script>
   <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
   <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
   <script src="{{ url_for('static', filename='js/coach_toast.js')}}"></script>
   <script src="{{ url_for('static', filename='js/reset_back.js') }}"></script>
 </body>
-
 </html>

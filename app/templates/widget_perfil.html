@@ -1,0 +1,68 @@
+<!-- Widget de Perfil de Usuario -->
+<div class="card perfil-widget">
+    <div class="card-header">
+        <h5>
+            <i class="fas fa-user-circle"></i>
+            Tu Perfil Adaptativo
+        </h5>
+        <span class="badge badge-info" id="badge-confianza">Calculando...</span>
+    </div>
+    
+    <div class="card-body">
+        <!-- Tipo de Usuario -->
+        <div class="perfil-item">
+            <div class="perfil-icon">
+                <i class="fas fa-briefcase"></i>
+            </div>
+            <div class="perfil-info">
+                <label>Tipo de Usuario</label>
+                <p id="perfil-tipo-inferido">Analizando...</p>
+                <small id="perfil-tipo-manual" class="text-muted"></small>
+            </div>
+        </div>
+        
+        <!-- Horario Pico -->
+        <div class="perfil-item">
+            <div class="perfil-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="perfil-info">
+                <label>Horario de Mayor Actividad</label>
+                <p id="perfil-horario-pico">-</p>
+                <small id="perfil-horario-manual" class="text-muted"></small>
+            </div>
+        </div>
+        
+        <!-- Días Activos -->
+        <div class="perfil-item">
+            <div class="perfil-icon">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="perfil-info">
+                <label>Días Más Activos</label>
+                <div id="perfil-dias-activos" class="dias-badges">
+                    <span class="badge">Lun</span>
+                    <span class="badge">Mar</span>
+                    <span class="badge">Mié</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Metadata -->
+        <div class="perfil-footer">
+            <small class="text-muted">
+                <i class="fas fa-info-circle"></i>
+                Perfil actualizado automáticamente cada semana
+            </small>
+            <div class="botones-accion">
+                <button class="btn btn-sm btn-outline-primary" onclick="actualizarPerfilManual()">
+                    <i class="fas fa-sync"></i> Actualizar perfil
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="reentrenarClasificador()">
+                    <i class="fas fa-brain"></i> Reentrenar ML
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>

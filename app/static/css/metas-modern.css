@@ -1,0 +1,574 @@
+/* ===============================================
+ * METAS Y LÍMITES MODERNO - Estilo Widget Perfil
+ * =============================================== */
+
+/* --- Layout Principal --- */
+.metas-container-modern {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 24px;
+    padding: 30px;
+}
+
+/* --- Header de Metas --- */
+.metas-header-modern {
+    grid-column: span 12;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 32px;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(240, 147, 251, 0.3);
+}
+
+.metas-header-modern h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.metas-header-modern p {
+    font-size: 16px;
+    opacity: 0.95;
+}
+
+/* --- Panel de Logros --- */
+.logros-panel-modern {
+    grid-column: span 12;
+    background: var(--card);
+    border: 1px solid var(--accent-light);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.logros-panel-modern h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logros-panel-modern h3::before {
+    content: '🏆';
+    font-size: 24px;
+}
+
+.logros-panel-modern h4 {
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+}
+
+.logros-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+/* Scrollbar personalizado */
+.logros-grid-modern::-webkit-scrollbar {
+    width: 8px;
+}
+
+.logros-grid-modern::-webkit-scrollbar-track {
+    background: var(--accent-light);
+    border-radius: 4px;
+}
+
+.logros-grid-modern::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+}
+
+/* Tarjeta de Logro */
+.logro-card {
+    background: var(--card);
+    border: 2px solid var(--accent-light);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.logro-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+}
+
+.logro-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(240, 147, 251, 0.2);
+    border-color: #f093fb;
+}
+
+.logro-card .icon {
+    font-size: 40px;
+    margin-bottom: 8px;
+}
+
+.logro-card .title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.logro-card .desc {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.logro-card.bloqueado {
+    opacity: 0.5;
+    filter: grayscale(1);
+}
+
+/* --- Panel de Sugerencias del Coach --- */
+.sug-limits-panel-modern {
+    grid-column: span 12;
+    background: var(--card);
+    border: 1px solid var(--accent-light);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.coach-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.coach-header h4 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+}
+
+.coach-header i {
+    font-size: 24px;
+    color: #667eea;
+}
+
+.info-coach-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.coach-tooltip-text {
+    visibility: hidden;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 300px;
+    background: #333;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.info-coach-tooltip:hover .coach-tooltip-text {
+    visibility: visible;
+}
+
+.prediction-container {
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    border-radius: 10px;
+    border: 1px solid var(--accent-light);
+}
+
+.prediction-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.prediction-controls label {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.prediction-controls select {
+    flex: 1;
+    max-width: 300px;
+    padding: 10px 14px;
+    border: 1px solid var(--accent-light);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 14px;
+}
+
+.prediction-status {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.prediction-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.btn-secondary-modern {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--accent-light);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary-modern:hover {
+    background: var(--accent-light);
+}
+
+.btn-primary-modern {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* --- Formularios Modernos --- */
+.form-box-modern {
+    grid-column: span 6;
+    background: var(--card);
+    border: 1px solid var(--accent-light);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.form-box-modern h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-box-modern h3::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(180deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 2px;
+}
+
+.tile-form-modern {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tile-form-modern select,
+.tile-form-modern input[type="number"] {
+    padding: 12px 14px;
+    border: 1px solid var(--accent-light);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.tile-form-modern select:focus,
+.tile-form-modern input[type="number"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.tile-form-modern button[type="submit"] {
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tile-form-modern button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+}
+
+/* --- Listas de Metas/Límites --- */
+.list-box-modern {
+    grid-column: span 6;
+    background: var(--card);
+    border: 1px solid var(--accent-light);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.list-box-modern h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.list-box-modern h3::before {
+    content: '📋';
+    font-size: 20px;
+}
+
+.table-container-modern {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.table-container-modern::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table-container-modern::-webkit-scrollbar-track {
+    background: var(--accent-light);
+    border-radius: 4px;
+}
+
+.table-container-modern::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+}
+
+.table-modern {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-modern thead {
+    position: sticky;
+    top: 0;
+    background: var(--card);
+    z-index: 10;
+}
+
+.table-modern th {
+    padding: 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    border-bottom: 2px solid var(--accent-light);
+}
+
+.table-modern td {
+    padding: 12px;
+    font-size: 14px;
+    color: var(--text);
+    border-bottom: 1px solid var(--accent-light);
+}
+
+.table-modern tbody tr:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.table-modern input[type="number"] {
+    width: 70px;
+    padding: 6px 8px;
+    border: 1px solid var(--accent-light);
+    border-radius: 4px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 13px;
+}
+
+.table-modern button {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s ease;
+}
+
+.table-modern button:hover {
+    transform: scale(1.2);
+}
+
+/* --- Estado de Metas --- */
+.status-box-modern {
+    grid-column: span 12;
+    background: var(--card);
+    border: 1px solid var(--accent-light);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.status-box-modern h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-box-modern h3::before {
+    content: '📊';
+    font-size: 20px;
+}
+
+/* Badges de Estado */
+.estado-verde {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    background: #d4edda;
+    color: #155724;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.estado-naranja {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    background: #fff3cd;
+    color: #856404;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.estado-rojo {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    background: #f8d7da;
+    color: #721c24;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.estado-azul {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    background: #d1ecf1;
+    color: #0c5460;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.estado-gris {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    background: #e2e3e5;
+    color: #383d41;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.estado-celeste {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    background: #cfe2ff;
+    color: #084298;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* --- Responsive --- */
+@media (max-width: 1200px) {
+    .form-box-modern,
+    .list-box-modern {
+        grid-column: span 12;
+    }
+}
+
+@media (max-width: 768px) {
+    .metas-container-modern {
+        padding: 16px;
+    }
+    
+    .metas-header-modern {
+        padding: 24px 20px;
+    }
+    
+    .metas-header-modern h1 {
+        font-size: 24px;
+    }
+    
+    .logros-grid-modern {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .table-modern {
+        font-size: 12px;
+    }
+    
+    .table-modern th,
+    .table-modern td {
+        padding: 8px;
+    }
+}

@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime
 from app.extensions import db
-from app.models.ml import MlPrediccionFuture
+from app.models.ml import MLPrediccionFuture
 
 
 def sync_preds_future_to_db(usuario_id: int, csv_path: str):
@@ -30,14 +30,14 @@ def sync_preds_future_to_db(usuario_id: int, csv_path: str):
     df["version_modelo"] = df.get("version_modelo", "v3.2")
     nuevos = 0
     for _, row in df.iterrows():
-        existe = MlPrediccionFuture.query.filter_by(
+        existe = MLPrediccionFuture.query.filter_by(
             usuario_id=usuario_id,
             fecha_pred=row["fecha_pred"],
             categoria=row["categoria"]
         ).first()
         if existe:
             continue  
-        registro = MlPrediccionFuture(
+        registro = MLPrediccionFuture(
             usuario_id=usuario_id,
             fecha_pred=row["fecha_pred"],
             categoria=row["categoria"],

@@ -1,0 +1,133 @@
+/* Widget de Perfil */
+.perfil-widget {
+    margin-bottom: 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.perfil-widget .card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px 20px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.perfil-widget .card-header h5 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#badge-confianza {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.perfil-item {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.perfil-item:last-of-type {
+    border-bottom: none;
+}
+
+.perfil-icon {
+    width: 40px;
+    height: 40px;
+    background: #f0f4ff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #667eea;
+    font-size: 20px;
+}
+
+.perfil-info {
+    flex: 1;
+}
+
+.perfil-info label {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.perfil-info p {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #212529;
+}
+
+.perfil-info small {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+.dias-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.dias-badges .badge {
+    background: #e7f3ff;
+    color: #0066cc;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.dias-badges .badge.activo {
+    background: #0066cc;
+    color: white;
+}
+
+.perfil-footer {
+    padding: 16px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #f0f0f0;
+}
+
+.perfil-footer .btn {
+    font-size: 12px;
+    padding: 6px 12px;
+}
+
+/* Badges de tipo de usuario */
+.tipo-estudiante {
+    color: #0066cc;
+}
+
+.tipo-trabajador {
+    color: #10b981;
+}
+
+.tipo-mixto {
+    color: #f59e0b;
+}
+
+.botones-accion {
+    display: flex;
+    gap: 8px;
+}

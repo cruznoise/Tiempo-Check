@@ -1,0 +1,63 @@
+<!-- Modal para explicar anomalías -->
+<div id="modalAnomalia" class="modal-overlay hidden">
+  <div class="modal-contenido anomalia-modal">
+    <div class="modal-header">
+      <h2>🤔 Coach Virtual</h2>
+      <button onclick="cerrarModalAnomalia()" class="btn-cerrar">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <p class="anomalia-texto">
+        Detecté que el <strong id="anomalia-fecha"></strong> tu uso fue 
+        <strong id="anomalia-diferencia"></strong> de lo normal.
+      </p>
+      
+      <p class="anomalia-detalle">
+        Usaste <strong id="anomalia-real"></strong> cuando normalmente usas 
+        <strong id="anomalia-esperado"></strong> los <span id="anomalia-dia-semana"></span>.
+      </p>
+      
+      <p class="anomalia-pregunta">¿Qué pasó ese día?</p>
+      
+      <div class="motivos-grid">
+        <button class="motivo-btn" data-motivo="sin_clases">
+          📚 No tuve clases/trabajo
+        </button>
+        
+        <button class="motivo-btn" data-motivo="olvide_apagar">
+          💻 Olvidé apagar el ordenador
+        </button>
+        
+        <button class="motivo-btn" data-motivo="evento">
+          🎉 Evento especial
+        </button>
+        
+        <button class="motivo-btn" data-motivo="deadline">
+          ⏰ Proyecto/deadline importante
+        </button>
+        
+        <button class="motivo-btn" data-motivo="vacaciones">
+          🏖️ Día libre/vacaciones
+        </button>
+        
+        <button class="motivo-btn" data-motivo="otro">
+          ❓ Otro motivo
+        </button>
+      </div>
+      
+      <div id="detalleExtra" class="detalle-extra hidden">
+        <label for="motivoDetalle">¿Quieres agregar más detalles? (opcional)</label>
+        <textarea id="motivoDetalle" rows="3" placeholder="Escribe aquí..."></textarea>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button onclick="cerrarModalAnomalia()" class="btn-secondary">
+        Recordar después
+      </button>
+      <button onclick="guardarMotivoAnomalia()" class="btn-primary" id="btnGuardar" disabled>
+        Guardar motivo
+      </button>
+    </div>
+  </div>
+</div>
