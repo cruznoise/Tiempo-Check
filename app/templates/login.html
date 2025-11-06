@@ -44,6 +44,38 @@
                     <span class="input-group-icon"><i class="fas fa-lock"></i></span>
                     <input type="password" name="contraseña_reg" placeholder="Contraseña" required> 
                 </div>
+                                
+                <div class="input-group">
+                    <span class="input-group-icon"><i class="fas fa-briefcase"></i></span>
+                    <select name="dedicacion" required class="login-select">
+                        <option value="" disabled selected>¿A qué te dedicas?</option>
+                        <option value="estudiante">Estudiante</option>
+                        <option value="trabajador">Trabajador (Empleado)</option>
+                        <option value="freelancer">Freelancer / Autónomo</option>
+                        <option value="emprendedor">Emprendedor</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <span class="input-group-icon"><i class="fas fa-clock"></i></span>
+                    <select name="horario" required class="login-select">
+                        <option value="" disabled selected>Horario Habitual de Concentración</option>
+                        <option value="manana">Mañana (8:00 - 13:00)</option>
+                        <option value="tarde">Tarde (13:00 - 18:00)</option>
+                        <option value="noche">Noche (18:00 - 23:00)</option>
+                        <option value="flexible">Flexible</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <span class="input-group-icon"><i class="fas fa-calendar-alt"></i></span>
+                    <select name="dias_trabajo" required class="login-select">
+                        <option value="" disabled selected>Días de Trabajo/Estudio</option>
+                        <option value="lun_vie">Lunes a Viernes</option>
+                        <option value="lun_sab">Lunes a Sábado</option>
+                        <option value="toda_semana">Toda la Semana</option>
+                        <option value="finde_semana">Fines de Semana</option>
+                    </select>
+                </div>
                 <button type="submit" class="register-btn">Registrarse</button>
             </form>
             <p class="registro-texto">¿Ya tienes cuenta? <a href="#" id="mostrarLogin">Inicia sesión</a></p>

@@ -34,16 +34,26 @@ def coach_catchup(app, usuario_id:int, dias:int=14):
         run_coach(usuario_id, ffin - timedelta(days=i))
     print(f"[SCHED][coach_catchup] user={usuario_id} lookback={dias}")
 
-def job_coach_alertas(app, usuario_id: int):
+def job_coach_alertas(app, usuario_id: int = None):
     """
     Ejecuta al cierre del día (o primera hora del siguiente) para el día de MX.
     """
     with app.app_context():
-        d = _hoy() - timedelta(days=1)  # generar para el día que terminó
-        res = generar_alertas_exceso(usuario_id=usuario_id, dia=d)
-        print(f"[SCHED][coach_alertas] pid={os.getpid()} {d} user={usuario_id} -> {res}")
-
-
+        if usuario_id is None:
+            from app.models.models import Usuario
+            usuarios = Usuario.query.all()
+            usuario_ids = [u.id for u in usuarios]
+        else:
+            usuario_ids = [usuario_id]
+        
+        d = _hoy() - timedelta(days=1) 
+        
+        for uid in usuario_ids:
+            try:
+                res = generar_alertas_exceso(usuario_id=uid, dia=d)
+                print(f"[SCHED][coach_alertas] pid={os.getpid()} {d} user={uid} -> {res}")
+            except Exception as e:
+                print(f"[SCHED][ERR][coach_alertas] user={uid} → {e}")
 
 def job_coach_autometas(app, usuario_id:int=1):
     """Genera metas automáticas a partir de sugerencias pendientes (meta_personalizada)."""

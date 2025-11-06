@@ -66,3 +66,21 @@ class CoachEstadoRegla(db.Model):
         server_default=func.current_timestamp(),
         onupdate=func.current_timestamp(),
     )
+
+class NotificacionClasificacion(db.Model):
+    __tablename__ = 'notificaciones_clasificacion'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    dominio = db.Column(db.String(255), nullable=False)
+    categoria_sugerida_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'), nullable=False)  # ← Id con mayúscula
+    confianza = db.Column(db.Float)
+    metodo = db.Column(db.String(20))
+    status = db.Column(db.String(20), default='pendiente')
+    categoria_correcta_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'))  # ← Id con mayúscula
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+    respondido_en = db.Column(db.DateTime)
+    
+    usuario = db.relationship('Usuario', backref='notificaciones_clasificacion')
+    categoria_sugerida = db.relationship('Categoria', foreign_keys=[categoria_sugerida_id])
+    categoria_correcta = db.relationship('Categoria', foreign_keys=[categoria_correcta_id])

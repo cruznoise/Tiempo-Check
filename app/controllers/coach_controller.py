@@ -69,17 +69,34 @@ def mark_read():
     db.session.commit()
     return jsonify({"ok": True})
 
-@bp.get('/sugerencias')
-def list_sugerencias():
-    usuario_id = int(request.args.get('usuario_id', 1))
-    items = (CoachSugerencia.query
-        .filter_by(usuario_id=usuario_id, status='new')
-        .order_by(CoachSugerencia.creado_en.desc()).limit(50).all())
-    return jsonify({"ok": True, "items": [
-        {"id": s.id, "tipo": s.tipo, "categoria": s.categoria, "titulo": s.titulo,
-        "cuerpo": s.cuerpo, "action_type": s.action_type, "action_payload": s.action_payload}
-        for s in items
-    ]})
+@bp.route('/sugerencias', methods=['GET'])
+def obtener_sugerencias():
+    """Obtiene sugerencias del coach para el usuario"""
+    usuario_id = request.args.get('usuario_id', 1, type=int)
+    
+    try:
+        # Obtener sugerencias activas
+        from app.models.models_coach import CoachSugerencia
+        from datetime import date
+
+        sugerencias = CoachSugerencia.query.filter(
+            CoachSugerencia.usuario_id == usuario_id,
+            CoachSugerencia.status == 'new'  
+        ).order_by(
+            CoachSugerencia.id.desc()  
+        ).limit(5).all()
+        
+        return jsonify({
+            'sugerencias': [{
+                'id': s.id,
+                'tipo': s.tipo,
+                'cuerpo': s.cuerpo,
+                'creado_en': s.creado_en.isoformat() if s.creado_en else None
+            } for s in sugerencias]
+        })
+    except Exception as e:
+        print(f"[COACH][ERROR] /sugerencias: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @bp.post('/sugerencias/act')
 def sugerencia_act():

@@ -11,7 +11,8 @@ from app.mysql_conn import get_mysql, close_mysql
 from app.models.models import Registro, DominioCategoria, Categoria, LimiteCategoria, MetaCategoria, Usuario, FeatureDiaria, FeatureHoraria
 from collections import defaultdict
 from datetime import datetime
-from app.utils import clasificar_dominio_automatico, desbloquear_logro, verificar_logros_dinamicos, obtener_promedio_categoria, calcular_nivel_confianza, obtener_dias_uso, calcular_sugerencias_por_categoria, _qa_invariantes_dia
+from app.utils import desbloquear_logro, verificar_logros_dinamicos, obtener_promedio_categoria, calcular_nivel_confianza, obtener_dias_uso, calcular_sugerencias_por_categoria, _qa_invariantes_dia
+from ml.utils_ml import clasificar_dominio_automatico
 from app.services.rachas_service import actualizar_rachas
 from app.extensions import db 
 from app.services.features_engine import calcular_persistir_features
@@ -662,7 +663,6 @@ def guardar_dominio():
             if row:
                 categoria_id = row[0]
             else:
-                from app.utils import clasificar_dominio_automatico
                 categoria_id = clasificar_dominio_automatico(dominio)
 
 
@@ -687,41 +687,75 @@ import traceback
 
 @bp.route("/registro", methods=["POST"])
 def registro():
+    """
+    Registro de usuario con perfil inicial
+    Guarda datos manuales + hace inferencia inicial
+    """
     try:
         data = request.get_json() or {}
-        print(" DATA RECIBIDA:", data)
+        print(" [REGISTRO] DATA RECIBIDA:", data)
+
         nombre = data.get("nombre")
         correo = data.get("correo")
         contrasena = data.get("contrasena")
+        dedicacion = data.get("dedicacion")
+        horario = data.get("horario")
+        dias_trabajo = data.get("dias_trabajo")
 
         if not nombre or not correo or not contrasena:
-            print(" Falta algún campo:", nombre, correo, contrasena)
-            return jsonify(success=False, message="Todos los campos son obligatorios."), 400
+            print(" [REGISTRO] Faltan campos obligatorios")
+            return jsonify(success=False, message="Nombre, correo y contraseña son obligatorios."), 400
 
-        existente = db.session.execute(
-            text("SELECT id FROM usuarios WHERE correo = :correo"),
-            {"correo": correo}
-        ).fetchone()
+        from app.models.models import Usuario
+        existente = Usuario.query.filter_by(correo=correo).first()
         if existente:
-            print(" Ya existe usuario con ese correo:", correo)
+            print(f" [REGISTRO] Ya existe usuario: {correo}")
             return jsonify(success=False, message="Ya existe un usuario con ese correo."), 400
 
-        db.session.execute(
-            text("""
-            INSERT INTO usuarios (nombre, correo, contrasena)
-            VALUES (:nombre, :correo, :contrasena)
-            """),
-            {"nombre": nombre, "correo": correo, "contrasena": contrasena}
+        nuevo_usuario = Usuario(
+            nombre=nombre,
+            correo=correo,
+            dedicacion=dedicacion,
+            horario_preferido=horario,
+            dias_trabajo=dias_trabajo
         )
+        nuevo_usuario.set_password(contrasena)
+        
+        db.session.add(nuevo_usuario)
         db.session.commit()
+        
+        print(f" [REGISTRO] Usuario creado: {correo} (ID: {nuevo_usuario.id})")
+        
+        # Inferir tipo inicial basado en dedicación manual
+        if dedicacion:
+            tipo_inicial = _inferir_tipo_desde_dedicacion(dedicacion)
+            nuevo_usuario.tipo_inferido = tipo_inicial
+            nuevo_usuario.confianza_inferencia = 0.5  # Baja confianza inicial
+            db.session.commit()
+            print(f" [PERFIL] Tipo inicial inferido: {tipo_inicial}")
 
-        return jsonify(success=True, message="Registro exitoso.")
+        return jsonify(success=True, message="Registro exitoso.", usuario_id=nuevo_usuario.id), 201
+
     except Exception as e:
-        print("ERROR REGISTRO:", e)
-        traceback.print_exc()   
+        print(f" [REGISTRO] ERROR:", e)
+        import traceback
+        traceback.print_exc()
         db.session.rollback()
-        return jsonify(success=False, message="Error interno: " + str(e)), 500
+        return jsonify(success=False, message=f"Error interno: {str(e)}"), 500
 
+
+def _inferir_tipo_desde_dedicacion(dedicacion: str) -> str:
+    """
+    Convierte la dedicación manual a tipo inferido
+    """
+    mapping = {
+        'estudiante': 'estudiante',
+        'trabajador': 'trabajador',
+        'freelancer': 'mixto',
+        'emprendedor': 'mixto',
+        'otro': 'mixto'
+    }
+    return mapping.get(dedicacion, 'mixto')
 
 @bp.route("/logout", methods=["GET"])
 def logout():

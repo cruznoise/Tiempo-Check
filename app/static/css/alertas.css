@@ -1,0 +1,157 @@
+.alerta-tiempo-real {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  width: 380px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  color: white;
+  z-index: 9999;
+  animation: slideInRight 0.4s ease;
+  overflow: hidden;
+}
+
+.alerta-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.alerta-icono {
+  font-size: 24px;
+}
+
+.alerta-header h4 {
+  margin: 0;
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.btn-cerrar-mini {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.btn-cerrar-mini:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.alerta-body {
+  padding: 20px;
+}
+
+.alerta-body p {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.btn-explicar, .btn-ignorar {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 8px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-explicar {
+  background: white;
+  color: #667eea;
+}
+
+.btn-explicar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+.btn-ignorar {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-ignorar:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(500px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.fade-out {
+  animation: fadeOut 0.3s ease;
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateX(500px);
+  }
+}
+
+#alertas-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 9999;
+  pointer-events: none; /* No bloquear clicks en página */
+}
+
+.alerta-tiempo-real {
+  width: 380px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  color: white;
+  animation: slideInRight 0.4s ease;
+  overflow: hidden;
+  pointer-events: auto; /* Pero sí en la alerta */
+  margin-bottom: 12px; /* Si hay múltiples alertas */
+}
+
+/* Modal overlay debe estar encima de todo */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000; /* Más alto que alertas */
+  padding: 20px;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+/* Resto del CSS... */

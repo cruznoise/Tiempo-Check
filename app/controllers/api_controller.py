@@ -6,7 +6,7 @@ import pandas as pd
 import json
 from app.extensions import db
 from flask_login import login_required, current_user
-from app.models.ml import MlPrediccionFuture
+from app.models.ml import MLPrediccionFuture
 from app.models.models import LimiteCategoria, FeaturesCategoriaDiaria
 from ml.pipeline import predict as ml_predict_fn
 from ml.pipeline import predict
@@ -110,12 +110,12 @@ def ml_preds_future():
         return jsonify({"error": "Parámetros inválidos: usa ?dias=3 o ?fecha_inicial=...&fecha_final=..."}), 400
 
     registros = (
-        MlPrediccionFuture.query
+        MLPrediccionFuture.query
         .filter(
-            MlPrediccionFuture.usuario_id == usuario_id,
-            MlPrediccionFuture.fecha_pred.in_(fechas)
+            MLPrediccionFuture.usuario_id == usuario_id,
+            MLPrediccionFuture.fecha_pred.in_(fechas)
         )
-        .order_by(MlPrediccionFuture.fecha_pred.asc(), MlPrediccionFuture.categoria.asc())
+        .order_by(MLPrediccionFuture.fecha_pred.asc(), MLPrediccionFuture.categoria.asc())
         .all()
     )
     if not registros:
@@ -147,6 +147,24 @@ def api_ml_predict():
     fecha = date.fromisoformat(f) if f else None
     res = ml_predict_fn(usuario_id=usuario_id, fecha=fecha)
     return jsonify(res)
+
+@bp.route('/api/categorias', methods=['GET'])  
+def obtener_categorias():
+    """Retorna lista de categorías para el frontend"""
+    from app.models.models import Categoria
+    
+    try:
+        categorias = Categoria.query.all()
+        
+        return jsonify({
+            'categorias': [{
+                'id': c.id, 
+                'nombre': c.nombre
+            } for c in categorias]
+        })
+    except Exception as e:
+        print(f"[API][ERROR] /categorias: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @bp.route("/api/ml/predict_multi", methods=["GET"])
 def api_ml_predict_multi():
@@ -266,3 +284,89 @@ def get_latest_eval():
 
     ultima_semana = sorted(data.keys())[-1]
     return jsonify({"semana": ultima_semana, "data": data[ultima_semana]})
+
+@bp.route('/api/perfil', methods=['GET'])
+def obtener_perfil():
+    """Obtiene el perfil completo del usuario actual"""
+    from app.services.perfil_adaptativo import obtener_perfil_completo
+    
+    usuario_id = session.get('usuario_id')
+    if not usuario_id:
+        return jsonify({'error': 'No autenticado'}), 401
+    
+    perfil = obtener_perfil_completo(usuario_id)
+    
+    if not perfil:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    return jsonify(perfil)
+
+
+@bp.route('/api/perfil/actualizar', methods=['POST'])
+def forzar_actualizacion_perfil():
+    """Fuerza actualización del perfil (para testing)"""
+    from app.services.perfil_adaptativo import inferir_perfil_usuario
+    
+    usuario_id = session.get('usuario_id')
+    if not usuario_id:
+        return jsonify({'error': 'No autenticado'}), 401
+    
+    perfil = inferir_perfil_usuario(usuario_id)
+    
+    if perfil:
+        return jsonify({'success': True, 'perfil': perfil})
+    else:
+        return jsonify({'success': False, 'mensaje': 'Datos insuficientes'}), 400
+    
+
+@bp.route('/api/clasificador/reentrenar', methods=['POST'])
+def reentrenar_clasificador_manual():
+    """
+    Endpoint para forzar reentrenamiento del clasificador
+    Útil para testing y demostración
+    """
+    from app.services.clasificador_ml import entrenar_clasificador_desde_bd
+    from ml.utils_ml import get_clasificador
+    
+    try:
+        print("🔄 [API] Reentrenamiento manual solicitado...")
+        
+        # Obtener stats antes
+        clasificador_viejo = get_clasificador()
+        precision_vieja = clasificador_viejo.metricas.get('accuracy', 0) if clasificador_viejo.entrenado else 0
+        
+        # Re-entrenar
+        clasificador_nuevo = entrenar_clasificador_desde_bd()
+        
+        if not clasificador_nuevo:
+            return jsonify({
+                'success': False,
+                'error': 'No se pudo entrenar (datos insuficientes)'
+            }), 400
+        
+        precision_nueva = clasificador_nuevo.metricas.get('accuracy', 0)
+        mejora = precision_nueva - precision_vieja
+        
+        # Recargar en memoria
+        get_clasificador().cargar()
+        
+        return jsonify({
+            'success': True,
+            'mensaje': 'Clasificador reentrenado correctamente',
+            'metricas': {
+                'precision_anterior': f"{precision_vieja:.2%}",
+                'precision_nueva': f"{precision_nueva:.2%}",
+                'mejora': f"{mejora:+.2%}",
+                'n_ejemplos': clasificador_nuevo.metricas.get('n_ejemplos', 0),
+                'n_categorias': clasificador_nuevo.metricas.get('n_categorias', 0)
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ [API] Error reentrenando: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

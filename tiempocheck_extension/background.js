@@ -63,8 +63,8 @@ function guardarTiempo(forzarEnvio = false) {
     body: new URLSearchParams({
       dominio: dominioActual,
       tiempo: String(delta),
-      fecha_hora: new Date(ahora).toISOString(),             // 👈 hora real
-      timezone_offset_min: String(new Date().getTimezoneOffset()) // opcional
+      fecha_hora: new Date(ahora).toISOString(),             
+      timezone_offset_min: String(new Date().getTimezoneOffset())
     })
   });
 
@@ -161,23 +161,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     })
     .then(res => res.json())
     .then(data => {
-      console.log("📥 Alerta recibida del backend:", data);
-      console.log("✅ Respuesta recibida:", data);
+      console.log(" Alerta recibida del backend:", data);
+      console.log(" Respuesta recibida:", data);
       sendResponse({ alerta: data.alerta });
     })
     .catch(err => {
-      console.error("❌ Error en background:", err);
+      console.error(" Error en background:", err);
       sendResponse({ alerta: false });
     });
 
     return true;
   }
 
-  console.log("📩 Mensaje recibido en background:", request); 
+  console.log(" Mensaje recibido en background:", request); 
   if (request.type === "cerrar_pestana") {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs.length > 0) {
-        console.log("🛑 Cerrando pestaña:", tabs[0].id);
+        console.log(" Cerrando pestaña:", tabs[0].id);
         chrome.tabs.remove(tabs[0].id);
       }
     });

@@ -1,0 +1,72 @@
+<!-- Modal para confirmar/corregir clasificaciones -->
+<div id="modalClasificacion" class="modal-overlay hidden">
+    <div class="modal-contenido modal-clasificacion">
+        <button onclick="cerrarModalClasificacion()" class="btn-cerrar">×</button>
+        
+        <div class="modal-header" id="modal-header">
+            <span class="icono-grande" id="modal-icono">🤖</span>
+            <h2 id="modal-titulo">Clasificación Automática</h2>
+        </div>
+        
+        <div class="modal-body">
+            <div class="clasificacion-info">
+                <div class="dominio-box">
+                    <label>Sitio web detectado:</label>
+                    <p id="clasificacion-dominio" class="dominio-texto"></p>
+                </div>
+                
+                <!-- Contenido para clasificación automática -->
+                <div id="contenido-automatico" class="contenido-seccion">
+                    <div class="categoria-sugerida">
+                        <label>Categoría asignada:</label>
+                        <div class="categoria-badge">
+                            <span id="clasificacion-categoria"></span>
+                            <span id="clasificacion-confianza" class="confianza-badge"></span>
+                        </div>
+                        <p class="metodo-info">
+                            <span id="clasificacion-metodo"></span>
+                        </p>
+                    </div>
+                    
+                    <p class="pregunta">¿Es correcta esta categorización?</p>
+                    
+                    <div class="clasificacion-acciones">
+                        <button onclick="confirmarClasificacion()" class="btn-confirmar">
+                            ✅ Sí, es correcta
+                        </button>
+                        
+                        <button onclick="mostrarSelectorCategoria()" class="btn-editar">
+                            ✏️ No, cambiar categoría
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Contenido para clasificación MANUAL -->
+                <div id="contenido-manual" class="contenido-seccion hidden">
+                    <div class="alerta-manual">
+                        <i class="fas fa-question-circle"></i>
+                        <p>No pudimos clasificar este sitio automáticamente.</p>
+                        <p class="texto-secundario">Por favor, ayúdanos seleccionando la categoría correcta:</p>
+                    </div>
+                </div>
+                
+                <!-- Selector de categoría (compartido) -->
+                <div id="selectorCategoria" class="selector-categoria hidden">
+                    <label>Selecciona la categoría correcta:</label>
+                    <select id="categoriaCorrecta" class="select-categoria">
+                        <!-- Se llena dinámicamente -->
+                    </select>
+                    <button onclick="guardarCorreccion()" class="btn-guardar">
+                        💾 Guardar categoría
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <p class="ayuda-texto">
+                💡 Tu feedback ayuda al sistema a aprender y mejorar
+            </p>
+        </div>
+    </div>
+</div>

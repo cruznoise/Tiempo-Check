@@ -1,0 +1,206 @@
+/* Modal de Anomalías */
+.anomalia-modal {
+  max-width: 600px;
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark, var(--accent)));
+  color: white;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.btn-cerrar {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 32px;
+  cursor: pointer;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.btn-cerrar:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.anomalia-texto {
+  font-size: 18px;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+.anomalia-detalle {
+  font-size: 16px;
+  color: var(--text-secondary, var(--text));
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--background);
+  border-radius: 8px;
+  border-left: 4px solid var(--accent);
+}
+
+.anomalia-pregunta {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+.motivos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.motivo-btn {
+  padding: 16px;
+  background: var(--background);
+  border: 2px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.motivo-btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.motivo-btn.selected {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.detalle-extra {
+  margin-top: 16px;
+}
+
+.detalle-extra label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.detalle-extra textarea {
+  width: 100%;
+  padding: 12px;
+  background: var(--background);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  resize: vertical;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  background: var(--background);
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-secondary, .btn-primary {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.2));
+}
+
+.btn-secondary:hover {
+  background: var(--surface);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Overlay del modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+/* Animación de entrada */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-contenido {
+  animation: modalSlideIn 0.3s ease;
+}

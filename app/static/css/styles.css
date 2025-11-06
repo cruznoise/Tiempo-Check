@@ -526,24 +526,30 @@ canvas {
 }
 
 .input-group-icon {
-  color: #ffffff;
+  position: absolute;
+  left: 10px; 
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text);
   transition: color 0.3s ease;
+  z-index: 10;
 }
 
-.login-container input {
-  padding: 0.85rem 1rem 0.85rem 1rem; 
-}
 
-.login-container input::placeholder {
-  color: #ffffff;
-  opacity: 0.6;
-}
-
-.login-container input:focus {
-  border-color: var(--text);
-  box-shadow: 0 0 10px var(--accent-light);
-  outline: none;
-}
+.login-container input, 
+.login-container .login-select { 
+  width: 100%;
+   padding: 0.85rem 1rem 0.85rem 2.2rem; 
+  border-radius: 0.8rem;
+  border: 1px solid var(--accent-light);
+  background-color: var(--card);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  -webkit-appearance: none; 
+  -moz-appearance: none;    
+  appearance: none;}
+  
 
 .input-group:focus-within .input-group-icon {
   color: #ffffff;
@@ -2377,13 +2383,29 @@ body {
 }
 
 /* Asignar posiciones específicas */
-.box-categoria { grid-column: 1; grid-row: 1; }
-.box-tiempo-sitio { grid-column: 2; grid-row: 1; }
-.box-prediccion { grid-column: 3; grid-row: 1; }
+.box-categoria { grid-column: 1; grid-row: 1; max-height: 400px;}
+.box-tiempo-sitio { grid-column: 2; grid-row: 1; max-height: 400px;}
+.box-prediccion { grid-column: 3; grid-row: 1; max-height: 400px;}
 
-.box-horario { grid-column: 1; grid-row: 2; }
-.box-tiempo-dia { grid-column: 2; grid-row: 2; }
-.box-nueva-tabla { grid-column: 3; grid-row: 2; }
+.box-horario { grid-column: 1; grid-row: 2; max-height: 400px;}
+.box-tiempo-dia { grid-column: 2; grid-row: 2; max-height: 400px;}
+.box-nueva-tabla { grid-column: 3; grid-row: 2; max-height: 400px;}
+
+
+.box-tiempo-sitio h3 {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.box-tiempo-sitio .chart-filter-inside {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+}
+
+.box-tiempo-sitio .chart-canvas-wrapper {
+  flex: 1;
+  min-height: 0; /* Importante para que funcione el scroll */
+}
 
 /* Ajustes visuales */
 .chart-box, .panel-box {
@@ -2402,22 +2424,82 @@ body {
   height: 100%;
 }
 
-/* === Filtro interno === */
+/* Filtro de rango DENTRO de la gráfica */
 .chart-filter-inside {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: var(--card);
-  border: 1px solid var(--accent-light);
-  border-radius: 10px;
-  padding: 8px 12px;
-  box-shadow: var(--shadow);
-  z-index: 5;
-  font-size: 0.85em;
+  padding: 12px;
+  background: var(--surface);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border, rgba(255,255,255,0.1));
 }
 
-.chart-canvas-wrapper {
-  position: relative;
+.chart-filter-inside label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.chart-filter-inside select {
   width: 100%;
-  height: 100%;
+  padding: 8px 12px;
+  background: var(--background);
+  color: var(--text);
+  border: 1px solid var(--border, rgba(255,255,255,0.2));
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chart-filter-inside select:hover {
+  border-color: var(--accent);
+}
+
+.chart-filter-inside select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 59, 130, 246), 0.1);
+}
+/* Contenedor con scroll horizontal */
+.chart-canvas-wrapper {
+  width: 100%;
+  height: 400px; /* Altura fija para la gráfica */
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 15px;
+  position: relative;
+}
+
+.chart-canvas-wrapper canvas {
+  height: 100% !important;
+  max-height: 380px;
+}
+
+/* Scrollbar más visible */
+.chart-canvas-wrapper::-webkit-scrollbar {
+  height: 12px;
+  background: var(--surface);
+}
+
+.chart-canvas-wrapper::-webkit-scrollbar-track {
+  background: var(--background);
+  border-radius: 6px;
+  border: 1px solid var(--border, rgba(255,255,255,0.1));
+}
+
+.chart-canvas-wrapper::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 6px;
+  border: 2px solid var(--background);
+}
+
+.chart-canvas-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-dark, var(--accent));
+}
+
+/* Para Firefox */
+.chart-canvas-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) var(--background);
 }

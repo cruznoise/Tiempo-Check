@@ -11,7 +11,7 @@ from ml.features import make_lagged, get_feature_cols, split_train_holdout, late
 from ml.estimators import NaiveLast, MA7, RFReg
 from ml.metrics import mae, rmse, smape, _best_baseline, log_metrics
 from ml.models import BaselineHybrid, RandomForestWrapper, load_model_for_categoria
-from ml.utils import canon_cat_filename, ensure_dir, guardar_predicciones
+from ml.utils_ml import canon_cat_filename, ensure_dir, guardar_predicciones
 from ml.scripts.build_model_selector import build_model_selector 
 import numpy as np
 import unicodedata
@@ -21,6 +21,12 @@ from app.extensions import db
 import json
 import joblib
 
+try:
+    from app.services.contexto_ml_integration import ajustar_prediccion_con_contexto
+    CONTEXTO_DISPONIBLE = True
+except ImportError:
+    CONTEXTO_DISPONIBLE = False
+    print("[PIPELINE] Módulo de contexto no disponible")
 
 def _strip_accents(s: str) -> str:
     if not isinstance(s, str):
@@ -113,7 +119,7 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
 
     n_dias = 0 if df.empty else df["fecha"].nunique()
     d = make_lagged(df) if not df.empty else df
-    threshold = min(hist_days, max(10, int(0.5 * hist_days)))
+    threshold = min(hist_days, max(10, int(0.3 * hist_days)))
     ts = date.today().isoformat()
 
     if df.empty or n_dias < threshold:
@@ -492,10 +498,29 @@ def predict_multi_horizon(usuario_id, fecha_base, horizontes=[1, 2, 3]):
                 if feature_cols is not None:
                     X = X.reindex(columns=list(feature_cols), fill_value=0.0)
                 _audit_X(X, feature_cols, tag=f"{fecha_pred.date()}_X") # <--- CAMBIO de tag
-
+                
                 pred = modelo.predict(X)
                 yhat_raw = float(pred[0]) if isinstance(pred, (list, tuple, np.ndarray)) else float(pred)
-                yhat = float(clamp_and_round(max(yhat_raw, 0.0), rnd=2))
+                yhat_base = float(clamp_and_round(max(yhat_raw, 0.0), rnd=2))
+                if CONTEXTO_DISPONIBLE and yhat_base > 0:
+                    try:
+                        dia_semana = fecha_pred.weekday()
+                        yhat_ajustada = ajustar_prediccion_con_contexto(
+                            prediccion_base=yhat_base,
+                            dia_semana=dia_semana,
+                            usuario_id=usuario_id,
+                            motivo_esperado=None
+                        )
+                        
+                        if abs(yhat_ajustada - yhat_base) > 1.0:  # Solo log si hay cambio significativo
+                            print(f"[CONTEXTO] {categoria}: {yhat_base:.0f} → {yhat_ajustada:.0f} min")
+                        
+                        yhat = yhat_ajustada
+                    except Exception as e:
+                        print(f"[CONTEXTO][ERROR] {categoria}: {e}")
+                        yhat = yhat_base
+                else:
+                    yhat = yhat_base
             except Exception as e:
                 print(f"[ERROR][MULTI] {categoria}: {e}")
                 continue

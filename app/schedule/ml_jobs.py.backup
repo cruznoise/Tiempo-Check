@@ -52,6 +52,49 @@ def job_ml_predict(app, usuario_id: int = None):
         except subprocess.CalledProcessError as e:
             print(f"[SCHED][ERR][PREDICT] user={uid} → {e}")
 
+def job_ml_catchup(app, usuario_id: int, dias: int = 3):
+    """
+    Verifica si existen predicciones faltantes en los últimos N días
+    y las genera usando ml.pipeline.predict si es necesario.
+    Compatible con v3.2 (usa ml_predicciones_future en lugar de ml_preds_diarias).
+    """
+    print(f"[SCHED][ML] Catch-up últimos {dias} días user={usuario_id}")
+
+    with app.app_context():
+        conexion = get_mysql()
+        try:
+            with conexion.cursor() as cursor:
+                for i in range(dias, 0, -1):
+                    d = (date.today() - timedelta(days=i)).isoformat()
+
+                    cursor.execute("""
+                        SELECT COUNT(*) 
+                        FROM ml_predicciones_future 
+                        WHERE usuario_id = %s AND fecha_pred = %s
+                    """, (usuario_id, d))
+                    existe = cursor.fetchone()[0]
+
+                    if existe == 0:
+                        cmd = [
+                            "python3", "-m", "ml.pipeline", "predict",
+                            "--usuario", str(usuario_id),
+                            "--fecha", d,
+                            "--save-csv"
+                        ]
+                        try:
+                            subprocess.run(cmd, check=True)
+                            print(f"[CATCHUP]  Generada predicción {d} para u{usuario_id}")
+                        except subprocess.CalledProcessError as e:
+                            print(f"[CATCHUP][ERROR]  u{usuario_id} fecha={d} -> {e}")
+                    else:
+                        print(f"[CATCHUP]  Ya existe predicción {d} user={usuario_id}, skip")
+
+        except Exception as e:
+            print(f"[CATCHUP][FATAL] {e}")
+        finally:
+            conexion.close()
+
+
 def job_ml_train_cat(app, usuario_id: int):
     with app.app_context():
         from ml.pipeline import train_por_categoria

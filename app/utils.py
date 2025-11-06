@@ -37,26 +37,6 @@ def generar_backup_completo(usuario_id):
     }
 
 
-def clasificar_dominio_automatico(dominio):
-    conexion = get_mysql()
-    print(f"[DEBUG] Intentando clasificar dominio: {dominio}")
-    
-    with conexion.cursor() as cursor:
-        cursor.execute("SELECT patron, categoria_id FROM patrones_categoria")
-        patrones = cursor.fetchall()
-
-        for patron, categoria_id in patrones:
-            if re.search(patron, dominio, re.IGNORECASE):
-                print(f"[DEBUG] Match encontrado: {patron} → categoría {categoria_id}")
-                cursor.execute("""
-                    INSERT INTO dominio_categoria (dominio, categoria_id) VALUES (%s, %s)
-                """, (dominio, categoria_id))
-                conexion.commit()
-                return categoria_id
-    
-    print("[DEBUG] No se encontró ningún patrón que haga match.")
-    return None
-
 def restaurar_backup_completo(data, usuario_id):
 
     db.session.query(Registro).filter_by(usuario_id=usuario_id).delete()

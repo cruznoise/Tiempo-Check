@@ -90,6 +90,34 @@ function filtrarDatosPorRango(rango) {
   }
 }
 
+// === Función para ajustar ancho dinámico de gráfica de barras ===
+function ajustarAnchoGrafica(numSitios) {
+  const canvas = document.getElementById('grafica');
+  const wrapper = canvas.closest('.chart-canvas-wrapper');
+  
+  if (!canvas || !wrapper) return;
+  
+  // Calcular ancho necesario (mínimo 80px por sitio)
+  const anchoPorSitio = 80;
+  const anchoMinimo = numSitios * anchoPorSitio;
+  const anchoWrapper = wrapper.clientWidth;
+  
+  if (anchoMinimo > anchoWrapper) {
+    // Hay overflow, activar scroll
+    canvas.style.width = `${anchoMinimo}px`;
+    wrapper.style.overflowX = 'scroll';
+  } else {
+    // Cabe todo, sin scroll
+    canvas.style.width = '100%';
+    wrapper.style.overflowX = 'hidden';
+  }
+  
+  // Forzar actualización de Chart.js
+  if (grafica) {
+    grafica.resize();
+  }
+}
+
 function crearGraficas() {
   const style = getComputedStyle(document.body);
   
@@ -160,25 +188,29 @@ function crearGraficas() {
       }
     }
   });
+ajustarAnchoGrafica(datos.length);
+// === FILTRO DINÁMICO POR MINUTOS (SELECT) ===
+// === FILTRO DINÁMICO POR MINUTOS (SELECT) ===
+const filtroMinutos = document.getElementById('filtro-minutos');
 
-  // === FILTRO DINÁMICO POR MINUTOS ===
-const rangeInput = document.getElementById('min-range');
-const minValue = document.getElementById('min-value');
+if (filtroMinutos && grafica) {
+  const datosOriginales = [...datos];
 
-if (rangeInput && grafica) {
-  const datosOriginales = [...datos]; // guarda copia completa
-
-  rangeInput.addEventListener('input', () => {
-    const minLimit = parseInt(rangeInput.value);
-    minValue.textContent = minLimit;
-
+  filtroMinutos.addEventListener('change', () => {
+    const minLimit = parseInt(filtroMinutos.value);
     const filtrados = datosOriginales.filter(d => d.total >= minLimit);
+    
+    // Actualizar datos
     grafica.data.labels = filtrados.map(d => d.dominio);
     grafica.data.datasets[0].data = filtrados.map(d => d.total);
-    grafica.update('none'); // 'none' evita animaciones bruscas
+    
+    // Ajustar ancho según cantidad de sitios
+    ajustarAnchoGrafica(filtrados.length);
+    
+    // Actualizar gráfica
+    grafica.update('none');
   });
 }
-
 
   // 2. Gráfica de Pastel (Distribución por categoría)
   graficaPastel = new Chart(ctxCat, {
@@ -221,6 +253,7 @@ if (rangeInput && grafica) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       scales: {
         y: { 

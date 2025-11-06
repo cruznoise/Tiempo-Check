@@ -1,6 +1,6 @@
 import joblib
 from pathlib import Path
-from ml.utils import canon_cat_filename, ensure_dir 
+from ml.utils_ml import canon_cat_filename, ensure_dir 
 
 ARTIFACTS_DIR = Path("ml/artifacts")
 

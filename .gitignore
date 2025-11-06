@@ -81,3 +81,12 @@ ml/utils_audit.py
 *copy.*
 *.ipynb_checkpoints/
 backup_*
+
+# --- Extras ---
+Documentacion.txt
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+readme2.md 
+RESUMEN_PROECTO.md
