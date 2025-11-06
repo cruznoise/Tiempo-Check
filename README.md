@@ -1,7 +1,7 @@
 #  TiempoCheck — “Tu asistente de hábitos digitales inteligentes”
 
-**Versión actual:** `v3.2 Unofficial`  
-**Fecha de lanzamiento:** 2025-10-30  
+**Versión actual:** `v3.2 Changes`  
+**Fecha de lanzamiento:** 2025-11-06 
 **Autores:** 
 Luis Ángel Cruz Tenorio (`@cruznoise`)
 Ana Maria Ambriz Gonzalez
@@ -17,7 +17,7 @@ El sistema monitorea tus actividades por categoría (Trabajo, Ocio, Estudio, etc
 
 ---
 
-## Pruebas funcionales en `v3.2 Unofficial`
+## Pruebas funcionales en `v3.2 Changes`
 
 Durante esta versión se validaron:
 - Ejecución completa de jobs automáticos y boot_catchup.
@@ -25,7 +25,9 @@ Durante esta versión se validaron:
 - Persistencia correcta de features y métricas.
 - Visualización dinámica en el dashboard.
 - Integración funcional con la extensión del navegador.
-
+- Integracion de clasificación inteligente de sitios en categorias.
+- Rentrenamiento de clasificación y predicciones automáticos y manuales.
+- 
 ---
 
 ##  Arquitectura general
@@ -128,6 +130,10 @@ python3 -m ml.scripts.build_model_selector
 
 # Generar predicción para hoy
 python3 -m ml.pipeline predict --usuario 1
+
+
+#Estos jobs tambien se puededen ejecutar de manera manual mediante los botones incluidos en el dashboard.
+
 ```
 
 ---
@@ -147,9 +153,9 @@ ml/preds/<id>/     → predicciones diarias
 | Versión | Estado | Enfoque principal |
 |----------|---------|------------------|
 | **v3.0** |  Cerrada | Baseline reproducible (RandomForest + BaselineHybrid) |
-| **v3.1** |  Estable | Selector automático y recomendaciones simples |
-| **v3.2** |  Cerrada | Predicciones extendidas (T+1..T+3) + UI de adopción |
-| **v3.3** |  En desarrollo | Coach inteligente con metas dinámicas, correción de errores y version final |
+| **v3.1** |  Cerrada | Selector automático y recomendaciones simples |
+| **v3.2** |  Estable | Predicciones extendidas (T+1..T+3) + UI de adopción y coach Inteligente |
+| **LaunchOf (v3.3)** |  En desarrollo | Correción de errores y version final |
 
 ---
 
