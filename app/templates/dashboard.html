@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard-modern.css') }}">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cleanup.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fix-canvas-zoom.css') }}">
 </head>
 <body
   data-datos='{{ datos | tojson | safe }}'

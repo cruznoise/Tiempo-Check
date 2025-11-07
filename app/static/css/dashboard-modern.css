@@ -1,6 +1,3 @@
-/* ===============================================
- * DASHBOARD MODERNO - Estilo Widget Perfil
- * =============================================== */
 
 /* --- Contenedor Principal del Dashboard --- */
 .dashboard-modern {
@@ -240,14 +237,19 @@
     font-size: 20px;
 }
 
-/* --- Chart Boxes Modernos --- */
+/* --- Chart Boxes Modernos - SIN CONFLICTOS --- */
 .chart-box-modern {
     background: var(--card);
     border: 1px solid var(--accent-light);
     border-radius: 12px;
-    padding: 24px;
+    padding: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 350px;
+    overflow: hidden;
+    height: 100%;
 }
 
 .chart-box-modern:hover {
@@ -255,53 +257,92 @@
 }
 
 .chart-box-modern h3 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
-    margin-bottom: 20px;
+    margin: 0 0 16px 0;
     color: var(--text);
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0;
 }
 
 .chart-box-modern h3::before {
     content: '';
-    width: 4px;
-    height: 20px;
+    width: 3px;
+    height: 18px;
     background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
     border-radius: 2px;
+    flex-shrink: 0;
 }
 
-/* Filtro dentro del chart */
+/* Filtro dentro del chart - IMPORTANTE: NO AFECTA AL CANVAS */
 .chart-filter-inside-modern {
     display: flex;
     gap: 12px;
     align-items: center;
-    margin-bottom: 16px;
-    padding: 12px;
+    margin-bottom: 12px;
+    padding: 10px;
     background: rgba(102, 126, 234, 0.05);
     border-radius: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
 .chart-filter-inside-modern label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--text);
+    white-space: nowrap;
 }
 
 .chart-filter-inside-modern select {
-    padding: 6px 12px;
+    padding: 6px 10px;
     border: 1px solid var(--accent-light);
     border-radius: 6px;
     background: var(--card);
     color: var(--text);
-    font-size: 13px;
+    font-size: 12px;
+    flex: 1;
+    min-width: 150px;
 }
 
-/* Canvas wrapper */
+/* Canvas wrapper - CLAVE PARA MANTENER GRÁFICAS EN SU LUGAR */
 .chart-canvas-wrapper {
     position: relative;
     width: 100%;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    max-height: 280px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 10px;
+}
+
+/* Asegurar que canvas NO TENGA ZOOM */
+.chart-canvas-wrapper canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Scrollbar para canvas si es necesario */
+.chart-canvas-wrapper::-webkit-scrollbar {
+    height: 6px;
+}
+
+.chart-canvas-wrapper::-webkit-scrollbar-track {
+    background: var(--accent-light);
+    border-radius: 3px;
+}
+
+.chart-canvas-wrapper::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 3px;
 }
 
 /* --- Panel de Predicción Moderno --- */
@@ -309,18 +350,24 @@
     background: var(--card);
     border: 1px solid var(--accent-light);
     border-radius: 12px;
-    padding: 24px;
+    padding: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    min-height: 350px;
+    overflow-y: auto;
+    height: 100%;
 }
 
 .panel-box-modern h3 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
-    margin-bottom: 16px;
+    margin: 0 0 16px 0;
     color: var(--text);
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-shrink: 0;
 }
 
 .panel-box-modern h3 i {
@@ -331,6 +378,7 @@
     list-style: none;
     padding: 0;
     margin: 0;
+    flex: 1;
 }
 
 .prediction-item {
@@ -339,6 +387,7 @@
     align-items: center;
     padding: 12px 0;
     border-bottom: 1px solid var(--accent-light);
+    font-size: 14px;
 }
 
 .prediction-item:last-child {
@@ -356,25 +405,44 @@
     color: #667eea;
 }
 
-/* --- Grid Layout del Dashboard --- */
+/* --- Grid Layout del Dashboard - CORREGIDO --- */
 .dashboard-grid-modern {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
     gap: 24px;
+    grid-auto-rows: minmax(350px, auto);
 }
 
 /* Distribución de las gráficas */
-.box-categoria { grid-column: span 6; }
-.box-tiempo-sitio { grid-column: span 6; }
-.box-prediccion { grid-column: span 12; }
-.box-horario { grid-column: span 6; }
-.box-tiempo-dia { grid-column: span 6; }
-.box-nueva-tabla { grid-column: span 12; }
+.box-categoria { 
+    grid-column: span 6;
+}
+
+.box-tiempo-sitio { 
+    grid-column: span 6;
+}
+
+.box-prediccion { 
+    grid-column: span 4;
+}
+
+.box-horario { 
+    grid-column: span 6;
+}
+
+.box-tiempo-dia { 
+    grid-column: span 6;
+}
+
+.box-nueva-tabla { 
+    grid-column: span 12;
+}
 
 /* Responsive */
 @media (max-width: 1400px) {
     .box-categoria { grid-column: span 12; }
     .box-tiempo-sitio { grid-column: span 12; }
+    .box-prediccion { grid-column: span 12; }
     .box-horario { grid-column: span 12; }
     .box-tiempo-dia { grid-column: span 12; }
 }
@@ -392,6 +460,10 @@
     .panel-temas-modern {
         flex-direction: column;
         align-items: stretch;
+    }
+    
+    .dashboard-grid-modern {
+        grid-auto-rows: minmax(300px, auto);
     }
 }
 

@@ -301,9 +301,7 @@
   </main>
 </div>
 
-
-
-  <!-- Menú flotante -->
+  <!-- Menú flotante de configuración (IDÉNTICO AL DASHBOARD) -->
   <div id="menuFlotanteConfig" class="config-dropdown hidden">
     <div class="tile-box menu-box">
       <h2 class="menu-title">Configuración de la cuenta</h2>
@@ -360,10 +358,29 @@
     checkCoachAlertas();
     window.__coachPolling = setInterval(checkCoachAlertas, 5 * 60 * 1000);
   }
+
+  // ===== MENÚ FLOTANTE DE CONFIGURACIÓN - FUNCIONA EN METAS =====
+  const btnConfig = document.getElementById('btnConfiguracion');
+  const menuConfig = document.getElementById('menuFlotanteConfig');
+
+  if (btnConfig && menuConfig) {
+    btnConfig.addEventListener('click', (e) => {
+      e.preventDefault(); 
+      e.stopPropagation(); 
+      menuConfig.classList.toggle('hidden');
+    });
+
+    // Cierra el menú si se hace clic fuera de él
+    document.addEventListener('click', (e) => {
+      if (!menuConfig.contains(e.target) && !btnConfig.contains(e.target) && !menuConfig.classList.contains('hidden')) {
+        menuConfig.classList.add('hidden');
+      }
+    });
+  }
 </script>
 <script src="{{ url_for('static', filename='js/metas.js') }}"></script>
 <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/reset_back.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reset_back.js') }}"></script>
 </body>
 </html>
