@@ -4,7 +4,7 @@
 [![Flask](https://img.shields.io/badge/Flask-2.3-green.svg)](https://flask.palletsprojects.com/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.3.0-orange.svg)](https://scikit-learn.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Active-success.svg)](https://github.com/cruznoise/tiempocheck)
+[![Status](https://img.shields.io/badge/Status-Active-success.svg)](https://github.com/cruznoise/Tiempo-Check)
 
 **Versión actual:** `v3.2.1 Cambios en V 3.2`  
 **Fecha de lanzamiento:** 2025-11-05  
