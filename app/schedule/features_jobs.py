@@ -10,22 +10,36 @@ def _hoy(app):
     tz = ZoneInfo(app.config.get("TZ", "America/Mexico_City"))
     return datetime.now(tz).date()
 
-def job_features_diarias(app=None, usuario_id=1, fecha=None):
-    """Calcula y guarda las features diarias del usuario para un día específico."""
-    app = app or current_app
+def job_features_diarias(app, usuario_id, fecha_override=None):
+    """
+    Job que calcula features diarias
+    
+    Args:
+        app: Instancia Flask
+        usuario_id: ID del usuario
+        fecha_override: Fecha específica (opcional, default: ayer)
+    """
+    from datetime import date, timedelta
+    
     with app.app_context():
-        from datetime import date
-        if fecha is None:
-            fecha = date.today()
-
-        print(f"[ENG][RUN] calcular_persistir_features usuario={usuario_id} dia={fecha}")
         try:
-            res = calcular_persistir_features(usuario_id=usuario_id, dia=fecha)
-            print(f"[SCHED][diarias] user={usuario_id} fecha={fecha} → diarias={res.get('diarias',0)} horarias={res.get('horarias',0)} ok={res.get('ok',0)}")
-            return res
+            # Usar fecha_override si se proporciona, sino ayer
+            if fecha_override:
+                fecha_calcular = fecha_override
+            else:
+                fecha_calcular = date.today() - timedelta(days=1)
+            
+            print(f"[FEATURES][DIARIAS] Usuario {usuario_id}, fecha: {fecha_calcular}")
+            
+            # Calcular features
+            calcular_persistir_features(usuario_id, fecha_calcular)
+            
+            print(f"[FEATURES][DIARIAS] ✅ Completado para {fecha_calcular}")
+            
         except Exception as e:
-            print(f"[ENG][ERR] Fallo en job_features_diarias({fecha}): {e}")
-            return None
+            print(f"[FEATURES][DIARIAS] ❌ Error: {e}")
+            import traceback
+            traceback.print_exc()
         
 def job_catchup(app, usuario_id: int, dias_atras: int = 3):
     with app.app_context():

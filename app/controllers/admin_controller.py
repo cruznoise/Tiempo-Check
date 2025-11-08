@@ -685,6 +685,14 @@ def guardar_dominio():
 
 import traceback
 
+@bp.route('/dashboard_ml')
+def dashboard_ml():
+    """Dashboard de métricas ML"""
+    if 'usuario_id' not in session:
+        return redirect('/login')
+    
+    return render_template('dashboard_ml.html')
+
 @bp.route("/registro", methods=["POST"])
 def registro():
     """
