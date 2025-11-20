@@ -53,7 +53,33 @@ TiempoCheck es un **sistema integral de análisis y optimización del tiempo** q
 | **Dashboard** | Visualizaciones interactivas | ✅ 90% |
 
 ---
+## Viusalización
 
+### Interfaz de Inicio de Sesión y registro.
+<img width="1274" height="663" alt="image" src="https://github.com/user-attachments/assets/1404ccc9-9b21-4ff3-aaa6-134f6cc734b5" />
+
+### Dashboard y ventana principal.
+<img width="1895" height="662" alt="image" src="https://github.com/user-attachments/assets/7b81bdf7-d229-4ca5-8f66-84dcb8ab058c" />
+<img width="1403" height="588" alt="image" src="https://github.com/user-attachments/assets/ed3e1d76-3223-4cfc-b1ac-37807193a008" />
+
+### Ventana de Logros y metas.
+<img width="1913" height="747" alt="image" src="https://github.com/user-attachments/assets/8b3252a5-2fed-4781-94ec-c9e59a88ea76" />
+<img width="1914" height="915" alt="image" src="https://github.com/user-attachments/assets/970707cd-6474-4aa1-877a-9eba8966ff52" />
+<img width="1913" height="936" alt="image" src="https://github.com/user-attachments/assets/2206b574-dbd2-42b9-a98f-ef9a03562ada" />
+
+### Panel de configuración de la cuenta.
+<img width="301" height="711" alt="image" src="https://github.com/user-attachments/assets/fabd8936-5d9f-48f6-9bb6-a1f55db6fa02" />
+
+### Administración de sitios y categorias.
+<img width="1907" height="938" alt="image" src="https://github.com/user-attachments/assets/fe2593ea-7746-4353-a9ca-13b72f049869" />
+
+### Popup de monitoreo.
+<img width="1915" height="985" alt="image" src="https://github.com/user-attachments/assets/d3b5a8f6-792e-409d-b765-9cc1277f7c29" />
+
+### Popup de alerta de limite.
+<img width="921" height="477" alt="image" src="https://github.com/user-attachments/assets/ea15b1fa-b243-4f2d-8294-4fb94c6b38a2" />
+
+---
 ## 🏗️ Arquitectura
 ```
 ┌─────────────────────────────────────────────────────────┐
