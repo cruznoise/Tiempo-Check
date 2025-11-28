@@ -70,6 +70,7 @@ TiempoCheck es un **sistema integral de análisis y optimización del tiempo** q
 
 ### Panel de configuración de la cuenta.
 <img width="323" height="771" alt="image" src="https://github.com/user-attachments/assets/ff50e4de-9411-40c6-ad6e-21a66ae6cc40" />
+
 ### Panel de información de la cuenta.
 <img width="1014" height="378" alt="image" src="https://github.com/user-attachments/assets/0814d6d8-f879-42cc-ad06-4a4cb970f732" />
 
