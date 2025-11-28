@@ -23,6 +23,7 @@ Ana Maria Ambriz Gonzalez
 TiempoCheck es un **sistema integral de análisis y optimización del tiempo** que combina:
 
 - 📊 **Tracking automático** de navegación web
+- 🎯 **Modo concentración**
 - 🤖 **Machine Learning predictivo** con 7 modelos especializados
 - 🧠 **Sistema de contexto humano** que aprende de tus explicaciones
 - 🎯 **Clasificación automática** con mejora continua
@@ -78,6 +79,11 @@ TiempoCheck es un **sistema integral de análisis y optimización del tiempo** q
 
 ### Popup de monitoreo.
 <img width="1915" height="985" alt="image" src="https://github.com/user-attachments/assets/d3b5a8f6-792e-409d-b765-9cc1277f7c29" />
+
+### Interfaz de Modo concentración
+![Imagen de WhatsApp 2025-11-28 a las 16 32 33_694de50c](https://github.com/user-attachments/assets/5931c4c8-96f1-40a2-b2e6-28162c5c9ead)
+<img width="1898" height="896" alt="image" src="https://github.com/user-attachments/assets/339ab9f1-2b2c-43d0-a74c-57e71eca5c6c" />
+
 
 ### Popup de alerta de limite.
 <img width="921" height="477" alt="image" src="https://github.com/user-attachments/assets/ea15b1fa-b243-4f2d-8294-4fb94c6b38a2" />
@@ -399,8 +405,8 @@ MIT License - ver [LICENSE](LICENSE)
 ## 📞 Contacto
 
 **Autor:** Angel Cruz  
-**Email:** contacto@tiempocheck.com  
-**GitHub:** [@cruznoise](https://github.com/tu-usuario)  
+**Email:** cruzlat3@gmail.com
+**GitHub:** [@cruznoise](https://github.com/cruznoise)  
 
 ---
 
@@ -409,7 +415,7 @@ MIT License - ver [LICENSE](LICENSE)
 - scikit-learn
 - Flask
 - Comunidad Python
-- [Más agradecimientos]
+- Agradecimiento especiales a Ana María Ambriz Gonzalez por haber contribuido y confiado en el desarrollo de TiempoCheck
 
 ---
 
