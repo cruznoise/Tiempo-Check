@@ -52,7 +52,7 @@ tmp/
 __temp__/
 
 # Config local (sube un example en su lugar)
-config.py
+config1.py
 mysql_conn.py
 .gitignore
 # Chrome extension builds
