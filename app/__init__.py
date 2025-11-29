@@ -41,13 +41,22 @@ def create_app(config_object=None):
     
     db.init_app(app)
     
+    # CORS actualizado para permitir extensión de Chrome
     cors.init_app(
         app,
         resources={
-            r"/api/*": {"origins": app.config.get("CORS_ORIGINS", "*")},
-            r"/admin/api/*": {"origins": app.config.get("CORS_ORIGINS", "*")},
+            r"/api/*": {
+                "origins": "*",
+                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                "allow_headers": ["Content-Type", "Authorization"]
+            },
+            r"/admin/*": {  # ← CAMBIADO: Ahora cubre TODAS las rutas de /admin
+                "origins": "*",
+                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                "allow_headers": ["Content-Type", "Authorization"]
+            }
         },
-        supports_credentials=True,
+        supports_credentials=True
     )
     
     migrate.init_app(app, db)
