@@ -52,7 +52,7 @@ async function cargarGraficas() {
 }
 
 async function graficarPrediccionesVsRealidad() {
-    const response = await fetch('/api/ml/predicciones_vs_realidad?dias=7');
+    const response = await fetch('/api/ml/predicciones_vs_realidad?dias=180');
     const data = await response.json();
     
     const ctx = document.getElementById('chartPrediccionesRealidad');

@@ -3,8 +3,10 @@ from flask_cors import CORS
 from sqlalchemy import text, func
 from datetime import datetime, timedelta, date
 from collections import defaultdict
-from app.models.models import db,Usuario, Registro, Categoria, DominioCategoria, FeatureDiaria, FeatureHoraria
-from app.models import DominioCategoria, Categoria
+from app.models.models import db, Usuario, Registro, Categoria, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria, ContextoDia, PatronCategoria, RachaUsuario, ConfiguracionLogro, AggEstadoDia, AggVentanaCategoria, AggKpiRango
+from app.models.ml import MLModelo, MLPrediccionFuture, MlMetric
+from app.models.features import FeatureDiaria, FeatureHoraria
+from app.models.models_coach import CoachAlerta, CoachSugerencia, CoachAccionLog, NotificacionClasificacion, CoachEstadoRegla
 from collections import defaultdict
 import tldextract
 from app.utils import desbloquear_logro, verificar_logros_dinamicos, obtener_promedio_categoria, calcular_nivel_confianza, obtener_dias_uso, calcular_sugerencias_por_categoria, _qa_invariantes_dia
@@ -139,6 +141,8 @@ def dashboard():
             return jsonify({'error': 'No autenticado'}), 401
 
         usuario_id = session['usuario_id']
+        usuario = Usuario.query.get(usuario_id)
+        nombre = usuario.nombre if usuario else "Usuario"
         fecha_inicio, fecha_fin, etiqueta_rango = _rango_fechas_desde_request()
 
         cutover = (
@@ -293,6 +297,7 @@ def dashboard():
 
         return render_template(
             'dashboard.html',
+            nombre=nombre,
             datos=datos,                  
             categorias=por_categoria,        
             uso_horario=uso_horario,        

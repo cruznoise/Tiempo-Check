@@ -6,9 +6,11 @@ from typing import Dict, List, Tuple
 import unicodedata
 import pandas as pd
 from app.extensions import db
-from sqlalchemy import and_, func
-from app.models.models import Registro, FeatureDiaria, FeatureHoraria, DominioCategoria, Categoria, AggVentanaCategoria, AggEstadoDia, AggKpiRango, FeaturesCategoriaDiaria
-
+from sqlalchemy import and_, func, or_
+from app.models.models import Registro, Categoria, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria, ContextoDia, PatronCategoria, RachaUsuario, ConfiguracionLogro, AggEstadoDia, AggVentanaCategoria, AggKpiRango, FeaturesCategoriaDiaria
+from app.models.ml import MLModelo, MLPrediccionFuture, MlMetric
+from app.models.features import FeatureDiaria, FeatureHoraria
+from app.models.models_coach import CoachAlerta, CoachSugerencia, CoachAccionLog, NotificacionClasificacion, CoachEstadoRegla
 VERSION = "fe-0.7-stable"
 print(f"[ENG][LOAD] features_engine {VERSION} file={__file__}")
 
@@ -137,10 +139,18 @@ def calcular_persistir_features(usuario_id: int, dia: date) -> dict:
     mapa = _cargar_mapa_dominios()
     patrones = _cargar_patrones()
 
-    if hasattr(Registro, 'fecha_hora'):
+    if hasattr(Registro, 'fecha_hora') and hasattr(Registro, 'fecha'):
+        # Si ambas existen, buscar en cualquiera
+        day_filter = or_(
+            func.date(Registro.fecha_hora) == dia,
+            func.date(Registro.fecha) == dia
+        )
+    elif hasattr(Registro, 'fecha_hora'):
+        # Solo fecha_hora existe
         day_filter = func.date(Registro.fecha_hora) == dia
     else:
-        day_filter = Registro.fecha == dia
+        # Solo fecha existe
+        day_filter = func.date(Registro.fecha) == dia
 
     registros = (
         db.session.query(Registro)

@@ -45,7 +45,7 @@ class CoachAccionLog(db.Model):
     origen_id  = db.Column(db.BigInteger)
     accion     = db.Column(db.String(32))
     payload    = db.Column(MySQLJSON)
-    creado_en  = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
+    created_at  = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
 
 class CoachEstadoRegla(db.Model):
     __tablename__ = "coach_estado_regla"
@@ -59,13 +59,6 @@ class CoachEstadoRegla(db.Model):
     last_triggered = db.Column(db.DateTime)
     cooldown_until = db.Column(db.DateTime, index=True)
     contador       = db.Column(db.Integer, nullable=False, default=0)
-    creado_en      = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
-    actualizado_en = db.Column(
-        db.DateTime,
-        nullable=False,
-        server_default=func.current_timestamp(),
-        onupdate=func.current_timestamp(),
-    )
 
 class NotificacionClasificacion(db.Model):
     __tablename__ = 'notificaciones_clasificacion'

@@ -3,80 +3,217 @@
 <head>
   <meta charset="UTF-8">
   <title>Configuración de la Cuenta</title>
-  <link rel="stylesheet"href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/config.css') }}">
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 </head>
 <body>
   <div class="dashboard-container">
     
     <!-- Sidebar -->
     <aside class="sidebar">
-    <h2>¡Hola, Ángel!</h2>
-    <p>Configuración de categorías y dominios</p>
-    <nav>
-      <ul>
-        <li><a href="{{ url_for('controlador.dashboard') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="Home"></a></li>
-        <li><a href="{{ url_for('admin_controller.vista_metas') }}"><img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros"></a></li>
-        <li><a href="{{ url_for('admin_controller.vista_configuracion') }}"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="Configuración"></a></li>
-      </ul>
-    </nav>
+      <h2>¡Hola, {{ usuario.nombre }}!</h2>
+      <p>Configuración de la cuenta</p>
+      <nav>
+        <ul>
+          <li><a href="{{ url_for('controlador.dashboard') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="Home"></a></li>
+          <li><a href="{{ url_for('admin_controller.vista_metas') }}"><img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros"></a></li>
+          <li><a href="{{ url_for('admin_controller.vista_configuracion') }}"><img src="{{ url_for('static', filename='icons/settings.png') }}" alt="Configuración"></a></li>
+        </ul>
+      </nav>
     </aside>
 
-  <!-- Contenido principal -->
-<main class="content">
-  <div class="tile-box" style="max-width: 500px; padding: 30px; text-align: center;">
-    <h2 style="margin-bottom: 30px;">Configuración de la cuenta</h2>
+    <!-- Contenido principal -->
+    <main class="content">
+      <!-- Alertas -->
+      <div id="alert-success" class="alert alert-success"></div>
+      <div id="alert-error" class="alert alert-error"></div>
 
-    <!-- Botón a categorias.html -->
-    <button onclick="window.location.href='/admin/categorias'" class="tile-button">
-       Administrar dominios y categorías
-    </button>
+      <!-- Información Personal -->
+      <div class="config-section">
+        <h3>📋 Información Personal</h3>
+        
+        <div class="info-row">
+          <div>
+            <div class="info-label">Nombre de usuario</div>
+            <div class="info-value" id="display-nombre">{{ usuario.nombre }}</div>
+          </div>
+          <button class="edit-btn" onclick="openEditModal('nombre')">✏️ Editar</button>
+        </div>
 
-    <!-- Exportar datos -->
-    <div style="margin-top: 30px;">
-      <label for="rango" style="font-weight: bold;">Rango de tiempo para exportar:</label>
-      <select id="rango" style="margin: 10px 0; padding: 6px 12px; border-radius: 8px;">
-        <option value="3dias">Últimos 3 días</option>
-        <option value="15dias">Últimos 15 días</option>
-        <option value="mes">Último mes</option>
-        <option value="3meses">Últimos 3 meses</option>
-        <option value="todo" selected>Todo el tiempo</option>
-      </select>
+        <div class="info-row">
+          <div>
+            <div class="info-label">Correo electrónico</div>
+            <div class="info-value">{{ usuario.correo }}</div>
+          </div>
+          <button class="edit-btn" onclick="openEditModal('correo')">✏️ Editar</button>
+        </div>
 
-      <div style="margin-top: 15px;">
-        <button id="bck_btn" class="tile-button">Descargar Backup Completo</button>
-        <button id="exportarCSV" class="tile-button">📄 Exportar CSV</button>
-        <button id="exportarJSON" class="tile-button" style="margin-left: 10px;"> Exportar JSON</button>
+        <div class="info-row">
+          <div>
+            <div class="info-label">Fecha de registro</div>
+            <div class="info-value">{{ usuario.fecha_creacion.strftime('%d/%m/%Y') if usuario.fecha_creacion else 'No disponible' }}</div>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <div>
+            <div class="info-label">Último acceso</div>
+            <div class="info-value">{{ usuario.ultimo_acceso.strftime('%d/%m/%Y %H:%M') if usuario.ultimo_acceso else 'No disponible' }}</div>
+          </div>
+        </div>
       </div>
-    </div>
-    <!-- Subir backup-->
-     <div style="margin-top: 30px;">
-      <label style="max-width: 500px; padding: 30px; text-align: center;"> Restaurar cuenta (.JSON)</label>
-      <form id="form-restaurar" enctype="multipart/form-data">
-        <input type="file" id="archivo-backup" name="backup" accept=".json" required>
-        <button type="submit"> Restaurar Backup</button>
-      </form>
 
-     </div>
+      <!-- Seguridad -->
+      <div class="config-section">
+        <h3>🔐 Seguridad</h3>
+        
+        <div class="info-row">
+          <div>
+            <div class="info-label">Contraseña</div>
+            <div class="info-value">••••••••</div>
+          </div>
+          <button class="edit-btn" onclick="openEditModal('password')">🔑 Cambiar</button>
+        </div>
+      </div>
 
-     <!-- Reseteo de cuenta-->
-    <div style="margin-top: 30px;">
-      <label style="max-width: 500px; padding: 30px; text-align: center;"> Reiniciar cuenta</label>
-      <button id="btn-reseteo-total" class="btn-danger">Reiniciar Cuenta desde Cero</button>
-    </div>
+      <!-- Zona de Peligro -->
+      <div class="danger-zone">
+        <h4>⚠️ Zona de Peligro</h4>
+        <p style="color: #888; margin-bottom: 15px;">Las acciones en esta sección son irreversibles</p>
+        
+        <button class="danger-btn" onclick="openResetModal()" style="margin-right: 10px;">
+          🔄 Resetear Cuenta
+        </button>
+        
+        <button class="danger-btn" onclick="openDeleteModal()">
+          🗑️ Eliminar Cuenta
+        </button>
+      </div>
 
-    <button id="logout-btn" class="btn btn-outline-danger mt-3">
-      <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-    </button>
-
+      <!-- Botón de cerrar sesión -->
+      <button id="logout-btn" class="btn btn-outline-danger mt-3" style="margin-top: 20px;">
+        <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+      </button>
+    </main>
   </div>
 
-</main>
-</div>
+  <!-- Modal para editar nombre -->
+  <div id="modal-nombre" class="modal-overlay">
+    <div class="modal-content">
+      <h3 class="modal-header">Cambiar nombre de usuario</h3>
+      <form id="form-nombre" onsubmit="return submitFormNombre(event)">
+        <div class="form-group">
+          <label>Nuevo nombre</label>
+          <input type="text" id="input-nombre" name="nuevo_nombre" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeModal('nombre')">Cancelar</button>
+          <button type="submit" class="btn-save">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para editar correo -->
+  <div id="modal-correo" class="modal-overlay">
+    <div class="modal-content">
+      <h3 class="modal-header">Cambiar correo electrónico</h3>
+      <form id="form-correo" onsubmit="return submitFormCorreo(event)">
+        <div class="form-group">
+          <label>Nuevo correo</label>
+          <input type="email" id="input-correo" name="nuevo_correo" required>
+        </div>
+        <div class="form-group">
+          <label>Confirma tu contraseña</label>
+          <input type="password" id="input-password-correo" name="password" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeModal('correo')">Cancelar</button>
+          <button type="submit" class="btn-save">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para cambiar contraseña -->
+  <div id="modal-password" class="modal-overlay">
+    <div class="modal-content">
+      <h3 class="modal-header">Cambiar contraseña</h3>
+      <form id="form-password" onsubmit="return submitFormPassword(event)">
+        <div class="form-group">
+          <label>Contraseña actual</label>
+          <input type="password" id="input-password-actual" name="password_actual" required>
+        </div>
+        <div class="form-group">
+          <label>Nueva contraseña</label>
+          <input type="password" id="input-password-nueva" name="password_nueva" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label>Confirmar nueva contraseña</label>
+          <input type="password" id="input-password-confirmar" name="password_confirmar" required minlength="6">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeModal('password')">Cancelar</button>
+          <button type="submit" class="btn-save">Cambiar contraseña</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para resetear cuenta -->
+  <div id="modal-reset" class="modal-overlay">
+    <div class="modal-content">
+      <h3 class="modal-header" style="color: #e74c3c;">⚠️ Resetear Cuenta</h3>
+      <p style="color: #888; margin-bottom: 20px;">
+        Esta acción eliminará todos tus datos de uso, metas, logros y predicciones. Tu cuenta permanecerá activa pero empezarás desde cero.
+      </p>
+      <form id="form-reset" onsubmit="return submitFormReset(event)">
+        <div class="form-group">
+          <label>Escribe "RESETEAR" para confirmar</label>
+          <input type="text" id="input-confirm-reset" name="confirmacion" required>
+        </div>
+        <div class="form-group">
+          <label>Confirma tu contraseña</label>
+          <input type="password" id="input-password-reset" name="password" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeModal('reset')">Cancelar</button>
+          <button type="submit" class="danger-btn">Resetear Cuenta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para eliminar cuenta -->
+  <div id="modal-delete" class="modal-overlay">
+    <div class="modal-content">
+      <h3 class="modal-header" style="color: #e74c3c;">⚠️ Eliminar Cuenta</h3>
+      <p style="color: #888; margin-bottom: 20px;">
+        Esta acción es <strong>PERMANENTE</strong> y no se puede deshacer. Se eliminará toda tu información y no podrás recuperar tu cuenta.
+      </p>
+      <form id="form-delete" onsubmit="return submitFormDelete(event)">
+        <div class="form-group">
+          <label>Escribe "ELIMINAR" para confirmar</label>
+          <input type="text" id="input-confirm-delete" name="confirmacion" required>
+        </div>
+        <div class="form-group">
+          <label>Confirma tu contraseña</label>
+          <input type="password" id="input-password-delete" name="password" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" onclick="closeModal('delete')">Cancelar</button>
+          <button type="submit" class="danger-btn">Eliminar Cuenta Permanentemente</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script src="{{ url_for('static', filename='js/reset_back.js') }}"></script>
   <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
   <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/config.js')}}"></script>
 </body>
 </html>

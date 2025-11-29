@@ -24,3 +24,4 @@ class FeatureHoraria(db.Model):
     uso_tipico_semana = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, server_default=db.func.current_timestamp())
     __table_args__ = (db.UniqueConstraint('usuario_id','fecha','hora','categoria', name='ux_user_fecha_hora_cat'),)
+

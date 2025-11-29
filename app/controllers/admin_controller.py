@@ -1,14 +1,19 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash, current_app, send_file
-from io import BytesIO
+from io import BytesIO, StringIO
 from flask_login import login_required
 from flask_cors import cross_origin
 import csv
 import json
+import re
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 from sqlalchemy import text
+from werkzeug.security import check_password_hash, generate_password_hash
 from app.mysql_conn import get_mysql, close_mysql
-from app.models.models import Registro, DominioCategoria, Categoria, LimiteCategoria, MetaCategoria, Usuario, FeatureDiaria, FeatureHoraria
+from app.models.models import Registro, Categoria,Usuario, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria, ContextoDia, PatronCategoria, RachaUsuario, ConfiguracionLogro, AggEstadoDia, AggVentanaCategoria, AggKpiRango, SesionFocus, IntentoBloqeuoFocus
+from app.models.ml import MLModelo, MLPrediccionFuture, MlMetric
+from app.models.features import FeatureDiaria, FeatureHoraria
+from app.models.models_coach import CoachAlerta, CoachSugerencia, CoachAccionLog, NotificacionClasificacion, CoachEstadoRegla
 from collections import defaultdict
 from datetime import datetime
 from app.utils import desbloquear_logro, verificar_logros_dinamicos, obtener_promedio_categoria, calcular_nivel_confianza, obtener_dias_uso, calcular_sugerencias_por_categoria, _qa_invariantes_dia
@@ -17,12 +22,25 @@ from app.services.rachas_service import actualizar_rachas
 from app.extensions import db 
 from app.services.features_engine import calcular_persistir_features
 from app.schedule.scheduler import get_scheduler
-from app.models.models_coach import CoachAlerta, CoachAccionLog,    CoachEstadoRegla, CoachSugerencia
 from app.schedule.coach_jobs import job_coach_alertas
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash, current_app, send_file
 
 
 bp = Blueprint('admin_controller', __name__)
+
+@bp.route('/focus')
+def vista_focus():
+    """Vista de la página completa del Modo Focus"""
+    if 'usuario_id' not in session:
+        return redirect('/login')
+    
+    usuario_id = session.get('usuario_id')
+    usuario = Usuario.query.get(usuario_id)
+    
+    if not usuario:
+        return redirect('/login')
+    
+    return render_template('focus_mode.html', nombre=usuario.nombre, usuario=usuario)
 
 @bp.route('/categorias', methods=['GET'])
 def vista_categorias():
@@ -32,10 +50,138 @@ def vista_categorias():
 
 @bp.route('/configuracion')
 def vista_configuracion():
+    """Vista de configuración de cuenta"""
     if 'usuario_id' not in session:
         return redirect('/login')
-    return render_template('admin/configuracion.html')
+    
+    usuario_id = session.get('usuario_id')
+    usuario = Usuario.query.get(usuario_id)  # Ahora Usuario está importado correctamente
+    
+    if not usuario:
+        return redirect('/login')
+    
+    return render_template('admin/configuracion.html', usuario=usuario)
 
+
+@bp.route('/actualizar-nombre', methods=['POST'])
+def actualizar_nombre():
+    """Actualiza el nombre del usuario"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    
+    try:
+        usuario_id = session.get('usuario_id')
+        data = request.get_json()
+        nuevo_nombre = data.get('nuevo_nombre', '').strip()
+        
+        if not nuevo_nombre:
+            return jsonify({'success': False, 'message': 'El nombre no puede estar vacío'})
+        
+        if len(nuevo_nombre) < 2:
+            return jsonify({'success': False, 'message': 'El nombre debe tener al menos 2 caracteres'})
+        
+        if len(nuevo_nombre) > 50:
+            return jsonify({'success': False, 'message': 'El nombre es demasiado largo'})
+        
+        usuario = Usuario.query.get(usuario_id)  # Ahora Usuario está importado
+        if not usuario:
+            return jsonify({'success': False, 'message': 'Usuario no encontrado'})
+        
+        usuario.nombre = nuevo_nombre
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Nombre actualizado correctamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al actualizar nombre: {e}")
+        return jsonify({'success': False, 'message': 'Error al actualizar el nombre'})
+
+
+@bp.route('/actualizar-correo', methods=['POST'])
+def actualizar_correo():
+    """Actualiza el correo del usuario"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    
+    try:
+        usuario_id = session.get('usuario_id')
+        data = request.get_json()
+        nuevo_correo = data.get('nuevo_correo', '').strip().lower()
+        password = data.get('password', '')
+        
+        if not nuevo_correo or not password:
+            return jsonify({'success': False, 'message': 'Todos los campos son requeridos'})
+        
+        # Validar formato de correo
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_regex, nuevo_correo):
+            return jsonify({'success': False, 'message': 'Formato de correo inválido'})
+        
+        usuario = Usuario.query.get(usuario_id)
+        if not usuario:
+            return jsonify({'success': False, 'message': 'Usuario no encontrado'})
+        
+        # Verificar contraseña
+        if not check_password_hash(usuario.password, password):
+            return jsonify({'success': False, 'message': 'Contraseña incorrecta'})
+        
+        # Verificar que el correo no esté en uso
+        correo_existente = Usuario.query.filter(
+            Usuario.correo == nuevo_correo,
+            Usuario.id != usuario_id
+        ).first()
+        
+        if correo_existente:
+            return jsonify({'success': False, 'message': 'Este correo ya está registrado'})
+        
+        usuario.correo = nuevo_correo
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Correo actualizado correctamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al actualizar correo: {e}")
+        return jsonify({'success': False, 'message': 'Error al actualizar el correo'})
+
+
+@bp.route('/cambiar-password', methods=['POST'])
+def cambiar_password():
+    """Cambia la contraseña del usuario"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    
+    try:
+        usuario_id = session.get('usuario_id')
+        data = request.get_json()
+        password_actual = data.get('password_actual', '')
+        password_nueva = data.get('password_nueva', '')
+        
+        if not password_actual or not password_nueva:
+            return jsonify({'success': False, 'message': 'Todos los campos son requeridos'})
+        
+        if len(password_nueva) < 6:
+            return jsonify({'success': False, 'message': 'La nueva contraseña debe tener al menos 6 caracteres'})
+        
+        usuario = Usuario.query.get(usuario_id)
+        if not usuario:
+            return jsonify({'success': False, 'message': 'Usuario no encontrado'})
+        
+        # Verificar contraseña actual
+        if not check_password_hash(usuario.password, password_actual):
+            return jsonify({'success': False, 'message': 'Contraseña actual incorrecta'})
+        
+        # Actualizar contraseña
+        usuario.password = generate_password_hash(password_nueva)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Contraseña actualizada correctamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error al cambiar contraseña: {e}")
+        return jsonify({'success': False, 'message': 'Error al cambiar la contraseña'})
 
 @bp.route('/categorias', methods=['POST'])
 def agregar_categoria():
@@ -170,7 +316,7 @@ def vista_metas():
 def agregar_meta():
     usuario_id = request.form.get('usuario_id')
     categoria_id = request.form.get('categoria_id')
-    limite_minutos = request.form.get('limite_minutos')
+    limite_minutos = request.form.get('minutos_meta')
 
     if usuario_id and categoria_id and limite_minutos:
         nueva = MetaCategoria(
@@ -523,6 +669,35 @@ def alerta_por_dominio():
     return jsonify({"alerta": False})
 
 
+@bp.route('/backup_completo', methods=['GET'])
+def backup_completo():
+    if 'usuario_id' not in session:
+        return jsonify({"error": "No autenticado"}), 401
+    
+    usuario_id = session['usuario_id']
+    
+    # Importar la función desde utils.py
+    from app.utils import generar_backup_completo
+    
+    datos_backup = generar_backup_completo(usuario_id)
+    
+    # Crear el archivo JSON en memoria
+    from io import BytesIO
+    import json
+    
+    salida_bytes = BytesIO()
+    salida_bytes.write(json.dumps(datos_backup, indent=2, ensure_ascii=False).encode('utf-8'))
+    salida_bytes.seek(0)
+    
+    nombre_archivo = f"backup_completo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    
+    return send_file(
+        salida_bytes,
+        mimetype='application/json',
+        as_attachment=True,
+        download_name=nombre_archivo
+    )
+
 @bp.route('/exportar/datos', methods=['GET'])
 def exportar_datos():
     if 'usuario_id' not in session:
@@ -589,6 +764,94 @@ def exportar_datos():
 
     else:
         return jsonify({"error": "Formato no válido"}), 400
+
+@bp.route('/reseteo_total', methods=['POST'])
+def reseteo_total():
+    """Borra TODOS los datos del usuario (excepto la cuenta)"""
+    if 'usuario_id' not in session:
+        return jsonify({"error": "No autenticado"}), 401
+    
+    usuario_id = session['usuario_id']
+    
+    # Confirmación extra de seguridad
+    from app.utils import resetear_datos_usuario
+    
+    resultado = resetear_datos_usuario(usuario_id)
+    
+    if resultado.get("success"):
+        return jsonify({
+            "mensaje": "✅ Cuenta reiniciada exitosamente. Todos tus datos han sido borrados.",
+            "success": True
+        }), 200
+    else:
+        return jsonify({
+            "error": "Error al resetear la cuenta",
+            "detalle": resultado.get("error"),
+            "success": False
+        }), 500
+
+@bp.route('/restaurar_backup', methods=['POST'])
+def restaurar_backup():
+    """Restaura un backup completo desde un archivo JSON"""
+    if 'usuario_id' not in session:
+        return jsonify({"error": "No autenticado"}), 401
+    
+    usuario_id = session['usuario_id']
+    
+    # Verificar que se subió un archivo
+    if 'backup' not in request.files:
+        return jsonify({"error": "No se envió ningún archivo"}), 400
+    
+    archivo = request.files['backup']
+    
+    if archivo.filename == '':
+        return jsonify({"error": "Archivo vacío"}), 400
+    
+    if not archivo.filename.endswith('.json'):
+        return jsonify({"error": "El archivo debe ser JSON"}), 400
+    
+    try:
+        # Leer el contenido del archivo
+        contenido = archivo.read().decode('utf-8')
+        data = json.loads(contenido)
+        
+        # Validar que el backup tenga la estructura correcta
+        if 'usuario_id' not in data:
+            return jsonify({"error": "Formato de backup inválido"}), 400
+        
+        # Verificar que el backup sea del mismo usuario (seguridad)
+        if data['usuario_id'] != usuario_id:
+            return jsonify({
+                "error": "Este backup pertenece a otro usuario",
+                "advertencia": "Por seguridad, solo puedes restaurar tus propios backups"
+            }), 403
+        
+        # Restaurar el backup
+        from app.utils import restaurar_backup_completo
+        resultado = restaurar_backup_completo(data, usuario_id)
+        
+        if resultado.get("success"):
+            return jsonify({
+                "mensaje": "✅ Backup restaurado exitosamente",
+                "success": True
+            }), 200
+        else:
+            return jsonify({
+                "error": "Error al restaurar el backup",
+                "detalle": resultado.get("error"),
+                "success": False
+            }), 500
+            
+    except json.JSONDecodeError:
+        return jsonify({"error": "El archivo no es un JSON válido"}), 400
+    except Exception as e:
+        print(f"[ERROR] Error al restaurar backup: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "error": "Error inesperado al restaurar backup",
+            "detalle": str(e)
+        }), 500
 
 @bp.route('/api/logros')
 def obtener_logros_usuario():

@@ -27,43 +27,62 @@ def ensure_dir(path: str | Path):
     """
     Path(path).mkdir(parents=True, exist_ok=True)
 
-def guardar_predicciones(
-        df,
-        fecha_base=None,
-        tipo: str = "multi",
-        canonical: bool = True
-            
-):
-    """ Se guaran las predicciones en ml/preds/ con nombre preds_future_xx_xx_xx.csv"""
-
-    if fecha_base is None:
-        fecha_str = date.today().isoformat()
-    elif isinstance(fecha_base, str):
-        try:
-            date.fromisoformat(fecha_base)  
-        except ValueError as e:
-            raise ValueError(f"fecha_base inválida (YYYY-MM-DD): {fecha_base}") from e
-        fecha_str = fecha_base
-    elif isinstance(fecha_base, datetime):
-        fecha_str = fecha_base.date().isoformat()
-    elif isinstance(fecha_base, date):
-        fecha_str = fecha_base.isoformat()
-    else:
-        raise TypeError(f"Tipo no soportado para fecha_base: {type(fecha_base)}")
+def guardar_predicciones(df, usuario_id: int, fecha_base=None, tipo: str = "multi", canonical: bool = True):
+    """
+    Guarda predicciones POR USUARIO en ml/preds/usuario_X/
+    Si df tiene múltiples fechas_pred, guarda un archivo por fecha
+    """
+    if df.empty:
+        print(f"[WARN] df vacío para usuario {usuario_id}")
+        return None
     
-    out_dir = Path(__file__).resolve().parent / "preds"
+    # Directorio POR USUARIO
+    out_dir = Path(__file__).resolve().parent / "preds" / f"usuario_{usuario_id}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    if canonical:
-        fname = f"preds_future_{fecha_str}.csv"
+    # ✅ Si hay múltiples fechas predichas, guardar un archivo por fecha
+    if tipo == "multi" and 'fecha_pred' in df.columns:
+        fechas_unicas = df['fecha_pred'].unique()
+        
+        for fecha_pred in fechas_unicas:
+            df_fecha = df[df['fecha_pred'] == fecha_pred].copy()
+            
+            # Convertir fecha_pred a string
+            if isinstance(fecha_pred, (date, datetime)):
+                fecha_str = fecha_pred.isoformat() if isinstance(fecha_pred, date) else fecha_pred.date().isoformat()
+            else:
+                fecha_str = str(fecha_pred)
+            
+            fname = f"preds_future_{fecha_str}.csv"
+            out_path = out_dir / fname
+            
+            df_fecha.to_csv(out_path, index=False)
+            # Solo mostrar mensaje cada 10 archivos para no saturar logs
+            if len(fechas_unicas) <= 10 or fechas_unicas.tolist().index(fecha_pred) % 10 == 0:
+                print(f"[ML][SAVE] {fname} → {len(df_fecha)} filas")
+        
+        print(f"[ML][SAVE] Total: {len(fechas_unicas)} archivos guardados para usuario {usuario_id}")
+        return out_dir / f"preds_future_{fechas_unicas[0]}.csv"  # Retornar el primero
+    
+    # Guardar todo en un solo archivo (caso normal)
     else:
-        fname = f"{fecha_str}_{tipo}.csv"
-
-    out_path = out_dir / fname
-    df.to_csv(out_path, index=False)
-    print(f"[ML][SAVE] Predicciones guardadas en: {out_path.as_posix()}")
-    return out_path
-
+        if fecha_base is None:
+            fecha_str = date.today().isoformat()
+        elif isinstance(fecha_base, str):
+            fecha_str = fecha_base
+        elif isinstance(fecha_base, datetime):
+            fecha_str = fecha_base.date().isoformat()
+        elif isinstance(fecha_base, date):
+            fecha_str = fecha_base.isoformat()
+        else:
+            raise TypeError(f"Tipo no soportado: {type(fecha_base)}")
+        
+        fname = f"preds_future_{fecha_str}.csv" if canonical else f"{fecha_str}_{tipo}.csv"
+        out_path = out_dir / fname
+        
+        df.to_csv(out_path, index=False)
+        print(f"[ML][SAVE] {out_path.as_posix()} → {len(df)} filas")
+        return out_path
 
 # ============================================================================
 # CLASIFICACIÓN AUTOMÁTICA DE DOMINIOS CON ML

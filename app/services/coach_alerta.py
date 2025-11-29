@@ -1,7 +1,10 @@
 from datetime import date, datetime
 import hashlib, json
 from app.extensions import db
-from app.models import CoachAlerta, LimiteCategoria, FeatureDiaria, Categoria
+from app.models.models import Registro, Categoria, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria, ContextoDia, PatronCategoria, RachaUsuario, ConfiguracionLogro, AggEstadoDia, AggVentanaCategoria, AggKpiRango
+from app.models.ml import MLModelo, MLPrediccionFuture, MlMetric
+from app.models.features import FeatureDiaria, FeatureHoraria
+from app.models.models_coach import CoachAlerta, CoachSugerencia, CoachAccionLog, NotificacionClasificacion, CoachEstadoRegla
 
 def generar_alertas_exceso(usuario_id: int, dia: date) -> dict:
     """

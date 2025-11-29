@@ -7,7 +7,7 @@ import json
 from app.extensions import db
 from flask_login import login_required, current_user
 from app.models.ml import MLPrediccionFuture
-from app.models.models import LimiteCategoria, FeaturesCategoriaDiaria
+from app.models.models import LimiteCategoria, FeaturesCategoriaDiaria, SesionFocus, IntentoBloqeuoFocus, Categoria, DominioCategoria
 from ml.pipeline import predict as ml_predict_fn
 from ml.pipeline import predict
 
@@ -92,7 +92,7 @@ print("[API] api_controller importado")
 #@login_required
 def ml_preds_future():
     """Devuelve predicciones futuras desde la tabla ml_predicciones_future."""
-    usuario_id = 1 #SE PONE 1 TEMPORALMENTE
+    usuario_id = session.get('usuario_id')
     dias = request.args.get("dias", type=int)
     fecha_inicial = request.args.get("fecha_inicial", type=str)
     fecha_final = request.args.get("fecha_final", type=str)
@@ -157,6 +157,7 @@ def obtener_categorias():
         categorias = Categoria.query.all()
         
         return jsonify({
+            'success': True,
             'categorias': [{
                 'id': c.id, 
                 'nombre': c.nombre
@@ -166,23 +167,61 @@ def obtener_categorias():
         print(f"[API][ERROR] /categorias: {e}")
         return jsonify({'error': str(e)}), 500
 
+
+@bp.route('/api/categorias/con-dominios', methods=['GET'])
+def obtener_categorias_con_dominios():
+    """Retorna categorías con sus dominios para la extensión"""    
+    try:
+        categorias = Categoria.query.all()
+        
+        resultado = {}
+        
+        for cat in categorias:
+            dominios = DominioCategoria.query.filter_by(categoria_id=cat.id).all()
+            
+            for dominio in dominios:
+                resultado[dominio.dominio] = cat.nombre
+        
+        return jsonify({
+            'success': True,
+            'mapeo': resultado,  
+            'total_dominios': len(resultado)
+        })
+        
+    except Exception as e:
+        print(f"[API][ERROR] /categorias/con-dominios: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+
 @bp.route("/api/ml/predict_multi", methods=["GET"])
 def api_ml_predict_multi():
-    """Devuelve predicciones multi-horizonte (T+1..T+3) y umbrales históricos por categoría."""
-    usuario_id = request.args.get("usuario_id", type=int, default=1)
-    preds_dir = Path(current_app.root_path).parent / "ml" / "preds"
-
+    """
+    Devuelve predicciones multi-horizonte POR USUARIO
+    """
+    from flask import session
+    usuario_id = session.get("usuario_id", 1)
+    
+    #  Buscar en directorio POR USUARIO
+    preds_dir = Path(current_app.root_path).parent / "ml" / "preds" / f"usuario_{usuario_id}"
+    
     if not preds_dir.exists():
-        return jsonify({"status": "error", "msg": "Directorio de predicciones no encontrado."}), 404
+        return jsonify({
+            "status": "error", 
+            "msg": f"No hay predicciones para usuario {usuario_id}. Ejecute el entrenamiento primero."
+        }), 404
 
     files = sorted(preds_dir.glob("preds_future_*.csv"), reverse=True)
     if not files:
-        return jsonify({"status": "error", "msg": "No hay archivos de predicción."}), 404
+        return jsonify({
+            "status": "error", 
+            "msg": f"No hay archivos de predicción para usuario {usuario_id}."
+        }), 404
 
     latest_file = files[0]
-    print(f"[API][PRED_MULTI] Usando archivo: {latest_file.name}")
+    print(f"[API][PRED_MULTI] user={usuario_id} usando: {latest_file.name}")
 
     df = pd.read_csv(latest_file)
+
     required_cols = {"fecha_pred", "categoria", "yhat_minutos"}
     if not required_cols.issubset(df.columns):
         return jsonify({"status": "error", "msg": f"Archivo {latest_file.name} incompleto."}), 400
@@ -447,7 +486,7 @@ def predicciones_vs_realidad():
     Usa Registro (raw) como fuente principal
     """
     usuario_id = session.get('usuario_id', 1)
-    dias = request.args.get('dias', 7, type=int)
+    dias = request.args.get('dias', 180, type=int)
     
     try:
         from datetime import date, timedelta
@@ -697,3 +736,333 @@ def matriz_confusion_clasificador():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+    
+
+@bp.route('/api/focus/start', methods=['POST'])
+def api_focus_start():
+    """Iniciar sesión de Modo Focus"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    
+    try:
+        usuario_id = session.get('usuario_id')
+        data = request.json
+        
+        # Validar datos
+        duracion = data.get('duration_minutes')
+        categorias = data.get('blocked_categories', [])
+        
+        if not duracion or duracion < 1 or duracion > 480:
+            return jsonify({'success': False, 'message': 'Duración inválida'}), 400
+        
+        if not categorias:
+            return jsonify({'success': False, 'message': 'Selecciona al menos una categoría'}), 400
+        
+        # Verificar que no haya sesión activa
+        sesion_activa = SesionFocus.query.filter_by(
+            usuario_id=usuario_id,
+            completada=False
+        ).filter(
+            SesionFocus.fin_programado > datetime.now()
+        ).first()
+        
+        if sesion_activa:
+            return jsonify({'success': False, 'message': 'Ya existe una sesión activa'}), 400
+        
+        # Crear nueva sesión
+        ahora = datetime.now()
+        sesion = SesionFocus(
+            usuario_id=usuario_id,
+            inicio=ahora,
+            fin_programado=ahora + timedelta(minutes=duracion),
+            duracion_minutos=duracion,
+            modo_estricto=data.get('strict_mode', False),
+            categorias_bloqueadas=json.dumps(categorias)
+        )
+        
+        db.session.add(sesion)
+        db.session.commit()
+        
+        print(f"[FOCUS] Sesión iniciada: ID={sesion.id}, Usuario={usuario_id}, Duración={duracion}min")
+        
+        return jsonify({
+            'success': True,
+            'session_id': sesion.id,
+            'message': 'Sesión iniciada correctamente'
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Error al iniciar Focus: {e}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error del servidor: {str(e)}'}), 500
+
+
+@bp.route('/api/focus/end', methods=['POST'])
+def api_focus_end():
+    """Finalizar sesión de Modo Focus"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    
+    try:
+        usuario_id = session.get('usuario_id')
+        data = request.json
+        completed = data.get('completed', False)
+        
+        # Buscar sesión activa
+        sesion = SesionFocus.query.filter_by(
+            usuario_id=usuario_id,
+            completada=False
+        ).order_by(SesionFocus.inicio.desc()).first()
+        
+        if not sesion:
+            return jsonify({'success': False, 'message': 'No hay sesión activa'}), 400
+        
+        # Actualizar sesión
+        ahora = datetime.now()
+        sesion.fin_real = ahora
+        sesion.completada = completed
+        
+        # Calcular tiempo real
+        tiempo_real = (ahora - sesion.inicio).total_seconds() / 60
+        sesion.tiempo_real_minutos = int(tiempo_real)
+        
+        db.session.commit()
+        
+        print(f"[FOCUS] Sesión finalizada: ID={sesion.id}, Completada={completed}, Tiempo={sesion.tiempo_real_minutos}min")
+        
+        return jsonify({
+            'success': True,
+            'completed': completed,
+            'tiempo_real': sesion.tiempo_real_minutos
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Error al finalizar Focus: {e}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error del servidor: {str(e)}'}), 500
+
+
+@bp.route('/api/focus/status', methods=['GET'])
+def api_focus_status():
+    """Obtener estado actual de Focus Mode"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    
+    try:
+        usuario_id = session.get('usuario_id')
+        
+        # Buscar sesión activa
+        sesion = SesionFocus.query.filter_by(
+            usuario_id=usuario_id,
+            completada=False
+        ).filter(
+            SesionFocus.fin_programado > datetime.now()
+        ).order_by(SesionFocus.inicio.desc()).first()
+        
+        if not sesion:
+            return jsonify({
+                'success': True,
+                'active': False
+            })
+        
+        # Contar intentos de bloqueo
+        intentos = IntentoBloqeuoFocus.query.filter_by(sesion_id=sesion.id).count()
+        
+        # Calcular tiempo restante
+        ahora = datetime.now()
+        restante_segundos = (sesion.fin_programado - ahora).total_seconds()
+        restante_minutos = int(restante_segundos / 60)
+        
+        return jsonify({
+            'success': True,
+            'active': True,
+            'session_id': sesion.id,
+            'duracion_minutos': sesion.duracion_minutos,
+            'tiempo_restante_minutos': restante_minutos,
+            'categorias_bloqueadas': json.loads(sesion.categorias_bloqueadas),
+            'modo_estricto': sesion.modo_estricto,
+            'blocks_count': intentos
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Error al obtener estado: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error del servidor: {str(e)}'}), 500
+
+
+@bp.route('/api/focus/block', methods=['POST'])
+def api_focus_block():
+    """Registrar intento de acceso a sitio bloqueado"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    
+    try:
+        usuario_id = session.get('usuario_id')
+        data = request.json
+        
+        # Buscar sesión activa
+        sesion = SesionFocus.query.filter_by(
+            usuario_id=usuario_id,
+            completada=False
+        ).order_by(SesionFocus.inicio.desc()).first()
+        
+        if not sesion:
+            return jsonify({'success': False, 'message': 'No hay sesión activa'}), 400
+        
+        # Registrar intento
+        intento = IntentoBloqeuoFocus(
+            sesion_id=sesion.id,
+            momento=datetime.now(),
+            url_bloqueada=data.get('url'),
+            categoria=data.get('categoria')
+        )
+        
+        db.session.add(intento)
+        db.session.commit()
+        
+        print(f"[FOCUS] Bloqueo registrado: URL={data.get('url')}, Cat={data.get('categoria')}")
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        print(f"[ERROR] Error al registrar bloqueo: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error del servidor: {str(e)}'}), 500
+
+
+@bp.route('/api/focus/stats/today', methods=['GET'])
+def api_focus_stats_today():
+    """Obtiene estadísticas de Focus Mode del día actual"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    
+    try:
+        usuario_id = session.get('usuario_id')
+        hoy = datetime.now().date()
+        
+        # Sesiones completadas hoy
+        sesiones_hoy = SesionFocus.query.filter(
+            SesionFocus.usuario_id == usuario_id,
+            db.func.date(SesionFocus.inicio) == hoy,
+            SesionFocus.completada == True
+        ).all()
+        
+        sesiones_completadas = len(sesiones_hoy)
+        minutos_totales = sum(s.tiempo_real_minutos or s.duracion_minutos for s in sesiones_hoy)
+        
+        # Calcular racha (días consecutivos con al menos una sesión completada)
+        racha = 0
+        fecha_check = hoy
+        while racha < 365:  # Límite de seguridad
+            sesion_dia = SesionFocus.query.filter(
+                SesionFocus.usuario_id == usuario_id,
+                db.func.date(SesionFocus.inicio) == fecha_check,
+                SesionFocus.completada == True
+            ).first()
+            
+            if sesion_dia:
+                racha += 1
+                fecha_check = fecha_check - timedelta(days=1)
+            else:
+                break
+        
+        return jsonify({
+            'success': True,
+            'sesiones_completadas': sesiones_completadas,
+            'minutos_totales': minutos_totales,
+            'racha_dias': racha
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Error al obtener estadísticas: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error del servidor: {str(e)}'}), 500
+
+
+@bp.route('/api/focus/history', methods=['GET'])
+def api_focus_history():
+    """Obtener historial de sesiones Focus"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    
+    try:
+        usuario_id = session.get('usuario_id')
+        limit = request.args.get('limit', 10, type=int)
+        
+        sesiones = SesionFocus.query.filter_by(
+            usuario_id=usuario_id
+        ).order_by(SesionFocus.inicio.desc()).limit(limit).all()
+        
+        historial = []
+        for s in sesiones:
+            historial.append({
+                'id': s.id,
+                'inicio': s.inicio.strftime('%d/%m/%Y %H:%M'),
+                'duracion': s.duracion_minutos,
+                'completada': s.completada,
+                'tiempo_real': s.tiempo_real_minutos
+            })
+        
+        return jsonify({
+            'success': True,
+            'historial': historial
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Error al obtener historial: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error del servidor: {str(e)}'}), 500
+    
+@bp.route('/api/focus/skip-block', methods=['POST'])
+def api_focus_skip_block():
+    """Registrar que el usuario omitió un bloqueo (solo en modo no estricto)"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    
+    try:
+        usuario_id = session.get('usuario_id')
+        data = request.json
+        
+        # Buscar sesión activa
+        sesion = SesionFocus.query.filter_by(
+            usuario_id=usuario_id,
+            completada=False
+        ).order_by(SesionFocus.inicio.desc()).first()
+        
+        if not sesion:
+            return jsonify({'success': False, 'message': 'No hay sesión activa'}), 400
+        
+        # Verificar que no sea modo estricto
+        if sesion.modo_estricto:
+            return jsonify({'success': False, 'message': 'No se puede omitir en modo estricto'}), 403
+        
+        # Registrar como intento de bloqueo (igual que un bloqueo normal)
+        intento = IntentoBloqeuoFocus(
+            sesion_id=sesion.id,
+            momento=datetime.now(),
+            url_bloqueada=data.get('domain'),
+            categoria=data.get('category')
+        )
+        
+        db.session.add(intento)
+        db.session.commit()
+        
+        print(f"[FOCUS] Usuario omitió bloqueo: {data.get('domain')} (categoría: {data.get('category')})")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Omisión registrada',
+            'domain': data.get('domain')
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Error en skip-block: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500

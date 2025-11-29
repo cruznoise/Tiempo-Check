@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sitio Bloqueado - Modo Focus</title>
+  <link rel="stylesheet" href="blocked.css" />
+
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🚫</div>
+    <h1>Modo Focus Activo</h1>
+    <p class="message">Este sitio está bloqueado durante tu sesión de concentración</p>
+
+    <div class="domain-info">
+      <div class="domain-name" id="domain-name">-</div>
+      <div class="category-badge" id="category-badge">-</div>
+    </div>
+
+    <div id="strict-mode-warning" class="strict-warning" style="display: none;">
+      ⚠️ Modo Estricto: No puedes omitir este bloqueo
+    </div>
+
+    <div class="timer">
+      Tiempo restante: <span id="time-remaining">--:--</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-dashboard">
+        🏠 Ir al Dashboard
+      </button>
+      <button class="btn btn-secondary" id="btn-skip">
+        ⏭️ Omitir esta vez
+      </button>
+    </div>
+
+    <div class="tips">
+      <h3>💡 Mientras tanto, puedes:</h3>
+      <ul>
+        <li>Tomar un breve descanso (5-10 min)</li>
+        <li>Hacer ejercicios de estiramiento</li>
+        <li>Tomar agua o un snack saludable</li>
+        <li>Revisar tu lista de tareas</li>
+      </ul>
+    </div>
+  </div>
+<script src="blocked.js"></script>
+</body>
+</html>

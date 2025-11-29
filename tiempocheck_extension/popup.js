@@ -8,23 +8,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const ultimaFecha = data.ultimaFecha;
 
     if (ultimaFecha !== hoy) {
-      // Nuevo día → reiniciar, conservar historial si se desea
       chrome.storage.local.get(null, (allData) => {
         const historialDominios = allData.historialDominios || [];
 
         chrome.storage.local.clear(() => {
           chrome.storage.local.set({
             ultimaFecha: hoy,
-            historialDominios: historialDominios  // Opcional, si lo quieres conservar
+            historialDominios: historialDominios  
           }, () => {
-            console.log("⏰ Historial reiniciado por nuevo día.");
+            console.log(" Historial reiniciado por nuevo día.");
             location.reload();
           });
         });
       });
     } else {
       iniciarPopup();
-      cargarRachas(); // Llama a la función de carga de rachas con endpoint actualizado
+      cargarRachas(); 
     }
   });
 });
@@ -176,11 +175,11 @@ function cargarRachas() {
             }
         }
         
-        console.log("✅ Rachas cargadas correctamente:", data);
+        console.log(" Rachas cargadas correctamente:", data);
         
     })
     .catch(err => {
-        console.error("❌ Error al cargar rachas:", err);
+        console.error(" Error al cargar rachas:", err);
         // Fallback para mostrar 0 días si hay error
         totalStreakDisplay.textContent = "0";
         document.getElementById("contador-racha-metas").textContent = "0";
@@ -197,3 +196,36 @@ function cargarRachas() {
         }
     });
 }
+
+
+// Verificar estado Focus Mode
+async function verificarFocusMode() {
+  try {
+    const response = await fetch('http://localhost:5000/api/focus/status', {
+      credentials: 'include'
+    });
+    const data = await response.json();
+    
+    const widget = document.getElementById('focus-status-widget');
+    
+    if (data.success && data.active) {
+      widget.style.display = 'block';
+      document.getElementById('focus-categories-count').textContent = data.categorias_bloqueadas.length;
+      
+      const mins = data.tiempo_restante_minutos || 0;
+      document.getElementById('focus-time-remaining').textContent = 
+        `${Math.floor(mins)}:${String(Math.floor((mins % 1) * 60)).padStart(2, '0')}`;
+    } else {
+      widget.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('[POPUP] Error verificando Focus:', error);
+  }
+}
+
+// Llamar en DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  // ... código existente ...
+  verificarFocusMode();
+  setInterval(verificarFocusMode, 5000); // Actualizar cada 5 seg
+});

@@ -1,104 +1,371 @@
 import re
 from sqlalchemy import func, text
 from app.mysql_conn import get_mysql, close_mysql
-from app.models.models import Registro, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria, FeatureDiaria, FeatureHoraria
+from app.models.models import Registro, Categoria, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria, ContextoDia, PatronCategoria, RachaUsuario, ConfiguracionLogro, AggEstadoDia, AggVentanaCategoria, AggKpiRango
+from app.models.ml import MLModelo, MLPrediccionFuture, MlMetric
+from app.models.features import FeatureDiaria, FeatureHoraria
+from app.models.models_coach import CoachAlerta, CoachSugerencia, CoachAccionLog, NotificacionClasificacion, CoachEstadoRegla
 from datetime import datetime, date, timedelta
 from app.extensions import db 
 from app.schedule.scheduler import get_scheduler
 from flask import current_app, request, jsonify
 
 def generar_backup_completo(usuario_id):
-
+    """Genera backup completo con las clases correctas"""
+    
     def serializar(queryset):
         resultado = []
         for obj in queryset:
             item = {}
             for column in obj.__table__.columns:
-                valor = getattr(obj, column.name)
-                if isinstance(valor, datetime):
-                    valor = valor.strftime('%Y-%m-%d %H:%M:%S')
-                item[column.name] = valor
+                try:
+                    # Usar column.key en lugar de column.name para obtener el atributo Python
+                    valor = getattr(obj, column.key)
+                    if isinstance(valor, datetime):
+                        valor = valor.strftime('%Y-%m-%d %H:%M:%S')
+                    elif isinstance(valor, date):
+                        valor = valor.strftime('%Y-%m-%d')
+                    # Guardar con el nombre de la columna en BD
+                    item[column.name] = valor
+                except AttributeError:
+                    # Si el atributo no existe, intentar con column.name
+                    try:
+                        valor = getattr(obj, column.name)
+                        if isinstance(valor, datetime):
+                            valor = valor.strftime('%Y-%m-%d %H:%M:%S')
+                        elif isinstance(valor, date):
+                            valor = valor.strftime('%Y-%m-%d')
+                        item[column.name] = valor
+                    except AttributeError:
+                        # Si aún no funciona, skip este campo
+                        continue
             resultado.append(item)
         return resultado
-
-
+    from app.models.models import (
+        Registro, MetaCategoria, LimiteCategoria, UsuarioLogro,
+        DominioCategoria, Categoria, ContextoDia,
+        AggEstadoDia, AggVentanaCategoria, AggKpiRango,
+        PatronCategoria, RachaUsuario 
+    )
+    from app.models.features import FeatureDiaria, FeatureHoraria
+    from app.models.ml import MLModelo, MlMetric, MLPrediccionFuture
+    from app.models.models_coach import (
+        CoachAlerta, CoachSugerencia, CoachAccionLog, 
+        CoachEstadoRegla, NotificacionClasificacion
+    )
+    
+    # DATOS PRINCIPALES
     registros = serializar(Registro.query.filter_by(usuario_id=usuario_id).all())
+    
+    # CONFIGURACIÓN Y GAMIFICACIÓN
     metas = serializar(MetaCategoria.query.filter_by(usuario_id=usuario_id).all())
     limites = serializar(LimiteCategoria.query.filter_by(usuario_id=usuario_id).all())
     logros = serializar(UsuarioLogro.query.filter_by(usuario_id=usuario_id).all())
-    dominios = serializar(DominioCategoria.query.all())  
+    
+    # Rachas (con try/catch por si no existe)
+    try:
+        rachas = serializar(RachaUsuario.query.filter_by(usuario_id=usuario_id).all())
+    except:
+        rachas = []
+    
+    # MACHINE LEARNING
+    contexto_dia = serializar(ContextoDia.query.filter_by(usuario_id=usuario_id).all())
+    ml_predicciones = serializar(MLPrediccionFuture.query.filter_by(usuario_id=usuario_id).all())
+    ml_metrics = serializar(MlMetric.query.filter_by(usuario_id=usuario_id).all())
+    ml_modelos = serializar(MLModelo.query.filter_by(usuario_id=usuario_id).all())
+    features_diarias = serializar(FeatureDiaria.query.filter_by(usuario_id=usuario_id).all())
+    features_horarias = serializar(FeatureHoraria.query.filter_by(usuario_id=usuario_id).all())
+    
+    # COACHING
+    coach_sugerencias = serializar(CoachSugerencia.query.filter_by(usuario_id=usuario_id).all())
+    coach_alertas = serializar(CoachAlerta.query.filter_by(usuario_id=usuario_id).all())
+    coach_acciones = serializar(CoachAccionLog.query.filter_by(usuario_id=usuario_id).all())
+    coach_estado_reglas = serializar(CoachEstadoRegla.query.filter_by(usuario_id=usuario_id).all())
+    
+    # ANÁLISIS Y PATRONES
+    patrones = serializar(PatronCategoria.query.filter_by(usuario_id=usuario_id).all())  
+    agg_estado_dia = serializar(AggEstadoDia.query.filter_by(usuario_id=usuario_id).all())
+    agg_ventana = serializar(AggVentanaCategoria.query.filter_by(usuario_id=usuario_id).all())
+    agg_kpi = serializar(AggKpiRango.query.filter_by(usuario_id=usuario_id).all())
+    notificaciones = serializar(NotificacionClasificacion.query.filter_by(usuario_id=usuario_id).all())
+    
+    # DATOS COMPARTIDOS (sin filtro de usuario) - SOLO para referencia
+    dominios = serializar(DominioCategoria.query.all())
+    categorias = serializar(Categoria.query.all())
 
     return {
+        # Datos principales
         "registro": registros,
+        
+        # Configuración y gamificación
         "metas": metas,
         "limites": limites,
         "logros": logros,
-        "dominios": dominios
+        "rachas": rachas,
+        
+        # Machine Learning
+        "contexto_dia": contexto_dia,
+        "ml_predicciones": ml_predicciones,
+        "ml_metrics": ml_metrics,
+        "ml_modelos": ml_modelos,
+        "features_diarias": features_diarias,
+        "features_horarias": features_horarias,
+        
+        # Coaching
+        "coach_sugerencias": coach_sugerencias,
+        "coach_alertas": coach_alertas,
+        "coach_acciones": coach_acciones,
+        "coach_estado_reglas": coach_estado_reglas,
+        
+        # Análisis
+        "patrones": patrones,  
+        "agg_estado_dia": agg_estado_dia,
+        "agg_ventana": agg_ventana,
+        "agg_kpi": agg_kpi,
+        "notificaciones_clasificacion": notificaciones,
+        
+        # Datos compartidos (solo referencia, no se restauran)
+        "dominios": dominios,
+        "categorias": categorias,
+        
+        # Metadata
+        "fecha_backup": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "usuario_id": usuario_id,
+        "version_backup": "3.2"
     }
 
-
 def restaurar_backup_completo(data, usuario_id):
-
-    db.session.query(Registro).filter_by(usuario_id=usuario_id).delete()
-
-    for entry in data.get('registro', []):
-        nuevo = Registro(
-            usuario_id=usuario_id,
-            dominio=entry['dominio'],
-            tiempo=entry['tiempo'],
-            fecha = datetime.strptime(entry['fecha'], '%Y-%m-%d %H:%M:%S')
-
-        )
-        db.session.add(nuevo)
-
-    for entry in data.get('metas', []):
-        nuevo = MetaCategoria(
-            usuario_id=usuario_id,
-            categoria_id=entry['categoria_id'],
-            limite_minutos=entry['limite_minutos'],
-            fecha=datetime.strptime(entry['fecha'], '%Y-%m-%d %H:%M:%S'),
-            cumplida=entry.get('cumplida', False)
-        )
-        db.session.add(nuevo)
-
-    for entry in data.get('limites', []):
-        nuevo = LimiteCategoria(
-            usuario_id=usuario_id,
-            categoria_id=entry['categoria_id'],
-            limite_minutos=entry['limite_minutos']
-        )
-        db.session.add(nuevo)
-
-    for entry in data.get('logros', []):
-        nuevo = UsuarioLogro(
-            usuario_id=usuario_id,
-            logro_id=entry['logro_id']
-        )
-        db.session.add(nuevo)
-
-    for entry in data.get('dominios', []):
-        nuevo = DominioCategoria(
-            dominio=entry['dominio'],
-            categoria_id=entry['categoria_id']
-        )
-        db.session.add(nuevo)
-
-    db.session.commit()
-
+    """
+    Restaura un backup completo del usuario.
+    ADVERTENCIA: Esto borrará todos los datos existentes del usuario antes de restaurar.
+    """
+    from app.models.models import (
+        Registro, MetaCategoria, LimiteCategoria, UsuarioLogro,
+        DominioCategoria, ContextoDia, AggEstadoDia, 
+        AggVentanaCategoria, AggKpiRango, PatronCategoria, RachaUsuario
+    )
+    from app.models.features import FeatureDiaria, FeatureHoraria
+    from app.models.ml import MLModelo, MlMetric, MLPrediccionFuture
+    from app.models.models_coach import (
+        CoachAlerta, CoachSugerencia, CoachAccionLog,
+        CoachEstadoRegla, NotificacionClasificacion
+    )
+    from app.extensions import db
+    from datetime import datetime, date
+    
+    try:
+        # PASO 1: Eliminar datos existentes del usuario (usar la función que ya tienes)
+        print(f"[DEBUG] Eliminando datos existentes del usuario {usuario_id}")
+        resultado_limpieza = resetear_datos_usuario(usuario_id)
+        
+        if not resultado_limpieza.get("success"):
+            return {"success": False, "error": "No se pudieron limpiar los datos existentes"}
+        
+        # PASO 2: Restaurar datos principales
+        print(f"[DEBUG] Restaurando registros...")
+        for entry in data.get('registro', []):
+            nuevo = Registro(
+                usuario_id=usuario_id,
+                dominio=entry['dominio'],
+                tiempo=entry['tiempo'],
+                fecha=datetime.strptime(entry['fecha'], '%Y-%m-%d %H:%M:%S') if isinstance(entry['fecha'], str) else entry['fecha']
+            )
+            db.session.add(nuevo)
+        
+        # PASO 3: Restaurar configuración
+        print(f"[DEBUG] Restaurando metas...")
+        for entry in data.get('metas', []):
+            nuevo = MetaCategoria(
+                usuario_id=usuario_id,
+                categoria_id=entry['categoria_id'],
+                minutos_meta=entry.get('minutos_meta', entry.get('limite_minutos')),
+                fecha=datetime.strptime(entry['fecha'], '%Y-%m-%d').date() if isinstance(entry['fecha'], str) else entry['fecha'],
+                cumplida=entry.get('cumplida', False),
+                origen=entry.get('origen', 'manual')
+            )
+            db.session.add(nuevo)
+        
+        print(f"[DEBUG] Restaurando límites...")
+        for entry in data.get('limites', []):
+            nuevo = LimiteCategoria(
+                usuario_id=usuario_id,
+                categoria_id=entry['categoria_id'],
+                limite_minutos=entry['limite_minutos']
+            )
+            db.session.add(nuevo)
+        
+        print(f"[DEBUG] Restaurando logros...")
+        for entry in data.get('logros', []):
+            nuevo = UsuarioLogro(
+                usuario_id=usuario_id,
+                logro_id=entry['logro_id']
+            )
+            db.session.add(nuevo)
+        
+        # PASO 4: Restaurar ML y contexto
+        print(f"[DEBUG] Restaurando contexto de días...")
+        for entry in data.get('contexto_dia', []):
+            nuevo = ContextoDia(
+                usuario_id=usuario_id,
+                fecha=datetime.strptime(entry['fecha'], '%Y-%m-%d').date() if isinstance(entry['fecha'], str) else entry['fecha'],
+                es_atipico=entry.get('es_atipico', False),
+                motivo=entry.get('motivo'),
+                motivo_detalle=entry.get('motivo_detalle'),
+                uso_esperado_min=entry.get('uso_esperado_min'),
+                uso_real_min=entry.get('uso_real_min'),
+                desviacion_pct=entry.get('desviacion_pct')
+            )
+            db.session.add(nuevo)
+        
+        # ✅ NUEVO: Restaurar anomalías
+        print(f"[DEBUG] Restaurando anomalías...")
+        for entry in data.get('anomalias', []):
+            fecha_anomalia = datetime.strptime(entry['fecha'], '%Y-%m-%d').date() if isinstance(entry['fecha'], str) else entry['fecha']
+            
+            # Buscar si ya existe contexto para ese día
+            contexto = ContextoDia.query.filter_by(
+                usuario_id=usuario_id,
+                fecha=fecha_anomalia
+            ).first()
+            
+            if contexto:
+                # Actualizar existente
+                contexto.es_atipico = True
+                contexto.motivo = entry.get('motivo')
+                contexto.motivo_detalle = entry.get('detalle')  # ✅ Nota: en anomalias es 'detalle', no 'motivo_detalle'
+                print(f"[DEBUG]   Actualizado contexto existente para {fecha_anomalia}: {entry.get('motivo')}")
+            else:
+                # Crear nuevo
+                nuevo_contexto = ContextoDia(
+                    usuario_id=usuario_id,
+                    fecha=fecha_anomalia,
+                    es_atipico=True,
+                    motivo=entry.get('motivo'),
+                    motivo_detalle=entry.get('detalle')
+                )
+                db.session.add(nuevo_contexto)
+                print(f"[DEBUG]   Creado nuevo contexto para {fecha_anomalia}: {entry.get('motivo')}")
+        
+        print(f"[DEBUG] {len(data.get('anomalias', []))} anomalías procesadas")
+        
+        print(f"[DEBUG] Restaurando predicciones ML...")
+        for entry in data.get('ml_predicciones', []):
+            nuevo = MLPrediccionFuture(
+                usuario_id=usuario_id,
+                fecha_pred=datetime.strptime(entry['fecha_pred'], '%Y-%m-%d').date() if isinstance(entry['fecha_pred'], str) else entry['fecha_pred'],
+                categoria=entry.get('categoria'),
+                yhat_minutos=entry.get('yhat_minutos'),
+                modelo=entry.get('modelo', 'RandomForest'),
+                version_modelo=entry.get('version_modelo', 'v3.2')
+            )
+            db.session.add(nuevo)
+        
+        print(f"[DEBUG] Restaurando métricas ML...")
+        for entry in data.get('ml_metrics', []):
+            nuevo = MlMetric(
+                fecha=datetime.strptime(entry['fecha'], '%Y-%m-%d').date() if isinstance(entry['fecha'], str) else entry['fecha'],
+                usuario_id=usuario_id,
+                modelo=entry.get('modelo'),
+                categoria=entry.get('categoria'),
+                hist_days=entry.get('hist_days'),
+                rows_train=entry.get('rows_train'),
+                rows_test=entry.get('rows_test'),
+                metric_mae=entry.get('metric_mae'),
+                metric_rmse=entry.get('metric_rmse')
+            )
+            db.session.add(nuevo)
+        
+        print(f"[DEBUG] Restaurando features diarias...")
+        for entry in data.get('features_diarias', []):
+            nuevo = FeatureDiaria(
+                usuario_id=usuario_id,
+                fecha=datetime.strptime(entry['fecha'], '%Y-%m-%d').date() if isinstance(entry['fecha'], str) else entry['fecha'],
+                categoria=entry.get('categoria'),
+                minutos=entry.get('minutos', 0)
+            )
+            db.session.add(nuevo)
+        
+        # PASO 5: Restaurar coaching
+        print(f"[DEBUG] Restaurando patrones personalizados...")
+        for entry in data.get('patrones', []):
+            nuevo = PatronCategoria(
+                usuario_id=usuario_id,
+                categoria_id=entry['categoria_id'],
+                patron=entry['patron'],
+                activo=entry.get('activo', True),  
+            )
+            db.session.add(nuevo)
+        
+        # PASO 6: Commit final
+        db.session.commit()
+        print(f"[DEBUG] ✅ Backup restaurado exitosamente")
+        
+        return {"success": True, "mensaje": "Backup restaurado exitosamente"}
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Error al restaurar backup: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+    
 def resetear_datos_usuario(usuario_id):
-    from app.models.models import Registro, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria
-    from app.mysql_conn import db
-
-    db.session.query(Registro).filter_by(usuario_id=usuario_id).delete()
-    db.session.query(MetaCategoria).filter_by(usuario_id=usuario_id).delete()
-    db.session.query(LimiteCategoria).filter_by(usuario_id=usuario_id).delete()
-    db.session.query(UsuarioLogro).filter_by(usuario_id=usuario_id).delete()
-
-    dominios = db.session.query(DominioCategoria).all()
-    for d in dominios:
-        db.session.delete(d)
-
-    db.session.commit()
+    """Borra TODOS los datos del usuario excepto su cuenta."""
+    from app.models.models import (
+        Registro, MetaCategoria, LimiteCategoria, UsuarioLogro,
+        ContextoDia, AggEstadoDia, AggVentanaCategoria, AggKpiRango,
+        PatronCategoria, RachaUsuario  # ✅
+    )
+    from app.models.features import FeatureDiaria, FeatureHoraria
+    from app.models.ml import MLModelo, MlMetric, MLPrediccionFuture
+    from app.models.models_coach import (
+        CoachAlerta, CoachSugerencia, CoachAccionLog,
+        CoachEstadoRegla, NotificacionClasificacion
+    )
+    from app.extensions import db
+    
+    try:
+        # Limpiar todas las tablas POR USUARIO
+        db.session.query(Registro).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(MetaCategoria).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(LimiteCategoria).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(UsuarioLogro).filter_by(usuario_id=usuario_id).delete()
+        
+        db.session.query(PatronCategoria).filter_by(usuario_id=usuario_id).delete()  # ✅
+        
+        try:
+            db.session.query(RachaUsuario).filter_by(usuario_id=usuario_id).delete()
+        except:
+            pass
+        
+        db.session.query(ContextoDia).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(MLPrediccionFuture).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(MlMetric).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(MLModelo).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(FeatureDiaria).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(FeatureHoraria).filter_by(usuario_id=usuario_id).delete()
+        
+        db.session.query(CoachSugerencia).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(CoachAlerta).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(CoachAccionLog).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(CoachEstadoRegla).filter_by(usuario_id=usuario_id).delete()
+        
+        db.session.query(AggEstadoDia).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(AggVentanaCategoria).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(AggKpiRango).filter_by(usuario_id=usuario_id).delete()
+        db.session.query(NotificacionClasificacion).filter_by(usuario_id=usuario_id).delete()
+        
+        # NO tocamos: logros_dinamicos, dominio_categoria, categorias (son globales)
+        
+        db.session.commit()
+        return {"success": True, "mensaje": "Todos los datos del usuario han sido eliminados"}
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Error al resetear usuario: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
 
 def desbloquear_logro(usuario_id, logro_id):
     conn = get_mysql()

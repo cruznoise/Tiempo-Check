@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Modo Focus - TiempoCheck</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modof.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard-modern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/focus-mode-full.css') }}">
+</head>
+<body>
+  <div class="dashboard-container">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2>¡Hola,<br>{{ nombre }}!</h2>
+      <p>Modo Focus</p>
+
+      <nav>
+        <ul>
+          <li>
+            <a href="{{ url_for('controlador.dashboard') }}">
+              <img src="{{ url_for('static', filename='icons/home.svg') }}" alt="Home">
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('admin_controller.vista_metas') }}">
+              <img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros">
+            </a>
+          </li>
+          <li>
+            <a href="#" id="btnConfiguracion">
+              <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración">
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Mini widget de estado actual en sidebar -->
+      <div class="focus-sidebar-status">
+        <div class="focus-status-mini" id="focus-sidebar-badge">
+          <span class="status-indicator"></span>
+          <span class="status-text">Inactivo</span>
+        </div>
+        <div id="focus-sidebar-timer" style="display: none;">
+          <div class="timer-mini" id="sidebar-countdown">--:--</div>
+          <div class="progress-mini">
+            <div class="progress-fill-sidebar" id="sidebar-progress"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Contenido principal -->
+    <main class="content">
+
+      <!-- Header -->
+      <header class="main-header-modern">
+        <div class="header-with-back">
+          <button class="btn-back" onclick="window.location.href='/dashboard'">
+            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+          </button>
+          <div>
+            <h1>🎯 Modo concentración</h1>
+            <p class="intro-text">Configura y controla tus sesiones de concentración profunda</p>
+          </div>
+        </div>
+      </header>
+
+      <!-- MODO FOCUS - Agregar a tu dashboard.html -->
+
+<!-- Sección Modo Focus (agregar en el contenido principal) -->
+<div class="tile-box" id="focus-mode-container">
+  <div class="tile-header">
+    <h3>🎯 Modo Focus</h3>
+    <span class="status-badge" id="focus-status-badge">Inactivo</span>
+  </div>
+
+  <!-- Estado cuando NO está activo -->
+  <div id="focus-inactive-state">
+    <p class="focus-description">
+      Bloquea temporalmente categorías distractoras para mantener tu concentración.
+    </p>
+
+    <div class="focus-config">
+      <h4>Configuración de sesión:</h4>
+      
+      <!-- Selector de duración -->
+      <div class="form-group-focus">
+        <label for="focus-duration">Duración:</label>
+        <select id="focus-duration" class="focus-select">
+          <option value="15">15 minutos (Quick Focus)</option>
+          <option value="25" selected>25 minutos (Pomodoro)</option>
+          <option value="45">45 minutos (Deep Work)</option>
+          <option value="60">1 hora</option>
+          <option value="90">1.5 horas</option>
+          <option value="120">2 horas</option>
+          <option value="custom">Personalizado...</option>
+        </select>
+        <input type="number" id="focus-duration-custom" 
+               placeholder="Minutos" min="1" max="480" 
+               style="display: none; margin-top: 10px;">
+      </div>
+
+      <!-- Selector de categorías a bloquear -->
+      <div class="form-group-focus">
+        <label>Categorías a bloquear:</label>
+        <div class="categories-checklist" id="focus-categories-list">
+          <!-- Se llenará dinámicamente desde el backend -->
+          <label class="category-checkbox">
+            <input type="checkbox" value="Redes Sociales" checked>
+            <span>📱 Redes Sociales</span>
+          </label>
+          <label class="category-checkbox">
+            <input type="checkbox" value="Ocio" checked>
+            <span>🎮 Ocio</span>
+          </label>
+          <label class="category-checkbox">
+            <input type="checkbox" value="Comercio">
+            <span>🛒 Comercio</span>
+          </label>
+          <label class="category-checkbox">
+            <input type="checkbox" value="Sin categoría">
+            <span>❓ Sin categoría</span>
+          </label>
+        </div>
+        <button class="btn-link" onclick="selectAllCategories()">Seleccionar todas</button>
+      </div>
+
+      <!-- Opciones avanzadas -->
+      <div class="focus-options">
+        <label class="focus-option">
+          <input type="checkbox" id="focus-allow-break" checked>
+          <span>Permitir descansos cada 25 min (recomendado)</span>
+        </label>
+        <label class="focus-option">
+          <input type="checkbox" id="focus-strict-mode">
+          <span>🔒 Modo estricto (sin omitir bloqueo)</span>
+        </label>
+        <label class="focus-option">
+          <input type="checkbox" id="focus-notify-end">
+          <span>🔔 Notificar al finalizar</span>
+        </label>
+      </div>
+
+      <button class="btn-focus-start" onclick="iniciarModoFocus()">
+        🚀 Iniciar Modo Focus
+      </button>
+    </div>
+  </div>
+
+  <!-- Estado cuando ESTÁ activo -->
+  <div id="focus-active-state" style="display: none;">
+    <div class="focus-session-info">
+      <div class="focus-timer">
+        <h2 id="focus-countdown">25:00</h2>
+        <p class="focus-subtitle">Tiempo restante</p>
+      </div>
+
+      <div class="focus-stats">
+        <div class="focus-stat">
+          <span class="stat-label">Sesión #</span>
+          <span class="stat-value" id="focus-session-number">1</span>
+        </div>
+        <div class="focus-stat">
+          <span class="stat-label">Categorías bloqueadas</span>
+          <span class="stat-value" id="focus-blocked-count">2</span>
+        </div>
+        <div class="focus-stat">
+          <span class="stat-label">Intentos bloqueados</span>
+          <span class="stat-value" id="focus-blocks-today">0</span>
+        </div>
+      </div>
+
+      <div class="focus-blocked-categories">
+        <h4>🚫 Categorías bloqueadas actualmente:</h4>
+        <div class="blocked-tags" id="focus-blocked-tags">
+          <!-- Se llenará dinámicamente -->
+        </div>
+      </div>
+
+      <div class="focus-actions">
+        <button class="btn-focus-pause" onclick="pausarModoFocus()">
+          ⏸️ Pausar (5 min)
+        </button>
+        <button class="btn-focus-end" onclick="finalizarModoFocus(false)">
+          ⏹️ Finalizar sesión
+        </button>
+      </div>
+
+      <div class="focus-progress-bar">
+        <div class="progress-fill" id="focus-progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial de sesiones recientes -->
+  <div class="focus-history">
+    <h4>📊 Sesiones recientes</h4>
+    <div class="history-list" id="focus-history-list">
+      <!-- Se llenará desde el backend -->
+      <div class="history-item">
+        <span class="history-date">Hoy, 10:30 AM</span>
+        <span class="history-duration">25 min</span>
+        <span class="history-status completed">✓ Completada</span>
+      </div>
+      <div class="history-item">
+        <span class="history-date">Ayer, 3:15 PM</span>
+        <span class="history-duration">45 min</span>
+        <span class="history-status completed">✓ Completada</span>
+      </div>
+      <div class="history-item">
+        <span class="history-date">Ayer, 9:00 AM</span>
+        <span class="history-duration">25 min</span>
+        <span class="history-status cancelled">✗ Cancelada</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+    </main>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
+
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/focus_mode.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+
+
+  <script>
+// Cargar categorías dinámicamente en /focus
+document.addEventListener('DOMContentLoaded', async function() {
+  console.log('[FOCUS PAGE] Cargando categorías...');
+  
+  try {
+    const response = await fetch('/api/categorias');
+    const data = await response.json();
+    
+    if (data.success || data.categorias) {
+      const container = document.getElementById('focus-categories-list');
+      if (container) {
+        container.innerHTML = '';
+        
+        const sugeridas = ['Redes Sociales', 'Ocio', 'Comercio', 'Sin categoría'];
+        
+        data.categorias.forEach(cat => {
+          const checked = sugeridas.includes(cat.nombre) ? 'checked' : '';
+          const emoji = obtenerEmojiCategoria ? obtenerEmojiCategoria(cat.nombre) : '📁';
+          
+          const label = document.createElement('label');
+          label.className = 'category-checkbox';
+          label.innerHTML = `
+            <input type="checkbox" value="${cat.nombre}" ${checked}>
+            <span>${emoji} ${cat.nombre}</span>
+          `;
+          
+          container.appendChild(label);
+        });
+        
+        console.log('[FOCUS PAGE] Categorías cargadas:', data.categorias.length);
+      }
+    }
+  } catch (error) {
+    console.error('[FOCUS PAGE] Error:', error);
+  }
+  
+  // Listener duración personalizada
+  const durationSelect = document.getElementById('focus-duration');
+  const customInput = document.getElementById('focus-duration-custom');
+  
+  if (durationSelect && customInput) {
+    durationSelect.addEventListener('change', function() {
+      customInput.style.display = this.value === 'custom' ? 'block' : 'none';
+      if (this.value === 'custom') customInput.focus();
+    });
+  }
+});
+</script>
+  <script>
+    // Función para ver historial completo (puedes expandir esto)
+    function verHistorialCompleto() {
+      // Por ahora, solo recarga el historial con más items
+      alert('Función en desarrollo: Mostrará historial completo de sesiones Focus');
+    }
+
+    // Cargar estadísticas al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+      cargarEstadisticasHoy();
+      cargarHistorialSesiones();
+      verificarSesionActiva();
+      
+      // Actualizar cada minuto
+      setInterval(actualizarEstadisticas, 60000);
+    });
+
+    async function cargarEstadisticasHoy() {
+      try {
+        const response = await fetch('/api/focus/stats/today');
+        const data = await response.json();
+        
+        if (data.success) {
+          document.getElementById('stats-completadas-hoy').textContent = data.sesiones_completadas || 0;
+          document.getElementById('stats-minutos-hoy').textContent = data.minutos_totales || 0;
+          document.getElementById('stats-racha').textContent = data.racha_dias || 0;
+        }
+      } catch (error) {
+        console.error('Error al cargar estadísticas:', error);
+      }
+    }
+
+    function actualizarEstadisticas() {
+      cargarEstadisticasHoy();
+      if (focusInterval) {
+        // Actualizar contador de bloqueos
+        fetch('/api/focus/status')
+          .then(r => r.json())
+          .then(data => {
+            if (data.active && data.blocks_count !== undefined) {
+              document.getElementById('focus-blocks-today').textContent = data.blocks_count;
+            }
+          });
+      }
+    }
+  </script>
+</body>
+</html>

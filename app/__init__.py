@@ -20,7 +20,7 @@ def create_app(config_object=None):
                 app: Instancia configurada de Flask
     """
     app = Flask(__name__)
-    app.config["DEBUG"] = True
+    #app.config["DEBUG"] = True
 
     # ========================================================================
     # CONFIGURACIÓN
@@ -121,7 +121,7 @@ def create_app(config_object=None):
     # BOOT CATCHUP (OPCIONAL)
     # ========================================================================
     
-    should_catchup = app.config.get("ENABLE_BOOT_CATCHUP", False)
+    should_catchup = app.config.get("ENABLE_BOOT_CATCHUP", True)
     is_ml_mode = os.environ.get("TIEMPOCHECK_ML_MODE") == "1"
     is_main = os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug
     
@@ -153,7 +153,7 @@ def create_app(config_object=None):
     # ========================================================================
     
     
-    should_start_scheduler = app.config.get("ENABLE_SCHEDULER", False)
+    should_start_scheduler = app.config.get("ENABLE_SCHEDULER", True)
     
     print(f"🔧 Scheduler: {'ENABLED' if should_start_scheduler else 'DISABLED'}")
     
