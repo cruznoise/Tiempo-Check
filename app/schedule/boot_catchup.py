@@ -74,10 +74,14 @@ def boot_catchup(app, usuario_id: int):
         print("[BOOT][SKIP] Proceso primario del reloader (dev).")
         return
 
-    print("[BOOT][CATCHUP] Verificando integridad temporal del sistema...")
+    print(f"[BOOT][CATCHUP] Verificando integridad temporal del sistema para usuario {usuario_id}...")
     dias_faltantes = _dias_faltantes_features(app, usuario_id, lookback_days=7)
 
     preds_dir = Path(current_app.root_path).parent / "ml" / "preds"
+    
+    # ✅ CAMBIO 1: Crear directorio por usuario
+    usuario_preds_dir = preds_dir / f"usuario_{usuario_id}"
+    usuario_preds_dir.mkdir(parents=True, exist_ok=True)
 
     for dia in dias_faltantes:
         print(f"[BOOT][CATCHUP] Corrigiendo día {dia} ...")
@@ -89,9 +93,11 @@ def boot_catchup(app, usuario_id: int):
             print(f"[BOOT][CATCHUP][ERR] Fallo en features/agg para {dia}: {e}")
             continue
 
-        target = preds_dir / f"preds_future_{dia}.csv"
+        # ✅ CAMBIO 2: Buscar en directorio del usuario
+        target = usuario_preds_dir / f"preds_future_{dia}.csv"
+        
         if not _csv_has_rows(target):
-            print(f"[BOOT][CATCHUP][PRED-MISS] No existe/está vacío {target.name}, generando...")
+            print(f"[BOOT][CATCHUP][PRED-MISS] No existe/está vacío {target.name} para usuario {usuario_id}, generando...")
             try:
                 job_ml_predict_multi(current_app, usuario_id, fecha_base=dia)
             except Exception as e:
@@ -109,4 +115,4 @@ def boot_catchup(app, usuario_id: int):
         except Exception as e:
             print(f"[SCHED][ERR][rachas] user={usuario_id} dia={dia} → {e}")
 
-    print("[BOOT][CATCHUP] Finalizado.")
+    print(f"[BOOT][CATCHUP] Finalizado para usuario {usuario_id}.")

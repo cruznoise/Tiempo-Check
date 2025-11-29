@@ -36,8 +36,8 @@
 
 // Descarga JSON para respaldo
 
-    document.getElementById('bck_btn').addEventListener('click', () => {
-  fetch('/backup_completo')
+document.getElementById('bck_btn').addEventListener('click', () => {
+  fetch('/admin/backup_completo')  // ← Cambia aquí, agrega /admin
     .then(res => res.blob())
     .then(blob => {
       const url = window.URL.createObjectURL(blob);
@@ -56,36 +56,57 @@
 });
 
 // Subir archivo JSON para backup
-
 document.getElementById('form-restaurar').addEventListener('submit', function(e) {
   e.preventDefault();
   const archivo = document.getElementById('archivo-backup').files[0];
-  if (!archivo) return alert("Selecciona un archivo JSON válido");
+  
+  if (!archivo) {
+    return alert("⚠️ Selecciona un archivo JSON válido");
+  }
+  
+  if (!archivo.name.endsWith('.json')) {
+    return alert("⚠️ El archivo debe ser un JSON (.json)");
+  }
+
+  // Mostrar que está procesando
+  const btnSubmit = e.target.querySelector('button[type="submit"]');
+  const textoOriginal = btnSubmit.textContent;
+  btnSubmit.disabled = true;
+  btnSubmit.textContent = '⏳ Restaurando...';
 
   const formData = new FormData();
   formData.append('backup', archivo);
 
-  fetch('/restaurar_backup', {
+  fetch('/admin/restaurar_backup', {
     method: 'POST',
     body: formData
   })
   .then(res => res.json())
   .then(data => {
-    alert(data.mensaje || "Backup restaurado correctamente");
+    if (data.success) {
+      alert("✅ " + (data.mensaje || "Backup restaurado correctamente"));
+      location.reload(); // Recargar para ver los datos restaurados
+    } else {
+      alert("❌ " + (data.error || "Error al restaurar el backup"));
+    }
   })
   .catch(err => {
     console.error("Error al restaurar:", err);
-    alert(" Ocurrió un error al restaurar el backup.");
+    alert("❌ Ocurrió un error al restaurar el backup.");
+  })
+  .finally(() => {
+    // Restaurar el botón
+    btnSubmit.disabled = false;
+    btnSubmit.textContent = textoOriginal;
   });
 });
-
-//Reseteo de la cuenta
+///Reseteo de la cuenta
 document.getElementById('btn-reseteo-total').addEventListener('click', function() {
   if (!confirm("¿Estás seguro de que deseas borrar todos tus datos? Esta acción no se puede deshacer.")) {
     return;
   }
 
-  fetch('/reseteo_total', {
+  fetch('/admin/reseteo_total', {  // ← Cambia aquí también
     method: 'POST'
   })
   .then(res => res.json())
@@ -95,7 +116,6 @@ document.getElementById('btn-reseteo-total').addEventListener('click', function(
   })
   .catch(err => {
     console.error("Error al resetear cuenta:", err);
-    alert(" Error al reiniciar la cuenta.");
+    alert("❌ Error al reiniciar la cuenta.");
   });
 });
-

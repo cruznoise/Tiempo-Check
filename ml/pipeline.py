@@ -251,21 +251,21 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
 
     return {"model_path": str(model_path), "metrics": metrics, "promoted": promote}
 
-def train_por_categoria(usuario_id: int, hist_days: int = 180):
+def train_por_categoria(usuario_id, hist_days=180):
     """
-    Entrena un modelo RandomForest por cada categoría del usuario.
-    Guarda los artefactos en ml/artifacts/<categoria>/rf_<categoria>.joblib
-    (ML-005: actualiza automáticamente model_selector.json)
+    Entrena modelos RF por categoría para UN USUARIO específico.
+    Guarda los artefactos en ml/artifacts/usuario_X/<categoria>/rf_<categoria>.joblib
     """
     start = date.today() - timedelta(days=hist_days)
     end = date.today() - timedelta(days=1)
     df = load_fc_diaria(usuario_id, start=start, end=end)
+    
     if df.empty:
-        print(" No hay datos para entrenar.")
+        print(f"No hay datos para entrenar (usuario={usuario_id})")
         return
 
     categorias = df["categoria"].unique()
-    print(f"[TRAIN] Entrenando {len(categorias)} categorías...")
+    print(f"[TRAIN] Entrenando {len(categorias)} categorías para usuario {usuario_id}...")
 
     for cat in categorias:
         sub = df[df["categoria"] == cat].copy()
@@ -283,40 +283,36 @@ def train_por_categoria(usuario_id: int, hist_days: int = 180):
         rf.fit(Xtr, ytr)
         rf.feature_names_in_ = list(Xtr.columns)
 
+        #  Guardar POR USUARIO
         cat_name = canon_cat_filename(cat)
-        outdir = ARTIF_DIR / cat_name
+        outdir = ARTIF_DIR / f"usuario_{usuario_id}" / cat_name
         ensure_dir(outdir)
         artifact_path = outdir / f"rf_{cat_name}.joblib"
         dump(rf, artifact_path)
-        print(f"[OK] Guardado modelo RF para {cat} → {artifact_path}")
+        print(f"[OK] Guardado modelo RF para usuario {usuario_id}, {cat} → {artifact_path}")
         
+        # Métricas
         from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-        import json
-
-        ypred = rf.predict(train_df[X_cols])
         import numpy as np
 
+        ypred = rf.predict(train_df[X_cols])
         mae = float(mean_absolute_error(ytr, ypred))
         mse = float(mean_squared_error(ytr, ypred))
         rmse = float(np.sqrt(mse))
         r2 = float(r2_score(ytr, ypred))
 
         metrics = {"MAE": mae, "RMSE": rmse, "R2": r2}
-
-
-        dump(rf, artifact_path)
         with open(outdir / "metrics.json", "w") as f:
             json.dump(metrics, f, indent=2)
 
-        print(f"[OK] Guardado modelo RF para {cat} → {artifact_path}")
         print(f"[METRICS] {cat} → {metrics}")
 
+    # Actualizar model_selector POR USUARIO
     try:
-        build_model_selector()
-        print("[ML-005] model_selector.json actualizado correctamente.")
+        build_model_selector(usuario_id)
+        print(f"[ML-005] model_selector.json actualizado para usuario {usuario_id}")
     except Exception as e:
         print(f"[WARN][ML-005] No se pudo actualizar model_selector.json: {e}")
-
 
 def _load_latest_model():
     if not LATEST.exists():
@@ -366,12 +362,17 @@ def predict(usuario_id: int, fecha: date | None = None, save_csv: bool = False):
     for idx, row in latest.iterrows():
         categoria = canon_cat(row["categoria"])
         valid_feats = ['min_t-1', 'min_t-2', 'min_t-3', 'min_t-7', 'MA7', 'dow', 'is_weekend', 'day', 'days_to_eom']
-        feats_cat = row[valid_feats].to_dict()
+        feats_cat = row[valid_feats]
         hist_cat = df[df["categoria"] == categoria]["minutos"]
-        yhat = predict_categoria(categoria, feats_cat, df_hist=hist_cat)
+        yhat = predict_categoria(
+            usuario_id=usuario_id,
+            categoria=categoria,
+            features=feats_cat,
+            df_hist=hist_cat
+        )
         preds.append({"categoria": categoria, "yhat_minutos": round(float(yhat), 2)})
 
-
+  
     print("[DEBUG] predicciones crudas →", preds)
 
     hist = df.copy()
@@ -448,6 +449,39 @@ def predict(usuario_id: int, fecha: date | None = None, save_csv: bool = False):
         df_out.to_csv(outdir / f"{fecha.isoformat()}_{ts}.csv", index=False)
         df_out.to_csv(outdir / f"{fecha.isoformat()}.csv", index=False)
 
+    # ========================================================================
+    # GUARDAR EN BASE DE DATOS
+    # ========================================================================
+    from app.models.ml import MLPrediccionFuture
+    from app.extensions import db
+    
+    try:
+        # Eliminar predicciones antiguas de esta fecha
+        MLPrediccionFuture.query.filter_by(
+            usuario_id=usuario_id,
+            fecha_pred=fecha
+        ).delete()
+        
+        # Guardar nuevas predicciones
+        for p in preds:
+            pred_obj = MLPrediccionFuture(
+                usuario_id=usuario_id,
+                fecha_pred=fecha,
+                categoria=p['categoria'],
+                yhat_minutos=p['yhat_minutos'],  # Ya es float, no necesitas int()
+                modelo='RandomForest',  # O el modelo que uses
+                version_modelo='v3.2',  # Tu versión actual
+                fecha_creacion=datetime.now()
+            )
+            db.session.add(pred_obj)
+                
+        db.session.commit()
+        print(f"[DEBUG] Guardadas {len(preds)} predicciones en BD para {fecha}")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] No se pudieron guardar predicciones: {e}")
+
     return result
 
 def predict_multi_horizon(usuario_id, fecha_base, horizontes=[1, 2, 3]):
@@ -474,7 +508,7 @@ def predict_multi_horizon(usuario_id, fecha_base, horizontes=[1, 2, 3]):
                   .fillna(0.0)
             )
             try:
-                modelo = load_model_for_categoria(categoria)
+                modelo = load_model_for_categoria(usuario_id, categoria)
                 
                 def _audit_X(X: pd.DataFrame | np.ndarray, feature_cols: list[str] | None = None, tag: str = "X"):
                     import numpy as np, pandas as pd
@@ -536,7 +570,7 @@ def predict_multi_horizon(usuario_id, fecha_base, horizontes=[1, 2, 3]):
 
     if all_preds:
         df_out = pd.DataFrame(all_preds)
-        guardar_predicciones(df_out, tipo="multi")
+        guardar_predicciones(df_out, usuario_id=usuario_id, tipo="multi") 
         return df_out
     else:
         print(f"[ML][MULTI] No se generaron predicciones para usuario={usuario_id}")
@@ -565,8 +599,9 @@ def main():
     args = parser.parse_args()
 
     if args.cmd == "train":
-        res = train(args.usuario, hist_days=args.hist, holdout_days=args.holdout)
-        print(json.dumps(res, ensure_ascii=False, indent=2))
+        print(f"[CMD] Entrenamiento por categoría para usuario {args.usuario}")
+        train_por_categoria(args.usuario, hist_days=args.hist)
+        print("[DONE] Entrenamiento por categoría completado.")
 
     elif args.cmd == "predict":
         f = date.fromisoformat(args.fecha) if args.fecha else None
@@ -594,39 +629,36 @@ if SELECTOR_FILE.exists():
 else:
     MODEL_SELECTOR = {}
 
-def get_model_for_categoria(categoria: str):
+def get_model_for_categoria(usuario_id: int, categoria: str):
     """
-    Devuelve un modelo listo para usar para la categoría indicada.
-    Compatible con las dos convenciones de guardado:
-      - ml/artifacts/<categoria>/rf_<categoria>.joblib
-      - ml/artifacts/<categoria>_rf.joblib
-    Si no se encuentra, usa BaselineHybrid como fallback.
+    Carga modelo POR USUARIO.
+    Busca en: ml/artifacts/usuario_X/<categoria>/rf_<categoria>.joblib
     """
     categoria_norm = categoria.lower().replace(" ", "_")
-    base_dir = Path("ml/artifacts") / categoria_norm
-
+    base_dir = Path("ml/artifacts") / f"usuario_{usuario_id}" / categoria_norm
+    
     if base_dir.exists() and base_dir.is_dir():
         for file in base_dir.glob(f"rf_{categoria_norm}.joblib"):
             try:
-                print(f"[MODEL][{categoria}] Cargando modelo desde {file}")
+                print(f"[MODEL][user={usuario_id}][{categoria}] Cargando desde {file}")
                 return joblib.load(file)
             except Exception as e:
                 print(f"[MODEL][ERR] No se pudo cargar {file}: {e}")
 
-    rf_path = Path("ml/artifacts") / f"{categoria}_rf.joblib"
-    if rf_path.exists():
-        print(f"[MODEL][{categoria}] Cargando modelo desde {rf_path}")
-        return joblib.load(rf_path)
+    # Fallback a modelo global (solo para migración)
+    global_path = Path("ml/artifacts") / categoria_norm / f"rf_{categoria_norm}.joblib"
+    if global_path.exists():
+        print(f"[MODEL][{categoria}] ⚠️ Usando modelo GLOBAL (migrar a por usuario)")
+        return joblib.load(global_path)
 
-    print(f"[MODEL][{categoria}] Usando BaselineHybrid (fallback)")
+    print(f"[MODEL][user={usuario_id}][{categoria}] Usando BaselineHybrid (fallback)")
     return BaselineHybrid()
 
-
-def predict_categoria(categoria: str, features, df_hist=None) -> float:
+def predict_categoria(usuario_id: int, categoria: str, features, df_hist=None) -> float:
     import numpy as np
     import pandas as pd
 
-    modelo = get_model_for_categoria(categoria)
+    modelo = get_model_for_categoria(usuario_id, categoria)
 
     if isinstance(features, (float, int, np.floating)):
         X = np.array([[float(features)]])
@@ -665,6 +697,32 @@ def predict_categoria(categoria: str, features, df_hist=None) -> float:
 
     return float(yhat[0]) if hasattr(yhat, "__len__") else float(yhat)
 
+def build_model_selector(usuario_id: int):
+    """
+    Construye model_selector.json POR USUARIO
+    Escanea ml/artifacts/usuario_X/ y mapea categorías a sus modelos
+    """
+    base_dir = ARTIF_DIR / f"usuario_{usuario_id}"
+    
+    if not base_dir.exists():
+        print(f"[WARN] No existe directorio de artefactos para usuario {usuario_id}")
+        return
+    
+    selector = {}
+    
+    for cat_dir in base_dir.iterdir():
+        if cat_dir.is_dir():
+            categoria = cat_dir.name
+            for model_file in cat_dir.glob("rf_*.joblib"):
+                selector[categoria] = str(model_file.relative_to(ARTIF_DIR))
+                break
+    
+    selector_path = base_dir / "model_selector.json"
+    with open(selector_path, "w") as f:
+        json.dump(selector, f, indent=2)
+    
+    print(f"[ML-005] model_selector.json creado para usuario {usuario_id}: {len(selector)} categorías")
+    return selector
 
 if __name__ == "__main__":
     main()

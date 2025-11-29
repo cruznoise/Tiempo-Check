@@ -1,35 +1,52 @@
 {
   "manifest_version": 3,
-  "name": "TimeTrack AI",
+  "name": "TiempoCheck, By AAI",
   "description": "Extensión para registrar el tiempo de uso por sitio web y mejorar tus hábitos digitales.",
-  "version": "1.0",
+  "version": "1.1",
 
   "content_scripts": [
-  {
-    "matches": ["<all_urls>"],
-    "js": ["content_script.js"],
-    "run_at": "document_idle"
-  }
-],
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content_script.js"],
+      "run_at": "document_idle"
+    }
+  ],
 
   "host_permissions": [
     "<all_urls>",     
     "http://localhost:5000/"
   ],
+  
   "background": {
     "service_worker": "background.js"
   },
+  
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon.png" 
-},
+  },
 
   "permissions": [
     "storage",
     "tabs",
     "notifications",
     "activeTab", 
-    "scripting"
-  ]
+    "scripting",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess"
+  ],
 
+  "web_accessible_resources": [
+    {
+      "resources": ["blocked.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "externally_connectable": {
+    "matches": [
+      "http://localhost:5000/*",
+      "http://127.0.0.1:5000/*"
+    ]
+  }
 }

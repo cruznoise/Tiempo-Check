@@ -9,7 +9,10 @@ import logging
 from datetime import date, datetime, timedelta
 from typing import Dict, Iterable, Tuple
 from collections import defaultdict
-from app.models.models import Registro, FeatureDiaria, FeatureHoraria, DominioCategoria, Categoria, AggVentanaCategoria, AggEstadoDia, AggKpiRango, MetaCategoria, LimiteCategoria
+from app.models.models import Registro, Categoria, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria, ContextoDia, PatronCategoria, RachaUsuario, ConfiguracionLogro, AggEstadoDia, AggVentanaCategoria, AggKpiRango
+from app.models.ml import MLModelo, MLPrediccionFuture, MlMetric
+from app.models.features import FeatureDiaria, FeatureHoraria
+from app.models.models_coach import CoachAlerta, CoachSugerencia, CoachAccionLog, NotificacionClasificacion, CoachEstadoRegla
 from app.extensions import db
 from sqlalchemy import func, and_, text
 

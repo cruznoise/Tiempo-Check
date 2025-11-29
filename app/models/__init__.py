@@ -1,3 +1,4 @@
-from .models import db, Usuario, Registro, Categoria, DominioCategoria, MetaCategoria, LimiteCategoria, FeatureDiaria, FeatureHoraria, AggVentanaCategoria, AggEstadoDia, AggKpiRango
-from .models_coach import CoachAlerta,  CoachSugerencia, CoachEstadoRegla, CoachAccionLog
-from .ml import MlMetric, MLModelo, MLPrediccionFuture
+from app.models.models import Usuario, Registro, Categoria, MetaCategoria, LimiteCategoria, UsuarioLogro, DominioCategoria, ContextoDia, PatronCategoria, RachaUsuario, ConfiguracionLogro, AggEstadoDia, AggVentanaCategoria, AggKpiRango, SesionFocus, IntentoBloqeuoFocus
+from app.models.ml import MLModelo, MLPrediccionFuture, MlMetric
+from app.models.features import FeatureDiaria, FeatureHoraria
+from app.models.models_coach import CoachAlerta, CoachSugerencia, CoachAccionLog, NotificacionClasificacion, CoachEstadoRegla

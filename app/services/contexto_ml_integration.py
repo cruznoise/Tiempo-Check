@@ -18,7 +18,7 @@ def obtener_contexto_historico(usuario_id: int, dias: int = 30):
         ContextoDia.usuario_id == usuario_id,
         ContextoDia.fecha >= fecha_inicio,
         ContextoDia.es_atipico == True,
-        ContextoDia.motivo != None  # Solo los que tienen motivo explicado
+        ContextoDia.motivo != None
     ).all()
     
     # Analizar patrones
@@ -40,8 +40,9 @@ def obtener_contexto_historico(usuario_id: int, dias: int = 30):
             }
         
         patrones['por_motivo'][motivo]['count'] += 1
-        patrones['por_motivo'][motivo]['uso_promedio'] += ctx.uso_real_min
-        patrones['por_motivo'][motivo]['desviacion_promedio'] += ctx.desviacion_pct
+        # ✅ Protección contra None
+        patrones['por_motivo'][motivo]['uso_promedio'] += (ctx.uso_real_min or 0)
+        patrones['por_motivo'][motivo]['desviacion_promedio'] += (ctx.desviacion_pct or 0)
         
         # Contar por día de semana
         dia_semana = ctx.fecha.weekday()
@@ -55,15 +56,14 @@ def obtener_contexto_historico(usuario_id: int, dias: int = 30):
     
     # Generar ajustes sugeridos por motivo
     for motivo, datos in patrones['por_motivo'].items():
-        if datos['count'] >= 2:  # Al menos 2 ocurrencias para considerar patrón
+        if datos['count'] >= 2:
             factor_ajuste = 1 + (datos['desviacion_promedio'] / 100)
             patrones['ajustes_sugeridos'][motivo] = {
                 'factor': round(factor_ajuste, 2),
-                'confianza': min(datos['count'] / 5, 1.0)  # Max confianza con 5+ ocurrencias
+                'confianza': min(datos['count'] / 5, 1.0)
             }
     
     return patrones
-
 
 def ajustar_prediccion_con_contexto(prediccion_base: float, dia_semana: int, 
                                      usuario_id: int, motivo_esperado: str = None) -> float:
@@ -79,27 +79,37 @@ def ajustar_prediccion_con_contexto(prediccion_base: float, dia_semana: int,
     Returns:
         Predicción ajustada (minutos)
     """
-    patrones = obtener_contexto_historico(usuario_id)
-    
-    prediccion_ajustada = prediccion_base
-    
-    # Si hay un motivo esperado (ej: usuario marcó "vacaciones próximas")
-    if motivo_esperado and motivo_esperado in patrones['ajustes_sugeridos']:
-        ajuste = patrones['ajustes_sugeridos'][motivo_esperado]
-        prediccion_ajustada *= ajuste['factor']
+    try:
+        patrones = obtener_contexto_historico(usuario_id)
         
-        print(f"[CONTEXTO] Ajuste por '{motivo_esperado}': "
-              f"{prediccion_base:.0f} → {prediccion_ajustada:.0f} min "
-              f"(factor: {ajuste['factor']}, confianza: {ajuste['confianza']:.0%})")
+        #  Validar que patrones no sea None
+        if not patrones:
+            return prediccion_base
+        
+        prediccion_ajustada = prediccion_base
+        
+        # Si hay un motivo esperado (ej: usuario marcó "vacaciones próximas")
+        if motivo_esperado and 'ajustes_sugeridos' in patrones and motivo_esperado in patrones['ajustes_sugeridos']:
+            ajuste = patrones['ajustes_sugeridos'][motivo_esperado]
+            prediccion_ajustada *= ajuste['factor']
+            
+            print(f"[CONTEXTO] Ajuste por '{motivo_esperado}': "
+                  f"{prediccion_base:.0f} → {prediccion_ajustada:.0f} min "
+                  f"(factor: {ajuste['factor']}, confianza: {ajuste['confianza']:.0%})")
+        
+        # Ajuste ligero por día de semana si tiene muchas anomalías ese día
+        if 'por_dia_semana' in patrones and dia_semana in patrones['por_dia_semana']:
+            anomalias_dia = patrones['por_dia_semana'][dia_semana] or 0  #  Protección contra None
+            if anomalias_dia >= 3:  # Patrón recurrente
+                # Día problemático, aumentar margen de incertidumbre
+                print(f"[CONTEXTO] Día {dia_semana} tiene patrón de anomalías ({anomalias_dia})")
+        
+        return prediccion_ajustada
     
-    # Ajuste ligero por día de semana si tiene muchas anomalías ese día
-    anomalias_dia = patrones['por_dia_semana'][dia_semana]
-    if anomalias_dia >= 3:  # Patrón recurrente
-        # Día problemático, aumentar margen de incertidumbre
-        print(f"[CONTEXTO] Día {dia_semana} tiene patrón de anomalías ({anomalias_dia})")
-    
-    return prediccion_ajustada
-
+    except Exception as e:
+        #  Si hay cualquier error, devolver predicción base
+        print(f"[CONTEXTO][WARN] Error al ajustar contexto: {e}")
+        return prediccion_base
 
 def sugerir_contexto_futuro(usuario_id: int, fecha_prediccion: date) -> list:
     """

@@ -1,0 +1,80 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>TiempoCheck ML - Predicciones vs Realidad</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+            body { font-family: Arial; padding: 20px; }
+            .stats { display: flex; gap: 20px; margin: 20px 0; }
+            .stat-card { 
+                border: 1px solid #ddd; 
+                padding: 15px; 
+                border-radius: 8px;
+                flex: 1;
+            }
+            .stat-value { font-size: 32px; font-weight: bold; }
+            canvas { max-width: 800px; margin: 20px 0; }
+        </style>
+    </head>
+    <body>
+        <h1>📊 TiempoCheck ML - Reporte de Precisión</h1>
+        <p>Usuario ID: 1 | Generado: 2025-11-13T11:26:00.780456</p>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value">162.9 min</div>
+                <div>MAE (Error Promedio)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">79.2%</div>
+                <div>Error Porcentual</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">1</div>
+                <div>Días Analizados</div>
+            </div>
+        </div>
+        
+        <h2>Comparación por Día</h2>
+        <canvas id="chart"></canvas>
+        
+        <script>
+            const datos = [{"fecha": "2025-11-06", "predicho": 368.6499999999999, "real": 205.73333333333332, "error_abs": 162.9166666666666, "error_pct": 79.1882696046662}];
+            
+            new Chart(document.getElementById('chart'), {
+                type: 'line',
+                data: {
+                    labels: datos.map(d => d.fecha),
+                    datasets: [
+                        {
+                            label: 'Predicho',
+                            data: datos.map(d => d.predicho),
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Real',
+                            data: datos.map(d => d.real),
+                            borderColor: 'rgb(255, 99, 132)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Minutos'
+                            }
+                        }
+                    }
+                }
+            });
+        </script>
+    </body>
+    </html>
+    

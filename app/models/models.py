@@ -124,28 +124,6 @@ class UsuarioLogro(db.Model):
             "logro_id": self.logro_id
         }
 
-class FeatureDiaria(db.Model):
-    __tablename__ = 'features_diarias'
-    id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False, index=True)
-    fecha = db.Column(db.Date, nullable=False, index=True)
-    categoria = db.Column(db.String(64), nullable=False, index=True)
-    minutos = db.Column(db.Integer, nullable=False, default=0)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
-    __table_args__ = (db.UniqueConstraint('usuario_id','fecha','categoria', name='uq_features_diarias'),)
-
-class FeatureHoraria(db.Model):
-    __tablename__ = 'features_horarias'
-    id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False, index=True)
-    fecha = db.Column(db.Date, nullable=False, index=True)
-    hora = db.Column(db.SmallInteger, nullable=False)  # 0..23
-    categoria = db.Column(db.String(64), nullable=False, index=True)
-    minutos = db.Column(db.Integer, nullable=False, default=0)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
-    __table_args__ = (db.UniqueConstraint('usuario_id','fecha','hora','categoria', name='uq_features_horarias'),)
 
 class FeaturesCategoriaDiaria(db.Model):
     __tablename__ = "features_categoria_diaria"
@@ -222,3 +200,109 @@ class ContextoDia(db.Model):
     
     def __repr__(self):
         return f'<ContextoDia {self.fecha} U{self.usuario_id} atipico={self.es_atipico}>'
+
+class PatronCategoria(db.Model):
+    __tablename__ = 'patrones_categoria'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    patron = db.Column(db.String(512), nullable=False, unique=True)  # ← varchar(512) y UNIQUE
+    categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'), nullable=False)
+    activo = db.Column(db.Boolean, nullable=False, default=True)  
+    creado_en = db.Column(db.DateTime, nullable=False, server_default=db.func.current_timestamp())
+    actualizado_en = db.Column(
+        db.DateTime, 
+        nullable=False, 
+        server_default=db.func.current_timestamp(),
+        onupdate=db.func.current_timestamp()
+    )
+    
+    usuario = db.relationship('Usuario')
+    categoria = db.relationship('Categoria')
+    
+    def __repr__(self):
+        return f'<PatronCategoria {self.patron} -> Cat{self.categoria_id}>'
+    
+class RachaUsuario(db.Model):
+    __tablename__ = 'rachas_usuario'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'), nullable=True)  # NULL = racha general
+    tipo_racha = db.Column(db.Enum('metas', 'limites', 'uso_diario'), default='metas')
+    racha_actual = db.Column(db.Integer, default=0)
+    racha_maxima = db.Column(db.Integer, default=0)
+    ultima_fecha = db.Column(db.Date)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+    actualizado_en = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    usuario = db.relationship('Usuario')
+    categoria = db.relationship('Categoria')
+    
+    def __repr__(self):
+        return f'<RachaUsuario U{self.usuario_id} actual={self.racha_actual} max={self.racha_maxima}>'
+    
+
+class ConfiguracionLogro(db.Model):
+    """Configuración de condiciones para desbloquear logros dinámicamente"""
+    __tablename__ = 'logros_dinamicos'
+    
+    logro_id = db.Column(db.Integer, primary_key=True)
+    tipo_condicion = db.Column(db.String(50))  # 'racha_dias', 'tiempo_categoria', 'meta_cumplida', etc.
+    categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'), nullable=True)
+    valor_referencia = db.Column(db.Integer)  # Valor que se debe alcanzar para desbloquear
+    
+    categoria = db.relationship('Categoria')
+    
+    def __repr__(self):
+        return f'<ConfiguracionLogro {self.logro_id} {self.tipo_condicion}={self.valor_referencia}>'
+    
+
+class SesionFocus(db.Model):
+    __tablename__ = 'sesiones_focus'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    inicio = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    fin_programado = db.Column(db.DateTime, nullable=False)
+    fin_real = db.Column(db.DateTime)
+    duracion_minutos = db.Column(db.Integer, nullable=False)
+    tiempo_real_minutos = db.Column(db.Integer)
+    completada = db.Column(db.Boolean, default=False)
+    modo_estricto = db.Column(db.Boolean, default=False)
+    categorias_bloqueadas = db.Column(db.Text) 
+    usuario = db.relationship('Usuario', backref='sesiones_focus')
+    intentos_bloqueo = db.relationship('IntentoBloqeuoFocus', backref='sesion', cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'usuario_id': self.usuario_id,
+            'inicio': self.inicio.isoformat() if self.inicio else None,
+            'fin_programado': self.fin_programado.isoformat() if self.fin_programado else None,
+            'fin_real': self.fin_real.isoformat() if self.fin_real else None,
+            'duracion_minutos': self.duracion_minutos,
+            'tiempo_real_minutos': self.tiempo_real_minutos,
+            'completada': self.completada,
+            'modo_estricto': self.modo_estricto,
+            'categorias_bloqueadas': self.categorias_bloqueadas
+        }
+
+
+class IntentoBloqeuoFocus(db.Model):
+    __tablename__ = 'intentos_bloqueo_focus'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sesion_id = db.Column(db.Integer, db.ForeignKey('sesiones_focus.id'), nullable=False)
+    momento = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    url_bloqueada = db.Column(db.String(500))
+    categoria = db.Column(db.String(100))
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sesion_id': self.sesion_id,
+            'momento': self.momento.isoformat() if self.momento else None,
+            'url_bloqueada': self.url_bloqueada,
+            'categoria': self.categoria
+        }

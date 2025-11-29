@@ -1,7 +1,7 @@
 /* Modal de Anomalías */
 .anomalia-modal {
   max-width: 600px;
-  background: var(--surface);
+  background: white;
   border-radius: 16px;
   padding: 0;
   overflow: hidden;

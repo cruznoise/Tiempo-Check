@@ -60,8 +60,10 @@ def job_ml_train_cat(app, usuario_id: int):
         print(f"[JOB][ML] Entrenamiento por categoría finalizado → usuario {usuario_id}")
 
 def job_ml_predict_multi(app, usuario_id: int = None, fecha_base=None):
-    """Genera predicciones multi-horizonte para usuario(s)"""
-    # Si no se especifica usuario, usar todos los activos
+    """
+    Genera predicciones multi-horizonte POR USUARIO
+    Ya no necesita --save-csv porque SIEMPRE guarda por usuario
+    """
     if usuario_id is None:
         with app.app_context():
             from app.models.models import Usuario
@@ -76,24 +78,19 @@ def job_ml_predict_multi(app, usuario_id: int = None, fecha_base=None):
         target = date.today().isoformat()
     else:
         target = fecha_base.isoformat()
-
-    env = os.environ.copy()
-    env["TIEMPOCHECK_ML_MODE"] = "1"
     
     for uid in usuario_ids:
-        print(f"[SCHED][ML][MULTI] Predicciones extendidas user={uid}")
+        print(f"[SCHED][ML] Predicción multi-horizonte {target} user={uid}")
         cmd = [
             "python3", "-m", "ml.pipeline", "multi",
             "--usuario", str(uid),
-            "--fecha", target,
-            "--save-csv"
+            "--fecha", target
         ]
-        
         try:
-            subprocess.run(cmd, check=True, env=env)
-            print(f"[SCHED][OK][MULTI] user={uid}")
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            print(f"[SCHED][OK][MULTI] user={uid} → {result.stdout[:200]}")
         except subprocess.CalledProcessError as e:
-            print(f"[SCHED][ERR][MULTI] user={uid} → {e}")
+            print(f"[SCHED][ERR][MULTI] user={uid} → {e.stderr}")
 
 def job_ml_eval_daily(app=None, usuario_id=None):
     """Ejecuta evaluación diaria de desempeño multihorizonte"""
