@@ -1212,3 +1212,13 @@ def api_focus_skip_block():
         print(f"[ERROR] Error en skip-block: {e}")
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
+@bp.route('/api/usuario/me', methods=['GET'])
+def get_current_user():
+    usuario_id = session.get('usuario_id')
+    if not usuario_id:
+        return jsonify({'error': 'No autenticado'}), 401
+    
+    return jsonify({
+        'usuario_id': usuario_id
+    })
