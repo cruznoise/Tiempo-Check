@@ -4,47 +4,49 @@ $(document).ready(function() {
   const errorMsg = $('#error-msg');
 
   // === Manejo de Login ===
-  $('#login-form').on('submit', function(e) {
-    e.preventDefault();
-    $.ajax({
-      url: "/login",
-      method: "POST",
-      contentType: "application/json",
-      data: JSON.stringify({
-        correo: $('#correo').val(),
-        contraseña: $('#contraseña').val()
-      }),
-      success: function(res) {
-        if (res.success) {
-          if (typeof chrome !== 'undefined' && chrome.storage) {
-            chrome.storage.local.set({ 
-              usuario_id: res.usuario_id,
-              sesion_activa: true,
-              timestamp: Date.now()
-            }, () => {
-              console.log(' [AUTH] Sesión guardada en extensión');
-              console.log('   Usuario ID:', res.usuario_id);
-            });
-          } else {
-            console.log(' [AUTH] Chrome storage no disponible');
-          }
-          
-          window.location.href = "/dashboard";
+$('#login-form').on('submit', function(e) {
+  e.preventDefault();
+  $.ajax({
+    url: "/login",
+    method: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({
+      correo: $('#correo').val(),
+      contraseña: $('#contraseña').val()
+    }),
+    success: function(res) {
+      if (res.success) {
+
+        if (typeof chrome !== 'undefined' && chrome.storage) {
+          chrome.storage.local.set({ 
+            usuario_id: res.usuario_id,
+            sesion_activa: true,
+            timestamp: Date.now()
+          }, () => {
+            console.log(' [AUTH] Sesión guardada:', res.usuario_id);
+
+            window.location.href = "/dashboard";
+          });
         } else {
-          errorMsg
-            .text(" Correo o contraseña incorrectos")
-            .removeClass("d-none")
-            .fadeIn();
+          // Si no hay chrome.storage, redirigir de todos modos
+          console.log(' [AUTH] Chrome storage no disponible');
+          window.location.href = "/dashboard";
         }
-      },
-      error: function() {
+      } else {
         errorMsg
-          .text(" Error del servidor")
+          .text(" Correo o contraseña incorrectos")
           .removeClass("d-none")
           .fadeIn();
       }
-    });
+    },
+    error: function() {
+      errorMsg
+        .text("Error del servidor")
+        .removeClass("d-none")
+        .fadeIn();
+    }
   });
+});
 
   // ------------------------------------
   // MANEJO DEL REGISTRO (CON NUEVOS CAMPOS)
