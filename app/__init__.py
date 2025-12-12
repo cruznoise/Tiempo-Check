@@ -48,11 +48,11 @@ def create_app(config_object=None):
             r"/api/*": {
                 "origins": [
                     "https://tiempo-check-production.up.railway.app",
-                    "chrome-extension://*"  # ← Importante
+                    "chrome-extension://*"  
                 ],
                 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization"],
-                "supports_credentials": True  # ← MUY IMPORTANTE
+                "allow_headers": ["Content-Type", "Authorization","X-Usuario-ID"],
+                "supports_credentials": True  
             },
             r"/admin/*": {
                 "origins": [
@@ -60,8 +60,8 @@ def create_app(config_object=None):
                     "chrome-extension://*"
                 ],
                 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization"],
-                "supports_credentials": True  # ← MUY IMPORTANTE
+                "allow_headers": ["Content-Type", "Authorization", "X-Usuario-ID"],
+                "supports_credentials": True  
             }
         }
     )
