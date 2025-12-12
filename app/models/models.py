@@ -79,10 +79,18 @@ class Categoria(db.Model):
 
 class DominioCategoria(db.Model):
     __tablename__ = 'dominio_categoria'
-    id = db.Column(db.Integer, primary_key=True)
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     dominio = db.Column(db.String(255), nullable=False)
-    categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'), nullable=False)
-    categoria = db.relationship('Categoria')
+    categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'))
+    categoria = db.Column(db.String(120), nullable=False, default='Sin categoría')
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False) 
+    # Relaciones
+    categoria_obj = db.relationship('Categoria', backref='dominios')
+    usuario = db.relationship('Usuario', backref='dominios_categorizados')
+    __table_args__ = (
+        db.UniqueConstraint('dominio', 'usuario_id', name='uq_dominio_usuario'),
+    )
 
 class MetaCategoria(db.Model):
     __tablename__ = 'metas_categoria'

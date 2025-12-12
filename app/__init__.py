@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 env_path = Path(__file__).parent.parent / '.env'
 if env_path.exists():
     load_dotenv(env_path)
-    print(f"✅ [ENV] Variables cargadas desde {env_path}")
+    print(f" [ENV] Variables cargadas desde {env_path}")
 
 def create_app(config_object=None):
     """

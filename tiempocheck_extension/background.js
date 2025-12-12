@@ -107,11 +107,11 @@ function mostrarNotificacion(titulo, mensaje) {
 
 async function verificarAlertas() {
   try {
-    const resCat = await fetch("https://tiempo-check-production.up.railway.app/admin/api/alerta_dominio");
+    const resCat = await fetch("https://tiempo-check-production.up.railway.app/api/alerta_dominio");
     const categorias = await resCat.json();
 
     for (const cat of categorias) {
-      const res = await fetch("https://tiempo-check-production.up.railway.app/admin/api/alerta_dominio", {
+      const res = await fetch("https://tiempo-check-production.up.railway.app/api/alerta_dominio", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ categoria_id: cat.id })
@@ -147,7 +147,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'verificar_alerta') {
     console.log("🔎 Verificando dominio:", request.dominio);
 
-    fetch("https://tiempo-check-production.up.railway.app/admin/api/alerta_dominio", {
+    fetch("https://tiempo-check-production.up.railway.app/api/alerta_dominio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dominio: request.dominio })

@@ -262,13 +262,16 @@ def vista_metas():
         SELECT dc.categoria_id, SUM(r.tiempo) as total
         FROM registro r
         JOIN dominio_categoria dc ON r.dominio = dc.dominio
-        WHERE r.usuario_id = :usuario_id AND DATE(r.fecha) = :hoy
+        WHERE r.usuario_id = :usuario_id 
+          AND dc.usuario_id = :usuario_id  
+          AND DATE(r.fecha) = :hoy
         GROUP BY dc.categoria_id
     """), {"usuario_id": usuario_id, "hoy": hoy}).fetchall()
 
     uso_actual = defaultdict(int)
     for categoria_id, total in registros:
         uso_actual[categoria_id] = round(total / 60)  
+        
     estado_metas = []
     for m in metas:
         nombre = next((c.nombre for c in categorias if c.id == m.categoria_id), 'Desconocida')
@@ -285,8 +288,6 @@ def vista_metas():
             'origen': getattr(m, 'origen', 'manual')  
         })
 
-    # db.session.commit() # se comenta por que aun no se guardan estados de metas para analisis con ML
-
     verificar_logros_dinamicos(usuario_id)
 
     estado_limites = []
@@ -301,10 +302,11 @@ def vista_metas():
         })
 
     from app.models import Usuario
-    usuarios = Usuario.query.get(session.get('usuario_id'))
+    usuario = Usuario.query.get(session.get('usuario_id'))
+    usuarios = [usuario] if usuario else [] 
 
     return render_template('admin/metas.html',
-        usuarios=usuarios,
+        usuarios=usuarios,  
         categorias=categorias,
         metas=metas,
         limites=limites,

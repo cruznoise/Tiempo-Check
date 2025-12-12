@@ -244,5 +244,4 @@ function mostrarToast(mensaje, tipo = 'info') {
     }, 3000);
 }
 
-// API endpoint para categorías (agregar a tu controller)
 // GET /api/categorias
