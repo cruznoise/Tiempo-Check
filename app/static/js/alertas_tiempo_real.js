@@ -1,3 +1,16 @@
+// Cargar usuario_id
+let usuarioId = null;
+chrome.storage.local.get(['usuario_id'], (data) => {
+    usuarioId = data.usuario_id;
+    if (usuarioId) {
+        console.log('[ALERTAS] ✅ Usuario autenticado:', usuarioId);
+        // Iniciar polling
+        iniciarPolling();
+    } else {
+        console.log('[ALERTAS] ⚠️ Usuario no autenticado');
+    }
+});
+
 // Sistema de Alertas en Tiempo Real - Global
 let alertasPollingInterval = null;
 

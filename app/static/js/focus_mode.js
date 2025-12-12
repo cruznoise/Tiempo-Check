@@ -661,8 +661,8 @@ async function finalizarModoFocus(completed) {
 
 function notificarExtensionFocus(action, data) {
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-    //const EXTENSION_ID = 'hcghpalkgapkbklfnhkfoialdcneafod' // == Extension del server ===
-    const EXTENSION_ID = 'danhjjndhhckkkhdpfgeaccpkbdlbmha' // == Extension local ==
+    const EXTENSION_ID = 'hcghpalkgapkbklfnhkfoialdcneafod' // == Extension del server ===
+    //const EXTENSION_ID = 'danhjjndhhckkkhdpfgeaccpkbdlbmha' // == Extension local ==
     chrome.runtime.sendMessage(
       EXTENSION_ID,
       { action: action, data: data },
