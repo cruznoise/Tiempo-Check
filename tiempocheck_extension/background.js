@@ -1,16 +1,40 @@
+// ============================================
+// AUTENTICACIÓN
+// ============================================
+let usuarioId = null;
+
+// Cargar usuario_id al iniciar extensión
+chrome.storage.local.get(['usuario_id'], (data) => {
+    usuarioId = data.usuario_id;
+    if (usuarioId) {
+        console.log('[AUTH]  Usuario autenticado:', usuarioId);
+    } else {
+        console.log('[AUTH]  Sin autenticación - inicia sesión en TiempoCheck');
+    }
+});
+
+// Escuchar cambios en el storage (cuando el usuario hace login)
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.usuario_id) {
+        usuarioId = changes.usuario_id.newValue;
+        console.log('[AUTH]  Usuario actualizado:', usuarioId);
+    }
+});
+
+// ============================================
+// TRACKING DE TIEMPO (ORIGINAL)
+// ============================================
 let dominioActual = null;
 let tiempoAcumulado = 0;
 let inicioSesion = null;
 let tiempoPorDominio = {};
 let ultimaPeticion = {};
 
-// Inicializar storage al cargar la extensión
 chrome.storage.local.get(null, (data) => {
   tiempoPorDominio = data || {};
   actualizarDominioActivo(); 
 });
 
-// Obtener dominio activo desde la pestaña actual
 async function actualizarDominioActivo() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.url || !tab.url.startsWith("http")) return;
@@ -26,7 +50,6 @@ async function actualizarDominioActivo() {
   }
 }
 
-// Guardar tiempo transcurrido y enviarlo al backend
 function guardarTiempo(forzarEnvio = false) {
   if (!dominioActual || !inicioSesion) return;
 
@@ -70,8 +93,6 @@ function guardarTiempo(forzarEnvio = false) {
   inicioSesion = Date.now();
 }
 
-// === EVENTOS DEL NAVEGADOR ===
-
 chrome.tabs.onActivated.addListener(() => {
   guardarTiempo();
   actualizarDominioActivo();
@@ -96,6 +117,10 @@ setInterval(() => {
   guardarTiempo(true);
 }, 20000);
 
+// ============================================
+// NOTIFICACIONES
+// ============================================
+
 function mostrarNotificacion(titulo, mensaje) {
   if (Notification.permission === 'granted') {
     new Notification(titulo, {
@@ -106,35 +131,56 @@ function mostrarNotificacion(titulo, mensaje) {
 }
 
 async function verificarAlertas() {
+  //REQUIERE AUTENTICACIÓN
+  if (!usuarioId) {
+    console.log('[ALERTAS] Sin autenticación, saltando verificación');
+    return;
+  }
+
   try {
-    const resCat = await fetch("https://tiempo-check-production.up.railway.app/api/alerta_dominio");
-    const categorias = await resCat.json();
+    const response = await fetch("https://tiempo-check-production.up.railway.app/api/categorias", {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Usuario-ID': String(usuarioId) 
+      }
+    });
+    
+    const categorias = await response.json();
 
-    for (const cat of categorias) {
-      const res = await fetch("https://tiempo-check-production.up.railway.app/api/alerta_dominio", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoria_id: cat.id })
-      });
+    if (categorias && Array.isArray(categorias)) {
+      for (const cat of categorias) {
+        const res = await fetch("https://tiempo-check-production.up.railway.app/api/alerta_dominio", {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Usuario-ID': String(usuarioId)  
+          },
+          body: JSON.stringify({ categoria_id: cat.id })
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (data.alerta && data.mensaje) {
-        mostrarNotificacion(` ${cat.nombre}`, data.mensaje);
+        if (data.alerta && data.mensaje) {
+          mostrarNotificacion(` ${cat.nombre}`, data.mensaje);
+        }
       }
     }
   } catch (error) {
-    console.error("Error al verificar alertas:", error);
+    console.error("[ALERTAS] Error:", error);
   }
 }
 
 if (Notification.permission !== 'granted') {
   Notification.requestPermission();
 }
+
 chrome.runtime.onInstalled.addListener(verificarAlertas);
 setInterval(verificarAlertas, 2 * 60 * 1000);
 
-// Listener para mensajes INTERNOS (desde content_script.js, popup.js)
+// ============================================
+// MENSAJES INTERNOS
+// ============================================
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request === 'resetStorage') {
     chrome.storage.local.clear(() => {
@@ -145,11 +191,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.type === 'verificar_alerta') {
-    console.log("🔎 Verificando dominio:", request.dominio);
+    console.log(" Verificando dominio:", request.dominio);
+
+    //  REQUIERE AUTENTICACIÓN
+    if (!usuarioId) {
+      console.log('[ALERTA]  Sin autenticación');
+      sendResponse({ alerta: false });
+      return true;
+    }
 
     fetch("https://tiempo-check-production.up.railway.app/api/alerta_dominio", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-Usuario-ID": String(usuarioId)  
+      },
       body: JSON.stringify({ dominio: request.dominio })
     })
     .then(res => res.json())
@@ -176,9 +232,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// ==================== FOCUS MODE - BLOQUEO DE SITIOS ====================
+// ============================================
+// FOCUS MODE
+// ============================================
 
-// Estado de Focus Mode
 let focusActive = false;
 let blockedCategories = [];
 let strictModeFocus = false;
@@ -186,7 +243,6 @@ let sessionIdFocus = null;
 let categoriasMapFocus = {};
 let dominiosOmitidos = [];
 
-// ==================== CARGAR CATEGORÍAS DESDE BD ====================
 async function cargarCategoriasMapFocus() {
   try {
     console.log('[FOCUS] Cargando categorías desde BD...');
@@ -199,15 +255,11 @@ async function cargarCategoriasMapFocus() {
     
     if (data.success && data.mapeo) {
       categoriasMapFocus = data.mapeo;
-      
       console.log('[FOCUS] Categorías cargadas desde BD');
       console.log(`[FOCUS] Total dominios: ${data.total_dominios}`);
-      console.log('[FOCUS] Ejemplos:', Object.keys(categoriasMapFocus).slice(0, 5));
-      
       chrome.storage.local.set({ categoriasMapFocus: categoriasMapFocus });
     } else {
       console.error('[FOCUS] Error: respuesta sin mapeo');
-      
       chrome.storage.local.get(['categoriasMapFocus'], (stored) => {
         if (stored.categoriasMapFocus) {
           categoriasMapFocus = stored.categoriasMapFocus;
@@ -217,7 +269,6 @@ async function cargarCategoriasMapFocus() {
     }
   } catch (error) {
     console.error('[FOCUS] Error cargando categorías:', error);
-    
     chrome.storage.local.get(['categoriasMapFocus'], (stored) => {
       if (stored.categoriasMapFocus) {
         categoriasMapFocus = stored.categoriasMapFocus;
@@ -227,13 +278,9 @@ async function cargarCategoriasMapFocus() {
   }
 }
 
-// Cargar al inicio
 cargarCategoriasMapFocus();
-
-// Recargar cada 5 minutos
 setInterval(cargarCategoriasMapFocus, 5 * 60 * 1000);
 
-// Sincronizar estado con backend
 async function sincronizarEstadoFocus() {
   try {
     const response = await fetch('https://tiempo-check-production.up.railway.app/api/focus/status', {
@@ -255,15 +302,11 @@ async function sincronizarEstadoFocus() {
       });
       
       console.log('[FOCUS] Sesión activa restaurada');
-      
-      // Actualizar reglas de bloqueo
       actualizarReglasBloqueoDNR();
     } else {
       focusActive = false;
       blockedCategories = [];
       chrome.storage.local.remove(['focusActive', 'blockedCategories', 'strictModeFocus', 'sessionIdFocus']);
-      
-      // Limpiar reglas
       actualizarReglasBloqueoDNR();
     }
   } catch (error) {
@@ -271,19 +314,13 @@ async function sincronizarEstadoFocus() {
   }
 }
 
-// Sincronizar al inicio
 sincronizarEstadoFocus();
-
-// Sincronizar cada 30 segundos
 setInterval(sincronizarEstadoFocus, 30000);
 
-// ==================== LISTENER ÚNICO PARA MENSAJES EXTERNOS ====================
-// Escuchar mensajes EXTERNOS (desde TiempoCheck webapp)
 chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
   console.log('[FOCUS] Mensaje externo recibido:', request);
   
   if (request.action === 'start') {
-    // Recargar categorías y activar
     cargarCategoriasMapFocus().then(() => {
       focusActive = true;
       blockedCategories = request.data.categorias || [];
@@ -298,20 +335,10 @@ chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => 
       });
       
       console.log('[FOCUS] Focus Mode ACTIVADO');
-      console.log('  - Categorías bloqueadas:', blockedCategories);
-      console.log('  - Dominios a bloquear:', 
-        Object.keys(categoriasMapFocus).filter(d => 
-          blockedCategories.includes(categoriasMapFocus[d])
-        ).length
-      );
-      
-      // Actualizar reglas de bloqueo
       actualizarReglasBloqueoDNR();
-      
       sendResponse({ success: true, message: 'Focus activado' });
     });
-    
-    return true; // Mantener canal abierto
+    return true;
   } 
   else if (request.action === 'end') {
     focusActive = false;
@@ -320,8 +347,6 @@ chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => 
     sessionIdFocus = null;
     
     chrome.storage.local.remove(['focusActive', 'blockedCategories', 'strictModeFocus', 'sessionIdFocus']);
-    
-    // Eliminar reglas
     actualizarReglasBloqueoDNR();
     
     console.log('[FOCUS] Focus Mode DESACTIVADO');
@@ -330,8 +355,6 @@ chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => 
   
   return true;
 });
-
-// ==================== BLOQUEO CON DECLARATIVE NET REQUEST ====================
 
 async function actualizarReglasBloqueoDNR() {
   if (!focusActive || blockedCategories.length === 0) {
@@ -347,28 +370,23 @@ async function actualizarReglasBloqueoDNR() {
     return;
   }
 
-const dominiosABloquear = Object.keys(categoriasMapFocus)
-  .filter(dominio => {
-    const categoria = categoriasMapFocus[dominio];
-    const estaBloqueado = blockedCategories.includes(categoria);
-    const estaOmitido = dominiosOmitidos.includes(dominio);
-    
-    return estaBloqueado && !estaOmitido; // ← Excluir omitidos
-  });
+  const dominiosABloquear = Object.keys(categoriasMapFocus)
+    .filter(dominio => {
+      const categoria = categoriasMapFocus[dominio];
+      const estaBloqueado = blockedCategories.includes(categoria);
+      const estaOmitido = dominiosOmitidos.includes(dominio);
+      return estaBloqueado && !estaOmitido;
+    });
 
-console.log('[FOCUS DNR] Dominios a bloquear:', dominiosABloquear.length);
-console.log('[FOCUS DNR] Dominios omitidos:', dominiosOmitidos.length);
+  console.log('[FOCUS DNR] Dominios a bloquear:', dominiosABloquear.length);
 
-  // Crear reglas con soporte para subdominios
   const reglas = [];
   let ruleId = 1;
 
   dominiosABloquear.forEach(dominio => {
     const categoria = categoriasMapFocus[dominio];
-    
     const dominioLimpio = dominio.replace(/^www\./, '');
     
-    // Crear regla para dominio base y todos sus subdominios
     reglas.push({
       id: ruleId++,
       priority: 1,
@@ -380,13 +398,12 @@ console.log('[FOCUS DNR] Dominios omitidos:', dominiosOmitidos.length);
         }
       },
       condition: {
-        urlFilter: `||${dominioLimpio}`,  // ← Esto bloquea dominio + subdominios
+        urlFilter: `||${dominioLimpio}`,
         resourceTypes: ["main_frame"]
       }
     });
   });
 
-  // Limitar a 5000 reglas
   const reglasLimitadas = reglas.slice(0, 5000);
 
   try {
@@ -399,12 +416,11 @@ console.log('[FOCUS DNR] Dominios omitidos:', dominiosOmitidos.length);
     });
 
     console.log('[FOCUS DNR] Reglas creadas:', reglasLimitadas.length);
-    
   } catch (error) {
     console.error('[FOCUS DNR] Error creando reglas:', error);
   }
 }
-// Helper: Registrar bloqueo en backend
+
 async function registrarIntentoBloqueadoFocus(domain, categoria) {
   try {
     await fetch('https://tiempo-check-production.up.railway.app/api/focus/block', {
@@ -417,15 +433,12 @@ async function registrarIntentoBloqueadoFocus(domain, categoria) {
       })
     });
     
-    console.log('[FOCUS]  Bloqueo registrado en BD');
+    console.log('[FOCUS] ✓ Bloqueo registrado en BD');
   } catch (error) {
     console.error('[FOCUS] Error registrando:', error);
   }
 }
 
-console.log('[FOCUS] Sistema de bloqueo inicializado');
-
-// Función para omitir un dominio
 async function omitirDominio(domain) {
   console.log('[FOCUS] Omitiendo dominio:', domain);
   
@@ -433,11 +446,10 @@ async function omitirDominio(domain) {
     dominiosOmitidos.push(domain);
     chrome.storage.local.set({ dominiosOmitidos: dominiosOmitidos });
     await actualizarReglasBloqueoDNR();
-    console.log('[FOCUS]  Dominio omitido');
+    console.log('[FOCUS] ✓ Dominio omitido');
   }
 }
 
-// Escuchar mensajes de blocked.html
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'omitir_dominio') {
     omitirDominio(request.domain).then(() => {
@@ -446,3 +458,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 });
+
+console.log('[FOCUS] Sistema de bloqueo inicializado');

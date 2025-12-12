@@ -2,6 +2,34 @@ const dominioActual = window.location.hostname.replace('www.', '');
 console.log("🌐 Dominio detectado:", dominioActual);
 
 // ============================================
+// AUTENTICACIÓN
+// ============================================
+let usuarioId = null;
+
+// Cargar usuario_id al iniciar
+chrome.storage.local.get(['usuario_id'], (data) => {
+    usuarioId = data.usuario_id;
+    if (usuarioId) {
+        console.log('[AUTH]  Usuario:', usuarioId);
+    } else {
+        console.log('[AUTH]  Sin autenticación - algunas funciones deshabilitadas');
+    }
+});
+
+// Escuchar cambios
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.usuario_id) {
+        usuarioId = changes.usuario_id.newValue;
+        console.log('[AUTH]  Usuario actualizado:', usuarioId);
+        
+        // Recargar categorías después de login
+        if (usuarioId) {
+            cargarCategoriasParaClasificacion();
+        }
+    }
+});
+
+// ============================================
 // SISTEMA DE ALERTAS DE LÍMITES
 // ============================================
 
@@ -9,6 +37,12 @@ verificarAlerta();
 iniciarIntervaloVerificacion();
 
 function verificarAlerta() {
+  //  Requiere autenticación
+  if (!usuarioId) {
+    console.log('[ALERTAS]  Sin autenticación');
+    return;
+  }
+
   chrome.storage.local.get(["recordatorios", "tiempoRecordatorio", "alertasMostradas"], (data) => {
     const recordatorios = data.recordatorios || {};
     const ultimaVez = recordatorios[dominioActual] || 0;
@@ -24,7 +58,8 @@ function verificarAlerta() {
     fetch("https://tiempo-check-production.up.railway.app/api/alerta_dominio", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-Usuario-ID": String(usuarioId)  
       },
       body: JSON.stringify({ dominio: dominioActual })
     })
@@ -41,7 +76,7 @@ function verificarAlerta() {
         const hoy = new Date().toDateString();
 
         if (alertas[dominioActual] === hoy) {
-          console.log("🔁 Alerta de proximidad ya mostrada hoy.");
+          console.log(" Alerta de proximidad ya mostrada hoy.");
           return;
         }
 
@@ -50,7 +85,7 @@ function verificarAlerta() {
         chrome.storage.local.set({ alertasMostradas: nuevasAlertas });
       }
     })
-    .catch(err => console.error("❌ Error en fetch:", err));
+    .catch(err => console.error(" Error en fetch:", err));
   });
 }
 
@@ -64,10 +99,19 @@ let notificacionClasificacionMostrada = false;
 cargarCategoriasParaClasificacion();
 
 async function cargarCategoriasParaClasificacion() {
+  //  Requiere autenticación
+  if (!usuarioId) {
+    console.log('[CLASIFICACIÓN]  Sin autenticación');
+    return;
+  }
+
   try {
     const response = await fetch("https://tiempo-check-production.up.railway.app/api/clasificacion/categorias", {
-      credentials: "include"
+      headers: {
+        "X-Usuario-ID": String(usuarioId)  
+      }
     });
+    
     const data = await response.json();
     
     if (data.success && data.categorias) {
@@ -83,11 +127,19 @@ async function verificarClasificacionPendiente() {
   if (document.getElementById("modalClasificacionSitio")) return;
   if (notificacionClasificacionMostrada) return;
   
+  //  Requiere autenticación
+  if (!usuarioId) {
+    console.log('[CLASIFICACIÓN]  Sin autenticación');
+    return;
+  }
+  
   try {
     const response = await fetch("https://tiempo-check-production.up.railway.app/api/clasificacion/verificar-dominio", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
+      headers: { 
+        "Content-Type": "application/json",
+        "X-Usuario-ID": String(usuarioId)  
+      },
       body: JSON.stringify({ dominio: dominioActual })
     });
     
@@ -95,7 +147,7 @@ async function verificarClasificacionPendiente() {
     
     if (data.necesita_clasificacion) {
       notificacionClasificacionMostrada = true;
-      console.log("[CLASIFICACIÓN] ✅ Sitio necesita clasificación");
+      console.log("[CLASIFICACIÓN]  Sitio necesita clasificación");
       mostrarModalClasificacionEnSitio(data);
     }
   } catch (error) {
@@ -112,10 +164,9 @@ function mostrarModalClasificacionEnSitio(data) {
   modal.style = modalStyle();
 
   if (esManual) {
-    // Modal simple para clasificación manual
     modal.innerHTML = `
       <div style="${modalBoxStyle('#3b82f6')}">
-        <h2 style="margin: 0 0 15px 0; font-size: 18px;">❓ Categorizar sitio</h2>
+        <h2 style="margin: 0 0 15px 0; font-size: 18px;"> Categorizar sitio</h2>
         <p style="margin: 0 0 15px 0; font-size: 14px;"><strong>${dominioActual}</strong></p>
         <select id="catSelect" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 6px; font-size: 14px;">
           <option value="">-- Selecciona categoría --</option>
@@ -128,7 +179,6 @@ function mostrarModalClasificacionEnSitio(data) {
       </div>
     `;
   } else {
-    // Modal para confirmar clasificación automática
     const confianza = Math.round((data.confianza || 0) * 100);
     modal.innerHTML = `
       <div style="${modalBoxStyle('#8b5cf6')}">
@@ -145,7 +195,6 @@ function mostrarModalClasificacionEnSitio(data) {
 
   document.body.appendChild(modal);
 
-  // Event listeners
   document.getElementById("btnCerrarCat")?.addEventListener("click", () => modal.remove());
   
   if (esManual) {
@@ -163,12 +212,14 @@ function mostrarModalClasificacionEnSitio(data) {
       try {
         await fetch(`https://tiempo-check-production.up.railway.app/api/clasificacion/clasificar_manual/${data.notificacion_id}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Usuario-ID': String(usuarioId)  
+          },
           body: JSON.stringify({ categoria_correcta_id: parseInt(select.value) })
         });
         
-        console.log("[CLASIFICACIÓN] ✅ Guardado");
+        console.log("[CLASIFICACIÓN]  Guardado");
         modal.remove();
       } catch (error) {
         console.error("[CLASIFICACIÓN] Error:", error);
@@ -181,10 +232,12 @@ function mostrarModalClasificacionEnSitio(data) {
       try {
         await fetch(`https://tiempo-check-production.up.railway.app/api/clasificacion/confirmar/${data.notificacion_id}`, {
           method: 'POST',
-          credentials: 'include'
+          headers: {
+            'X-Usuario-ID': String(usuarioId)  // ← AGREGAR HEADER
+          }
         });
         
-        console.log("[CLASIFICACIÓN] ✅ Confirmado");
+        console.log("[CLASIFICACIÓN]  Confirmado");
         modal.remove();
       } catch (error) {
         console.error("[CLASIFICACIÓN] Error:", error);
@@ -198,10 +251,10 @@ function iniciarIntervaloVerificacion() {
 
   setInterval(() => {
     verificarAlerta();
-    verificarClasificacionPendiente(); // ← CLASIFICACIÓN
+    verificarClasificacionPendiente();
   }, intervaloMs);
 
-  console.log(`🔄 Intervalo de verificación: cada ${intervaloMs / 1000} segundos`);
+  console.log(` Intervalo de verificación: cada ${intervaloMs / 1000} segundos`);
 }
 
 // ============================================
@@ -217,7 +270,7 @@ function mostrarAlertaPersonalizada(mensaje) {
 
   modal.innerHTML = `
     <div style="${modalBoxStyle()}">
-      <h2 style="margin-top: 0; font-weight: bold;">⏳ TiempoCheck</h2>
+      <h2 style="margin-top: 0; font-weight: bold;"> TiempoCheck</h2>
       <p style="margin-bottom: 20px; font-size: 16px;">❗ ${mensaje}</p>
       <label for="tiempoRecordatorio" style="font-size: 14px; display: block; margin-bottom: 5px; color: #ffffff;">¿En cuánto tiempo quieres que te lo vuelva a recordar?</label>
       <div style="margin-bottom: 20px;">
@@ -254,7 +307,7 @@ function mostrarAlertaPersonalizada(mensaje) {
         tiempoRecordatorio: parseInt(seleccionado),
         recordatorios: nuevoRegistro
       }, () => {
-        console.log(`📥 Guardado: ${seleccionado} min para ${dominioActual}`);
+        console.log(` Guardado: ${seleccionado} min para ${dominioActual}`);
         modal.remove();
       });
     });

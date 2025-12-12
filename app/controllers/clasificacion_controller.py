@@ -9,10 +9,31 @@ from datetime import datetime
 
 bp = Blueprint('clasificacion', __name__, url_prefix='/api/clasificacion')
 
+def get_usuario_id():
+    """
+    Obtiene usuario_id desde session o header X-Usuario-ID
+    Útil para requests desde extensión Chrome
+    """
+    # Prioridad 1: Session (dashboard web)
+    usuario_id = session.get('usuario_id')
+    
+    # Prioridad 2: Header (extensión Chrome)
+    if not usuario_id:
+        usuario_id = request.headers.get('X-Usuario-ID')
+        if usuario_id:
+            try:
+                usuario_id = int(usuario_id)
+            except (ValueError, TypeError):
+                return None
+    
+    return usuario_id
+
 @bp.route('/pendientes', methods=['GET'])
 def obtener_pendientes():
     """Obtiene notificaciones pendientes de confirmación"""
-    usuario_id = session.get('usuario_id', 1)
+    usuario_id = get_usuario_id()
+    if not usuario_id:
+        return jsonify({'error': 'No autenticado'}), 401
     
     pendientes = NotificacionClasificacion.query.filter_by(
         usuario_id=usuario_id,
@@ -38,7 +59,9 @@ def obtener_pendientes():
 @bp.route('/confirmar/<int:notif_id>', methods=['POST'])
 def confirmar_clasificacion(notif_id):
     """Usuario confirma que la clasificación es correcta"""
-    usuario_id = session.get('usuario_id', 1)
+    usuario_id = get_usuario_id()
+    if not usuario_id:
+        return jsonify({'error': 'No autenticado'}), 401
     
     notif = NotificacionClasificacion.query.filter_by(
         id=notif_id,
@@ -62,7 +85,10 @@ def confirmar_clasificacion(notif_id):
 @bp.route('/rechazar/<int:notif_id>', methods=['POST'])
 def rechazar_clasificacion(notif_id):
     """Usuario rechaza y corrige la clasificación"""
-    usuario_id = session.get('usuario_id', 1)
+    usuario_id = get_usuario_id()
+    if not usuario_id:
+        return jsonify({'error': 'No autenticado'}), 401
+    
     data = request.json
     categoria_correcta_id = data.get('categoria_correcta_id')
     
@@ -99,7 +125,7 @@ def rechazar_clasificacion(notif_id):
             db.session.add(dominio_cat)
         
         db.session.commit()
-        print(f"[CLASIFICACIÓN] {notif.dominio} → categoría {categoria_correcta_id} (usuario {usuario_id})")
+        print(f"[CLASIFICACIÓN]  {notif.dominio} → categoría {categoria_correcta_id} (usuario {usuario_id})")
         
     except Exception as e:
         print(f"[CLASIFICACIÓN][ERROR] {e}")
@@ -116,7 +142,10 @@ def clasificar_manual(notif_id):
     """
     Usuario clasifica manualmente un sitio que el sistema no pudo clasificar
     """
-    usuario_id = session.get('usuario_id', 1)
+    usuario_id = get_usuario_id()
+    if not usuario_id:
+        return jsonify({'error': 'No autenticado'}), 401
+    
     data = request.json
     categoria_correcta_id = data.get('categoria_correcta_id')
     
@@ -165,7 +194,6 @@ def clasificar_manual(notif_id):
     })
 
 
-
 @bp.route('/verificar-dominio', methods=['POST'])
 def verificar_dominio_clasificacion():
     """
@@ -173,7 +201,7 @@ def verificar_dominio_clasificacion():
     Usado por content_script.js para mostrar modal en el sitio
     """
     try:
-        usuario_id = session.get('usuario_id')
+        usuario_id = get_usuario_id()
         if not usuario_id:
             return jsonify({'error': 'No autenticado'}), 401
         
@@ -220,7 +248,7 @@ def listar_categorias_usuario():
     Usado para llenar selectores en modales
     """
     try:
-        usuario_id = session.get('usuario_id')
+        usuario_id = get_usuario_id()
         if not usuario_id:
             return jsonify({'error': 'No autenticado'}), 401
         

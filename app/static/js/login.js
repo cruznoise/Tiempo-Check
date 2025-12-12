@@ -3,11 +3,10 @@ $(document).ready(function() {
   const registroSection = $('#registro-section');
   const errorMsg = $('#error-msg');
 
-  // === Manejo de Login (Endpoint Mantenido) ===
+  // === Manejo de Login ===
   $('#login-form').on('submit', function(e) {
     e.preventDefault();
     $.ajax({
-      // Endpoint Mantenido
       url: "/login",
       method: "POST",
       contentType: "application/json",
@@ -17,6 +16,19 @@ $(document).ready(function() {
       }),
       success: function(res) {
         if (res.success) {
+          if (typeof chrome !== 'undefined' && chrome.storage) {
+            chrome.storage.local.set({ 
+              usuario_id: res.usuario_id,
+              sesion_activa: true,
+              timestamp: Date.now()
+            }, () => {
+              console.log(' [AUTH] Sesión guardada en extensión');
+              console.log('   Usuario ID:', res.usuario_id);
+            });
+          } else {
+            console.log(' [AUTH] Chrome storage no disponible');
+          }
+          
           window.location.href = "/dashboard";
         } else {
           errorMsg
@@ -58,15 +70,12 @@ $(document).ready(function() {
     }
 
     $.ajax({
-      // Endpoint Mantenido
       url: "/admin/registro",
       method: "POST",
       contentType: "application/json",
       data: JSON.stringify({
         nombre: $('input[name="nombre_reg"]').val(),
-        // Se usa el nombre de campo 'correo' que usa el HTMLN estandarizado
         correo: $('input[name="correo_reg"]').val(), 
-        // Se usa el nombre de campo 'contraseña' que usa el HTMLN estandarizado
         contrasena: $('input[name="contraseña_reg"]').val(), 
         dedicacion: $('input[name="dedicacion"]').val(),
         horario: $('input[name="horario"]').val(),
@@ -74,17 +83,27 @@ $(document).ready(function() {
       }),
       success: function(res) {
         if (res.success) {
+          if (typeof chrome !== 'undefined' && chrome.storage && res.usuario_id) {
+            chrome.storage.local.set({ 
+              usuario_id: res.usuario_id,
+              sesion_activa: true,
+              timestamp: Date.now()
+            }, () => {
+              console.log(' [AUTH] Sesión guardada en extensión (registro)');
+            });
+          }
+          
           window.location.href = "/dashboard";
         } else {
           errorMsgRegistro
-            .text("⚠️ No se pudo registrar. " + (res.message || "Intenta de nuevo."))
+            .text(" No se pudo registrar. " + (res.message || "Intenta de nuevo."))
             .removeClass("d-none")
             .fadeIn();
         }
       },
       error: function() {
         errorMsgRegistro
-          .text("❌ Error en el servidor durante el registro")
+          .text(" Error en el servidor durante el registro")
           .removeClass("d-none")
           .fadeIn();
       }

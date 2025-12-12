@@ -33,7 +33,7 @@ def create_app(config_object=None):
         app.config.from_object(cfg)
     
     # Verificar qué config se cargó realmente
-    print(f"✅ [CONFIG] Config final cargada: {app.config.get('SQLALCHEMY_DATABASE_URI', 'NO DEFINIDA')}")
+    print(f" [CONFIG] Config final cargada: {app.config.get('SQLALCHEMY_DATABASE_URI', 'NO DEFINIDA')}")
 
     # ========================================================================
     # EXTENSIONES
@@ -46,17 +46,24 @@ def create_app(config_object=None):
         app,
         resources={
             r"/api/*": {
-                "origins": "*",
+                "origins": [
+                    "https://tiempo-check-production.up.railway.app",
+                    "chrome-extension://*"  # ← Importante
+                ],
                 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization"]
+                "allow_headers": ["Content-Type", "Authorization"],
+                "supports_credentials": True  # ← MUY IMPORTANTE
             },
-            r"/admin/*": {  # ← CAMBIADO: Ahora cubre TODAS las rutas de /admin
-                "origins": "*",
+            r"/admin/*": {
+                "origins": [
+                    "https://tiempo-check-production.up.railway.app",
+                    "chrome-extension://*"
+                ],
                 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "Authorization"]
+                "allow_headers": ["Content-Type", "Authorization"],
+                "supports_credentials": True  # ← MUY IMPORTANTE
             }
-        },
-        supports_credentials=True
+        }
     )
     
     migrate.init_app(app, db)
