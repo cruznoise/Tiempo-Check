@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash, current_app, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash, current_app, send_file, abort
 from io import BytesIO, StringIO
 from flask_login import login_required
 from flask_cors import cross_origin
@@ -44,8 +44,11 @@ def vista_focus():
 
 @bp.route('/categorias', methods=['GET'])
 def vista_categorias():
-    categorias = Categoria.query.all()
-    dominios = DominioCategoria.query.all()
+    usuario_id = session.get('usuario_id')
+    if not usuario_id:
+        abort(401)
+    categorias = Categoria.query.filter_by(usuario_id=usuario_id).all()
+    dominios = DominioCategoria.query.filter_by(usuario_id=usuario_id).all()
     return render_template('admin/categorias.html', categorias=categorias, dominios=dominios)
 
 @bp.route('/configuracion')
@@ -250,7 +253,7 @@ def vista_metas():
 
     usuario_id = session['usuario_id']
 
-    categorias = db.session.query(Categoria).all()
+    categorias = db.session.query(Categoria).filter_by(usuario_id=usuario_id).all()
     metas = db.session.query(MetaCategoria).filter_by(usuario_id=usuario_id).all()
     limites = db.session.query(LimiteCategoria).filter_by(usuario_id=usuario_id).all()
 
@@ -298,7 +301,7 @@ def vista_metas():
         })
 
     from app.models import Usuario
-    usuarios = Usuario.query.all()
+    usuarios = Usuario.query.get(session.get('usuario_id'))
 
     return render_template('admin/metas.html',
         usuarios=usuarios,
@@ -387,10 +390,9 @@ def vista_limites():
     if 'usuario_id' not in session:
         return redirect(url_for('controlador.login'))
 
-    usuario_id = session['usuario_id']
-
-    categorias = Categoria.query.all()
-    limites = db.session.query(LimiteCategoria).all()
+    usuario_id = session.get('usuario_id')
+    categorias = Categoria.query.filter_by(usuario_id=usuario_id).all()
+    limites = db.session.query(LimiteCategoria).filter_by(usuario_id=usuario_id).all()
 
 
     hoy = date.today()
@@ -922,7 +924,8 @@ def sugerencias():
         })
 
     sugerencias_resultado = []
-    categorias = Categoria.query.all()
+    usuario_id = session.get('usuario_id')
+    categorias = Categoria.query.filter_by(usuario_id=usuario_id).all()
 
     for cat in categorias:
         promedio = obtener_promedio_categoria(usuario_id, cat.id)

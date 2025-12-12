@@ -19,7 +19,7 @@ function verificarAlerta() {
       return;
     }
 
-    fetch("https://tiempo-check-production.up.railway.app/admin/api/alerta_dominio", {
+    fetch("https://tiempo-check-production.up.railway.app/api/alerta_dominio", {
   method: "POST",
   headers: {
     "Content-Type": "application/json"

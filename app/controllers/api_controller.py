@@ -294,7 +294,10 @@ def obtener_categorias():
     from app.models.models import Categoria
     
     try:
-        categorias = Categoria.query.all()
+        usuario_id = session.get('usuario_id')
+        if not usuario_id:
+            return jsonify({'error': 'No autenticado'}), 401
+        categorias = Categoria.query.filter_by(usuario_id=usuario_id).all()
         
         return jsonify({
             'success': True,
@@ -312,12 +315,15 @@ def obtener_categorias():
 def obtener_categorias_con_dominios():
     """Retorna categorías con sus dominios para la extensión"""    
     try:
-        categorias = Categoria.query.all()
+        usuario_id = session.get('usuario_id')
+        if not usuario_id:
+            return jsonify({'error': 'No autenticado'}), 401
+        categorias = Categoria.query.filter_by(usuario_id=usuario_id).all()
         
         resultado = {}
         
         for cat in categorias:
-            dominios = DominioCategoria.query.filter_by(categoria_id=cat.id).all()
+            dominios = DominioCategoria.query.filter_by(categoria_id=cat.id, usuario_id= usuario_id).all()
             
             for dominio in dominios:
                 resultado[dominio.dominio] = cat.nombre

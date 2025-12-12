@@ -89,9 +89,9 @@ def generar_backup_completo(usuario_id):
     agg_kpi = serializar(AggKpiRango.query.filter_by(usuario_id=usuario_id).all())
     notificaciones = serializar(NotificacionClasificacion.query.filter_by(usuario_id=usuario_id).all())
     
-    # DATOS COMPARTIDOS (sin filtro de usuario) - SOLO para referencia
-    dominios = serializar(DominioCategoria.query.all())
-    categorias = serializar(Categoria.query.all())
+    # DATOS UNICOS POR USUARIO!!!!! NO SE COMPARTE NADA
+    dominios = serializar(DominioCategoria.query.filter_by(usuario_id=usuario_id).all())
+    categorias = serializar(Categoria.query.filter_by(usuario_id=usuario_id).all())
 
     return {
         # Datos principales
