@@ -95,7 +95,7 @@ $('#login-form').on('submit', function(e) {
             });
           }
           
-          window.location.href = "/dashboard";
+          window.location.href = "/login";
         } else {
           errorMsgRegistro
             .text(" No se pudo registrar. " + (res.message || "Intenta de nuevo."))
