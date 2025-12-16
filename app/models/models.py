@@ -72,9 +72,14 @@ class Registro(db.Model):
 class Categoria(db.Model):
     __tablename__ = 'categorias'
     
-    id = db.Column('Id', db.Integer, primary_key=True)  # Nota la 'I' mayúscula
-    nombre = db.Column(db.String(50), nullable=False, unique=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True) 
+    id = db.Column('Id', db.Integer, primary_key=True)
+    nombre = db.Column(db.String(50), nullable=False)  
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+    
+    # Restricción única compuesta
+    __table_args__ = (
+        db.UniqueConstraint('nombre', 'usuario_id', name='unique_categoria_usuario'),
+    )
     #fecha_hora = db.Column(db.DateTime, nullable=True, index=True)
 
 class DominioCategoria(db.Model):

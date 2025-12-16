@@ -116,7 +116,6 @@ def actualizar_correo():
         if not nuevo_correo or not password:
             return jsonify({'success': False, 'message': 'Todos los campos son requeridos'})
         
-        # Validar formato de correo
         email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_regex, nuevo_correo):
             return jsonify({'success': False, 'message': 'Formato de correo inválido'})
@@ -125,11 +124,9 @@ def actualizar_correo():
         if not usuario:
             return jsonify({'success': False, 'message': 'Usuario no encontrado'})
         
-        # Verificar contraseña
         if not check_password_hash(usuario.password, password):
             return jsonify({'success': False, 'message': 'Contraseña incorrecta'})
         
-        # Verificar que el correo no esté en uso
         correo_existente = Usuario.query.filter(
             Usuario.correo == nuevo_correo,
             Usuario.id != usuario_id
@@ -171,11 +168,9 @@ def cambiar_password():
         if not usuario:
             return jsonify({'success': False, 'message': 'Usuario no encontrado'})
         
-        # Verificar contraseña actual
         if not check_password_hash(usuario.password, password_actual):
             return jsonify({'success': False, 'message': 'Contraseña actual incorrecta'})
         
-        # Actualizar contraseña
         usuario.password = generate_password_hash(password_nueva)
         db.session.commit()
         
@@ -866,13 +861,18 @@ def registro():
         
         print(f" [REGISTRO] Usuario creado: {correo} (ID: {nuevo_usuario.id})")
         
-        # Inferir tipo inicial basado en dedicación manual
         if dedicacion:
             tipo_inicial = _inferir_tipo_desde_dedicacion(dedicacion)
             nuevo_usuario.tipo_inferido = tipo_inicial
-            nuevo_usuario.confianza_inferencia = 0.5  # Baja confianza inicial
+            nuevo_usuario.confianza_inferencia = 0.5  
             db.session.commit()
             print(f" [PERFIL] Tipo inicial inferido: {tipo_inicial}")
+
+        try:
+            _inicializar_categorias_usuario(nuevo_usuario.id)
+            print(f" [REGISTRO] Categorías inicializadas para usuario {nuevo_usuario.id}")
+        except Exception as e:
+            print(f" [REGISTRO] Error al inicializar categorías: {e}")
 
         return jsonify(success=True, message="Registro exitoso.", usuario_id=nuevo_usuario.id), 201
 
@@ -883,6 +883,55 @@ def registro():
         db.session.rollback()
         return jsonify(success=False, message=f"Error interno: {str(e)}"), 500
 
+
+def _inicializar_categorias_usuario(usuario_id):
+    """
+    Crea las categorías por defecto y sus patrones para un nuevo usuario
+    """
+    from app.models.models import Categoria, PatronCategoria
+    
+    categorias_default = {
+        1: 'Productividad',
+        2: 'Entretenimiento',
+        3: 'Redes Sociales',
+        4: 'Estudio',
+        5: 'Trabajo',
+        6: 'Herramientas',
+        7: 'Comercio',
+        9: 'Salud y bientestar',
+        10: 'Informacion'
+    }
+    
+    mapeo_ids = {}
+    
+    for cat_id_ref, nombre in categorias_default.items():
+        nueva_categoria = Categoria(
+            nombre=nombre,
+            usuario_id=usuario_id
+        )
+        db.session.add(nueva_categoria)
+        db.session.flush()
+        mapeo_ids[cat_id_ref] = nueva_categoria.id
+    
+    patrones_plantilla = PatronCategoria.query.filter_by(
+        usuario_id=1,
+        activo=True
+    ).all()
+    
+    for patron_original in patrones_plantilla:
+        nueva_categoria_id = mapeo_ids.get(patron_original.categoria_id)
+        
+        if nueva_categoria_id:
+            nuevo_patron = PatronCategoria(
+                usuario_id=usuario_id,
+                patron=patron_original.patron,
+                categoria_id=nueva_categoria_id,
+                activo=True
+            )
+            db.session.add(nuevo_patron)
+    
+    db.session.commit()
+    print(f" {len(mapeo_ids)} categorías y {len(patrones_plantilla)} patrones creados para usuario {usuario_id}")
 
 def _inferir_tipo_desde_dedicacion(dedicacion: str) -> str:
     """
