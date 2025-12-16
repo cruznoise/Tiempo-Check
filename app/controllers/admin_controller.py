@@ -883,55 +883,48 @@ def registro():
         db.session.rollback()
         return jsonify(success=False, message=f"Error interno: {str(e)}"), 500
 
-
 def _inicializar_categorias_usuario(usuario_id):
-    """
-    Crea las categorías por defecto y sus patrones para un nuevo usuario
-    """
     from app.models.models import Categoria, PatronCategoria
-    
-    categorias_default = {
-        1: 'Productividad',
-        2: 'Entretenimiento',
-        3: 'Redes Sociales',
-        4: 'Estudio',
-        5: 'Trabajo',
-        6: 'Herramientas',
-        7: 'Comercio',
-        9: 'Salud y bientestar',
-        10: 'Informacion'
-    }
-    
-    mapeo_ids = {}
-    
-    for cat_id_ref, nombre in categorias_default.items():
-        nueva_categoria = Categoria(
-            nombre=nombre,
+
+    categorias_plantilla = Categoria.query.filter_by(usuario_id=1).all()
+
+    # Mapeo: nombre_categoria al nuevo_id
+    mapeo_categorias = {}
+
+    for cat in categorias_plantilla:
+        nueva = Categoria(
+            nombre=cat.nombre,
             usuario_id=usuario_id
         )
-        db.session.add(nueva_categoria)
+        db.session.add(nueva)
         db.session.flush()
-        mapeo_ids[cat_id_ref] = nueva_categoria.id
-    
+        mapeo_categorias[cat.nombre] = nueva.id
+
     patrones_plantilla = PatronCategoria.query.filter_by(
         usuario_id=1,
         activo=True
     ).all()
-    
-    for patron_original in patrones_plantilla:
-        nueva_categoria_id = mapeo_ids.get(patron_original.categoria_id)
-        
-        if nueva_categoria_id:
-            nuevo_patron = PatronCategoria(
-                usuario_id=usuario_id,
-                patron=patron_original.patron,
-                categoria_id=nueva_categoria_id,
-                activo=True
-            )
-            db.session.add(nuevo_patron)
-    
+
+    copiados = 0
+    for patron in patrones_plantilla:
+        nombre_categoria = patron.categoria.nombre
+        nueva_categoria_id = mapeo_categorias.get(nombre_categoria)
+
+        if not nueva_categoria_id:
+            continue
+
+        nuevo_patron = PatronCategoria(
+            usuario_id=usuario_id,
+            patron=patron.patron,
+            categoria_id=nueva_categoria_id,
+            activo=True
+        )
+        db.session.add(nuevo_patron)
+        copiados += 1
+
     db.session.commit()
-    print(f" {len(mapeo_ids)} categorías y {len(patrones_plantilla)} patrones creados para usuario {usuario_id}")
+    print(f" Categorías duplicadas: {len(mapeo_categorias)} | Patrones duplicados: {copiados}")
+
 
 def _inferir_tipo_desde_dedicacion(dedicacion: str) -> str:
     """
