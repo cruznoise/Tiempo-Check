@@ -208,6 +208,7 @@ def clasificar_dominio_automatico(dominio, usuario_id):
             import traceback
             traceback.print_exc()
     
+    
     if categoria_id:
         try:
             dominio_cat = DominioCategoria.query.filter_by(
@@ -216,14 +217,12 @@ def clasificar_dominio_automatico(dominio, usuario_id):
             ).first()
             
             if dominio_cat:
-                # Actualizar categoría existente
                 dominio_cat.categoria_id = categoria_id
-                # Obtener nombre de categoría
                 cat = Categoria.query.get(categoria_id)
                 if cat:
                     dominio_cat.categoria = cat.nombre
                 
-                print(f"[BD] Actualizado: {dominio} → categoría {categoria_id}")
+                print(f"[BD]  Actualizado: {dominio} → categoría {categoria_id}")
             else:
                 cat = Categoria.query.get(categoria_id)
                 cat_nombre = cat.nombre if cat else 'Sin categoría'
@@ -232,18 +231,39 @@ def clasificar_dominio_automatico(dominio, usuario_id):
                     dominio=dominio,
                     categoria_id=categoria_id,
                     categoria=cat_nombre,
-                    usuario_id=usuario_id  
+                    usuario_id=usuario_id
                 )
                 db.session.add(nuevo_dominio)
-                print(f"[BD] Creado: {dominio} → categoría {categoria_id} (usuario {usuario_id})")
+                print(f"[BD]  Creado: {dominio} → categoría {categoria_id} (usuario {usuario_id})")
             
             db.session.commit()
             
         except Exception as e:
-            print(f"[BD][ERROR] {e}")
-            import traceback
-            traceback.print_exc()
             db.session.rollback()
+            
+            if 'Duplicate entry' in str(e) or '1062' in str(e):
+                print(f"[BD]  Dominio ya existe (race condition), reintentando actualización...")
+                
+                try:
+                    dominio_cat = DominioCategoria.query.filter_by(
+                        dominio=dominio,
+                        usuario_id=usuario_id
+                    ).first()
+                    
+                    if dominio_cat:
+                        dominio_cat.categoria_id = categoria_id
+                        cat = Categoria.query.get(categoria_id)
+                        if cat:
+                            dominio_cat.categoria = cat.nombre
+                        db.session.commit()
+                        print(f"[BD]  Actualizado en segundo intento")
+                except Exception as e2:
+                    print(f"[BD][ERROR] Error en reintento: {e2}")
+                    db.session.rollback()
+            else:
+                print(f"[BD][ERROR] {e}")
+                import traceback
+                traceback.print_exc()
     
     try:
         notif_existente = NotificacionClasificacion.query.filter_by(
