@@ -54,7 +54,7 @@ function guardarTiempo(forzarEnvio = false) {
     }
   });
 
-  fetch("http://localhost:5000/admin/guardar", {
+  fetch("https://tiempo-check-production.up.railway.app/admin/guardar", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     credentials: "include",
@@ -107,11 +107,11 @@ function mostrarNotificacion(titulo, mensaje) {
 
 async function verificarAlertas() {
   try {
-    const resCat = await fetch("http://localhost:5000/admin/api/alerta_dominio");
+    const resCat = await fetch("https://tiempo-check-production.up.railway.app/admin/api/alerta_dominio");
     const categorias = await resCat.json();
 
     for (const cat of categorias) {
-      const res = await fetch("http://localhost:5000/admin/api/alerta_dominio", {
+      const res = await fetch("https://tiempo-check-production.up.railway.app/admin/api/alerta_dominio", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ categoria_id: cat.id })
@@ -147,7 +147,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'verificar_alerta') {
     console.log("🔎 Verificando dominio:", request.dominio);
 
-    fetch("http://localhost:5000/admin/api/alerta_dominio", {
+    fetch("https://tiempo-check-production.up.railway.app/admin/api/alerta_dominio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
@@ -194,7 +194,7 @@ async function cargarCategoriasMapFocus() {
   try {
     console.log('[FOCUS] Cargando categorías desde BD...');
     
-    const response = await fetch('http://localhost:5000/api/categorias/con-dominios', {
+    const response = await fetch('https://tiempo-check-production.up.railway.app/api/categorias/con-dominios', {
       credentials: 'include'
     });
     
@@ -239,7 +239,7 @@ setInterval(cargarCategoriasMapFocus, 5 * 60 * 1000);
 // Sincronizar estado con backend
 async function sincronizarEstadoFocus() {
   try {
-    const response = await fetch('http://localhost:5000/api/focus/status', {
+    const response = await fetch('https://tiempo-check-production.up.railway.app/api/focus/status', {
       credentials: 'include'
     });
     const data = await response.json();
@@ -410,7 +410,7 @@ console.log('[FOCUS DNR] Dominios omitidos:', dominiosOmitidos.length);
 // Helper: Registrar bloqueo en backend
 async function registrarIntentoBloqueadoFocus(domain, categoria) {
   try {
-    await fetch('http://localhost:5000/api/focus/block', {
+    await fetch('https://tiempo-check-production.up.railway.app/api/focus/block', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
