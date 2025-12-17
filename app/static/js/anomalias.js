@@ -5,17 +5,26 @@ let motivoSeleccionado = null;
 
 // Detectar anomalías al cargar dashboard
 async function detectarAnomalias() {
+  console.log('[ANOMALÍAS] Detectando anomalías...');
+  
   try {
-    const response = await fetch('/api/anomalias/pendientes');
+    const response = await fetch('/api/anomalias/recientes');
     const data = await response.json();
     
-    if (data.pendientes && data.pendientes.length > 0) {
-      anomaliasDetectadas = data.pendientes;
+    console.log('[ANOMALÍAS]  Respuesta:', data);
+    
+    if (data.anomalias && data.anomalias.length > 0) {
+      anomaliasDetectadas = data.anomalias;
       
-      // Mostrar la primera anomalía pendiente
+      console.log('[ANOMALÍAS]  Anomalías encontradas:', data.total);
+      
+      // Mostrar la primera anomalía
       setTimeout(() => {
+        console.log('[ANOMALÍAS]  Mostrando primera anomalía');
         mostrarModalAnomalia(anomaliasDetectadas[0]);
-      }, 2000); // 2 segundos después de cargar el dashboard
+      }, 2000);
+    } else {
+      console.log('[ANOMALÍAS] No hay anomalías para mostrar');
     }
   } catch (error) {
     console.error('[ANOMALÍAS] Error al detectar:', error);

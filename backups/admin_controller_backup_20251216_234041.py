@@ -28,52 +28,6 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 
 bp = Blueprint('admin_controller', __name__)
 
-
-def _inicializar_categorias_usuario(usuario_id):
-    """
-    Crea las categorías por defecto y sus patrones para un nuevo usuario
-    """
-    from app.models.models import Categoria, PatronCategoria
-    
-    categorias_plantilla = Categoria.query.filter_by(usuario_id=1).all()
-    
-    mapeo_categorias = {}
-    
-    for cat in categorias_plantilla:
-        nueva = Categoria(
-            nombre=cat.nombre,
-            usuario_id=usuario_id
-        )
-        db.session.add(nueva)
-        db.session.flush() 
-        mapeo_categorias[cat.nombre] = nueva.id
-    
-    patrones_plantilla = PatronCategoria.query.filter_by(
-        usuario_id=1,
-        activo=True
-    ).all()
-    
-    copiados = 0
-    for patron in patrones_plantilla:
-        nombre_categoria = patron.categoria.nombre
-        nueva_categoria_id = mapeo_categorias.get(nombre_categoria)
-        
-        if not nueva_categoria_id:
-            continue
-        
-        nuevo_patron = PatronCategoria(
-            usuario_id=usuario_id,
-            patron=patron.patron,
-            categoria_id=nueva_categoria_id,
-            activo=True
-        )
-        db.session.add(nuevo_patron)
-        copiados += 1
-    
-    db.session.commit()
-    print(f" Categorías duplicadas: {len(mapeo_categorias)} | Patrones duplicados: {copiados}")
-
-
 @bp.route('/focus')
 def vista_focus():
     """Vista de la página completa del Modo Focus"""
@@ -87,18 +41,11 @@ def vista_focus():
         return redirect('/login')
     
     return render_template('focus_mode.html', nombre=usuario.nombre, usuario=usuario)
+
 @bp.route('/categorias', methods=['GET'])
 def vista_categorias():
-    if 'usuario_id' not in session:
-        flash('Debes iniciar sesión', 'error')
-        return redirect(url_for('controlador.login'))
-    
-    usuario_id = session['usuario_id']
-    
-    categorias = Categoria.query.filter_by(usuario_id=usuario_id).all()
-    
-    dominios = DominioCategoria.query.filter_by(usuario_id=usuario_id).all()
-    
+    categorias = Categoria.query.all()
+    dominios = DominioCategoria.query.all()
     return render_template('admin/categorias.html', categorias=categorias, dominios=dominios)
 
 @bp.route('/configuracion')
@@ -238,37 +185,12 @@ def cambiar_password():
 
 @bp.route('/categorias', methods=['POST'])
 def agregar_categoria():
-    if 'usuario_id' not in session:
-        flash('Debes iniciar sesión', 'error')
-        return redirect(url_for('controlador.login'))
-    
-    usuario_id = session['usuario_id']
     nombre = request.form.get('nombre')
-    
-    if not nombre:
-        flash('Falta nombre de categoría', 'error')
-        return redirect(url_for('admin_controller.vista_categorias'))
-    
-    existe = Categoria.query.filter_by(
-        nombre=nombre,
-        usuario_id=usuario_id
-    ).first()
-    
-    if existe:
-        flash(f'Ya tienes una categoría llamada "{nombre}"', 'warning')
-        return redirect(url_for('admin_controller.vista_categorias'))
-    
-    nueva = Categoria(
-        nombre=nombre,
-        usuario_id=usuario_id
-    )
-    
-    db.session.add(nueva)
-    db.session.commit()
-    
-    print(f" [CATEGORÍA] Creada '{nombre}' para usuario {usuario_id}")
-    flash(f'Categoría "{nombre}" agregada correctamente', 'success')
-    
+    if nombre:
+        nueva = Categoria(nombre=nombre)
+        db.session.add(nueva)
+        db.session.commit()
+        flash('Categoría agregada correctamente')
     return redirect(url_for('admin_controller.vista_categorias'))
 
 @bp.route('/dominios', methods=['POST'])
@@ -284,44 +206,15 @@ def agregar_dominio():
 
 @bp.route('/categorias/eliminar/<int:id>', methods=['POST'])
 def eliminar_categoria(id):
-    """Eliminar categoría - solo del usuario actual"""
-    if 'usuario_id' not in session:
-        flash('Debes iniciar sesión', 'error')
-        return redirect(url_for('controlador.login'))
-    
-    usuario_id = session['usuario_id']
-    
-    categoria = Categoria.query.filter_by(
-        id=id,
-        usuario_id=usuario_id
-    ).first()
-    
-    if not categoria:
-        flash('Categoría no encontrada o no tienes permiso para eliminarla', 'error')
-        return redirect(url_for('admin_controller.vista_categorias'))
-    
-    nombre_eliminado = categoria.nombre
+    categoria = Categoria.query.get_or_404(id)
     db.session.delete(categoria)
     db.session.commit()
-    
-    flash(f'Categoría "{nombre_eliminado}" eliminada correctamente', 'success')
+    flash('Categoría eliminada')
     return redirect(url_for('admin_controller.vista_categorias'))
 
 @bp.route('/dominios/eliminar/<int:id>', methods=['POST'])
 def eliminar_dominio(id):
-    if 'usuario_id' not in session:
-        flash('No autenticado', 'error')
-        return redirect(url_for('controlador.login'))
-
-    usuario_id = session['usuario_id']
-    dominio = DominioCategoria.query.filter_by(
-        id=id,
-        usuario_id=usuario_id
-    ).first()
-
-    if not dominio:
-        flash('Dominio no encontrado', 'error')
-        return redirect(url_for('admin_controller.vista_categorias'))
+    dominio = DominioCategoria.query.get_or_404(id)
     db.session.delete(dominio)
     db.session.commit()
     flash('Dominio eliminado')
@@ -329,46 +222,17 @@ def eliminar_dominio(id):
 
 @bp.route('/categorias/editar/<int:id>', methods=['POST'])
 def editar_categoria(id):
-    """Editar categoría - solo del usuario actual"""
-    if 'usuario_id' not in session:
-        flash('Debes iniciar sesión', 'error')
-        return redirect(url_for('controlador.login'))
-    
-    usuario_id = session['usuario_id']
+    categoria = Categoria.query.get_or_404(id)
     nuevo_nombre = request.form.get('nuevo_nombre')
-    categoria = Categoria.query.filter_by(
-        id=id,
-        usuario_id=usuario_id
-    ).first()
-    
-    if not categoria:
-        flash('Categoría no encontrada o no tienes permiso para editarla', 'error')
-        return redirect(url_for('admin_controller.vista_categorias'))
-    
     if nuevo_nombre:
         categoria.nombre = nuevo_nombre
         db.session.commit()
-        flash(f'Categoría actualizada a "{nuevo_nombre}"', 'success')
-    else:
-        flash('Debes proporcionar un nuevo nombre', 'warning')
-    
+        flash('Categoría actualizada')
     return redirect(url_for('admin_controller.vista_categorias'))
 
 @bp.route('/dominios/editar/<int:id>', methods=['POST'])
 def editar_dominio(id):
-    if 'usuario_id' not in session:
-        flash('No autenticado', 'error')
-        return redirect(url_for('controlador.login'))
-
-    usuario_id = session['usuario_id']
-    dominio = DominioCategoria.query.filter_by(
-        id=id,
-        usuario_id=usuario_id
-    ).first()
-
-    if not dominio:
-        flash('Dominio no encontrado', 'error')
-        return redirect(url_for('admin_controller.vista_categorias'))
+    dominio = DominioCategoria.query.get_or_404(id)
     nuevo_dominio = request.form.get('nuevo_dominio')
     nueva_categoria_id = request.form.get('nueva_categoria_id')
     if nuevo_dominio and nueva_categoria_id:
@@ -378,6 +242,7 @@ def editar_dominio(id):
         flash('Dominio actualizado')
     return redirect(url_for('admin_controller.vista_categorias'))
 
+
 @bp.route('/metas')
 def vista_metas():
     if 'usuario_id' not in session:
@@ -385,7 +250,7 @@ def vista_metas():
 
     usuario_id = session['usuario_id']
 
-    categorias = db.session.query(Categoria).filter_by(usuario_id=usuario_id).all()
+    categorias = db.session.query(Categoria).all()
     metas = db.session.query(MetaCategoria).filter_by(usuario_id=usuario_id).all()
     limites = db.session.query(LimiteCategoria).filter_by(usuario_id=usuario_id).all()
 
@@ -393,7 +258,7 @@ def vista_metas():
     registros = db.session.execute(text("""
         SELECT dc.categoria_id, SUM(r.tiempo) as total
         FROM registro r
-        JOIN dominio_categoria dc ON r.dominio = dc.dominio AND dc.usuario_id = :usuario_id
+        JOIN dominio_categoria dc ON r.dominio = dc.dominio
         WHERE r.usuario_id = :usuario_id AND DATE(r.fecha) = :hoy
         GROUP BY dc.categoria_id
     """), {"usuario_id": usuario_id, "hoy": hoy}).fetchall()
@@ -401,7 +266,6 @@ def vista_metas():
     uso_actual = defaultdict(int)
     for categoria_id, total in registros:
         uso_actual[categoria_id] = round(total / 60)  
-    
     estado_metas = []
     for m in metas:
         nombre = next((c.nombre for c in categorias if c.id == m.categoria_id), 'Desconocida')
@@ -418,6 +282,8 @@ def vista_metas():
             'origen': getattr(m, 'origen', 'manual')  
         })
 
+    # db.session.commit() # se comenta por que aun no se guardan estados de metas para analisis con ML
+
     verificar_logros_dinamicos(usuario_id)
 
     estado_limites = []
@@ -431,7 +297,11 @@ def vista_metas():
             'excedido': excedido
         })
 
+    from app.models import Usuario
+    usuarios = Usuario.query.all()
+
     return render_template('admin/metas.html',
+        usuarios=usuarios,
         categorias=categorias,
         metas=metas,
         limites=limites,
@@ -439,6 +309,8 @@ def vista_metas():
         estado_metas=estado_metas,
         estado_limites=estado_limites
     )
+
+
 
 @bp.route('/metas', methods=['POST'])
 def agregar_meta():
@@ -492,19 +364,7 @@ def agregar_meta_api():
 
 @bp.route('/metas/eliminar/<int:id>', methods=['POST'])
 def eliminar_meta(id):
-    if 'usuario_id' not in session:
-        flash('No autenticado', 'error')
-        return redirect(url_for('controlador.login'))
-
-    usuario_id = session['usuario_id']
-    meta = MetaCategoria.query.filter_by(
-        id=id,
-        usuario_id=usuario_id
-    ).first()
-
-    if not meta:
-        flash('Meta no encontrada', 'error')
-        return redirect(url_for('admin_controller.vista_metas'))
+    meta = MetaCategoria.query.get_or_404(id)
     db.session.delete(meta)
     db.session.commit()
     flash('Meta eliminada')
@@ -512,19 +372,7 @@ def eliminar_meta(id):
 
 @bp.route('/metas/editar/<int:id>', methods=['POST'])
 def editar_meta(id):
-    if 'usuario_id' not in session:
-        flash('No autenticado', 'error')
-        return redirect(url_for('controlador.login'))
-
-    usuario_id = session['usuario_id']
-    meta = MetaCategoria.query.filter_by(
-        id=id,
-        usuario_id=usuario_id
-    ).first()
-
-    if not meta:
-        flash('Meta no encontrada', 'error')
-        return redirect(url_for('admin_controller.vista_metas'))
+    meta = MetaCategoria.query.get_or_404(id)
     nuevo_limite = request.form.get('limite_minutos')
 
     if nuevo_limite:
@@ -534,15 +382,16 @@ def editar_meta(id):
 
     return redirect(url_for('admin_controller.vista_metas'))
 
-@bp.route('/limites', methods=['GET'])
+@bp.route('/limites')
 def vista_limites():
     if 'usuario_id' not in session:
         return redirect(url_for('controlador.login'))
-    
+
     usuario_id = session['usuario_id']
-    
-    categorias = Categoria.query.filter_by(usuario_id=usuario_id).all()
-    limites = LimiteCategoria.query.filter_by(usuario_id=usuario_id).all()
+
+    categorias = Categoria.query.all()
+    limites = db.session.query(LimiteCategoria).all()
+
 
     hoy = date.today()
     registros = db.session.execute(text("""
@@ -570,12 +419,12 @@ def vista_limites():
         })
 
     return render_template('admin/metas.html',
-                    usuarios=[],  
                     categorias=categorias,
                     limites=limites,
                     uso_actual=uso_actual,
                     estado_limites=estado_limites
                 )
+
 @bp.route('/agregar_limite', methods=['POST'])
 def agregar_limite():
     try:
@@ -656,17 +505,7 @@ def agregar_limite_api():
 def editar_limite(id):
     try:
         nuevo_limite = int(request.form['limite_minutos'])
-        if 'usuario_id' not in session:
-            return jsonify({'error': 'No autenticado'}), 401
-
-        usuario_id = session['usuario_id']
-        limite = LimiteCategoria.query.filter_by(
-            id=id,
-            usuario_id=usuario_id
-        ).first()
-
-        if not limite:
-            return jsonify({'error': 'Límite no encontrado'}), 404
+        limite = LimiteCategoria.query.get(id)
         if limite:
             limite.limite_minutos = nuevo_limite
             db.session.commit()
@@ -682,17 +521,7 @@ def editar_limite(id):
 @bp.route('/eliminar_limite/<int:id>', methods=['POST'])
 def eliminar_limite(id):
     try:
-        if 'usuario_id' not in session:
-            return jsonify({'error': 'No autenticado'}), 401
-
-        usuario_id = session['usuario_id']
-        limite = LimiteCategoria.query.filter_by(
-            id=id,
-            usuario_id=usuario_id
-        ).first()
-
-        if not limite:
-            return jsonify({'error': 'Límite no encontrado'}), 404
+        limite = LimiteCategoria.query.get(id)
         if limite:
             db.session.delete(limite)
             db.session.commit()
@@ -778,28 +607,22 @@ def alerta_por_dominio():
         response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
         return response
 
+
     data = request.get_json()
     dominio = data.get('dominio')
-    
-    # ✅ Obtener usuario_id del body (no de la sesión)
-    usuario_id = data.get('usuario_id')
-    
-    # Fallback: intentar sesión, luego default a 1
-    if not usuario_id:
-        usuario_id = session.get('usuario_id', 1)
+    usuario_id = 1 
 
-    if not dominio:
-        return jsonify({"alerta": False, "error": "Falta dominio"}), 400
+    if not dominio or not usuario_id:
+        return jsonify({"alerta": False, "error": "Faltan datos"}), 400
 
-    # ✅ Buscar categoría del dominio PARA ESTE USUARIO
     categoria_result = db.session.execute(text("""
         SELECT categoria_id 
         FROM dominio_categoria 
-        WHERE dominio = :dominio AND usuario_id = :usuario_id
-    """), {"dominio": dominio, "usuario_id": usuario_id}).fetchone()
+        WHERE dominio = :dominio
+    """), {"dominio": dominio}).fetchone()
 
     if not categoria_result:
-        return jsonify({"alerta": False})
+        return jsonify({"alerta": False, "error": "Dominio sin categoría asociada"}), 404
 
     categoria_id = categoria_result.categoria_id
 
@@ -809,14 +632,14 @@ def alerta_por_dominio():
             SUM(r.tiempo) AS total, 
             lc.limite_minutos
         FROM registro r
-        JOIN dominio_categoria dc ON r.dominio = dc.dominio AND dc.usuario_id = :usuario_id
-        JOIN categorias c ON dc.categoria_id = c.Id
+        JOIN dominio_categoria dc ON r.dominio = dc.dominio
+        JOIN categorias c ON dc.categoria_id = c.id
         LEFT JOIN limite_categoria lc 
-            ON lc.categoria_id = c.Id AND lc.usuario_id = :usuario_id
+            ON lc.categoria_id = c.id AND lc.usuario_id = :usuario_id
         WHERE r.usuario_id = :usuario_id 
           AND dc.categoria_id = :categoria_id
           AND DATE(r.fecha) = CURDATE()
-        GROUP BY c.Id, lc.limite_minutos
+        GROUP BY c.id, lc.limite_minutos
     """), {
         "usuario_id": usuario_id,
         "categoria_id": categoria_id
@@ -831,7 +654,7 @@ def alerta_por_dominio():
             return jsonify({
                 "alerta": True,
                 "tipo": "exceso",
-                "mensaje": f"⚠️ Has superado tu límite diario de {limite} minutos en {categoria_nombre}.",
+                "mensaje": f" Has superado tu límite diario de {limite} minutos en {categoria_nombre}.",
                 "categoria_nombre": categoria_nombre
             })
 
@@ -839,11 +662,12 @@ def alerta_por_dominio():
             return jsonify({
                 "alerta": True,
                 "tipo": "proximidad",
-                "mensaje": f"⏰ Estás cerca de tu límite diario para {categoria_nombre}. Llevas {int(minutos_usados)} minutos.",
+                "mensaje": f"Estás cerca de tu límite diario para {categoria_nombre}. Llevas {int(minutos_usados)} minutos.",
                 "categoria_nombre": categoria_nombre
             })
 
     return jsonify({"alerta": False})
+
 
 @bp.route('/backup_completo', methods=['GET'])
 def backup_completo():
@@ -1084,31 +908,27 @@ def guardar_dominio():
         fh = None
         if fh_raw:
             try:
+
                 fh = datetime.fromisoformat(fh_raw.replace('Z', '+00:00'))
                 if fh.tzinfo:
                     fh = fh.astimezone().replace(tzinfo=None)
             except Exception:
                 fh = None
         if fh is None:
-            fh = datetime.now()
+            fh = datetime.now()  
 
-        from app.models.models import DominioCategoria
-        dominio_existente = DominioCategoria.query.filter_by(
-            dominio=dominio,
-            usuario_id=usuario_id
-        ).first()
-        
-        if dominio_existente:
-            categoria_id = dominio_existente.categoria_id
-            print(f"[✓] Dominio ya clasificado: {dominio} → categoría {categoria_id} (usuario {usuario_id})")
-        else:
-            print(f"[→] Clasificando dominio nuevo: {dominio} (usuario {usuario_id})")
-            categoria_id = clasificar_dominio_automatico(dominio, usuario_id)  
-
-        # Guardar registro
-        from app.utils import get_mysql
         conexion = get_mysql()
         with conexion.cursor() as cursor:
+
+            cursor.execute("SELECT categoria_id FROM dominio_categoria WHERE dominio = %s", (dominio,))
+            row = cursor.fetchone()
+
+            if row:
+                categoria_id = row[0]
+            else:
+                categoria_id = clasificar_dominio_automatico(dominio)
+
+
             cursor.execute("""
                 INSERT INTO registro (usuario_id, dominio, tiempo, fecha, fecha_hora)
                 VALUES (%s, %s, %s, %s, %s)
@@ -1117,16 +937,6 @@ def guardar_dominio():
 
         print(f"[✔] /guardar dominio={dominio} tiempo={tiempo}s usuario={usuario_id} fecha_hora={fh}")
         return jsonify({"ok": True})
-
-    except Exception as e:
-        try:
-            conexion.rollback()
-        except Exception:
-            pass
-        print("Error en /guardar:", e)
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": "Error al guardar"}), 500
 
     except Exception as e:
         try:
@@ -1149,7 +959,8 @@ def dashboard_ml():
 @bp.route("/registro", methods=["POST"])
 def registro():
     """
-    Registro de usuario con perfil inicial y categorías
+    Registro de usuario con perfil inicial
+    Guarda datos manuales + hace inferencia inicial
     """
     try:
         data = request.get_json() or {}
@@ -1186,21 +997,14 @@ def registro():
         
         print(f" [REGISTRO] Usuario creado: {correo} (ID: {nuevo_usuario.id})")
         
+        # Inferir tipo inicial basado en dedicación manual
         if dedicacion:
             tipo_inicial = _inferir_tipo_desde_dedicacion(dedicacion)
             nuevo_usuario.tipo_inferido = tipo_inicial
-            nuevo_usuario.confianza_inferencia = 0.5  
+            nuevo_usuario.confianza_inferencia = 0.5  # Baja confianza inicial
             db.session.commit()
             print(f" [PERFIL] Tipo inicial inferido: {tipo_inicial}")
-        
-        try:
-            _inicializar_categorias_usuario(nuevo_usuario.id)
-            print(f" [REGISTRO] Categorías inicializadas para usuario {nuevo_usuario.id}")
-        except Exception as e:
-            print(f" [REGISTRO] Error al inicializar categorías: {e}")
-            import traceback
-            traceback.print_exc()
-        
+
         return jsonify(success=True, message="Registro exitoso.", usuario_id=nuevo_usuario.id), 201
 
     except Exception as e:
@@ -1209,6 +1013,7 @@ def registro():
         traceback.print_exc()
         db.session.rollback()
         return jsonify(success=False, message=f"Error interno: {str(e)}"), 500
+
 
 def _inferir_tipo_desde_dedicacion(dedicacion: str) -> str:
     """

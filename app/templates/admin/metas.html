@@ -105,12 +105,7 @@
       <section class="form-box-modern">
         <h3><i class="fas fa-plus-circle"></i> AGREGAR UNA NUEVA META DIARIA</h3>
         <form class="tile-form-modern" action="{{ url_for('admin_controller.agregar_meta') }}" method="POST">
-          <select name="usuario_id" required>
-            <option value="">Selecciona un usuario</option>
-            {% for u in usuarios %}
-            <option value="{{ u.id }}">{{ u.nombre }}</option>
-            {% endfor %}
-          </select>
+
           <select name="categoria_id" required>
             <option value="">Selecciona una categoría</option>
             {% for c in categorias %}
@@ -209,12 +204,7 @@
       <section class="form-box-modern">
         <h3><i class="fas fa-exclamation-triangle"></i> AGREGAR UN LÍMITE NUEVO DIARIO</h3>
         <form class="tile-form-modern" action="{{ url_for('admin_controller.agregar_limite') }}" method="POST">
-          <select name="usuario_id" required>
-            <option value="">Selecciona un usuario</option>
-            {% for u in usuarios %}
-            <option value="{{ u.id }}">{{ u.nombre }}</option>
-            {% endfor %}
-          </select>
+
           <select name="categoria_id" required>
             <option value="">Selecciona una categoría</option>
             {% for c in categorias %}

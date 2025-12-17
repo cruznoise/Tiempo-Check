@@ -1,16 +1,30 @@
+// ============================================
+// CONFIGURACIÓN DE URL BASE
+// ============================================
+
+// Cambiar según entorno
+const IS_LOCAL = true;  // ← Cambiar a false para Railway
+const API_URL = IS_LOCAL 
+    ? "https://localhost:5000"  // ← HTTPS local
+    : "https://tiempo-check-production.up.railway.app";
+
+console.log(`[API] Usando: ${API_URL}`);
+
+// ============================================
+// TRACKING DE TIEMPO (ORIGINAL)
+// ============================================
+
 let dominioActual = null;
 let tiempoAcumulado = 0;
 let inicioSesion = null;
 let tiempoPorDominio = {};
 let ultimaPeticion = {};
 
-// Inicializar storage al cargar la extensión
 chrome.storage.local.get(null, (data) => {
   tiempoPorDominio = data || {};
   actualizarDominioActivo(); 
 });
 
-// Obtener dominio activo desde la pestaña actual
 async function actualizarDominioActivo() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.url || !tab.url.startsWith("http")) return;
@@ -26,7 +40,6 @@ async function actualizarDominioActivo() {
   }
 }
 
-// Guardar tiempo transcurrido y enviarlo al backend
 function guardarTiempo(forzarEnvio = false) {
   if (!dominioActual || !inicioSesion) return;
 
@@ -54,7 +67,7 @@ function guardarTiempo(forzarEnvio = false) {
     }
   });
 
-  fetch("http://localhost:5000/admin/guardar", {
+  fetch(`${API_URL}/admin/guardar`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     credentials: "include",
@@ -70,8 +83,7 @@ function guardarTiempo(forzarEnvio = false) {
   inicioSesion = Date.now();
 }
 
-// === EVENTOS DEL NAVEGADOR ===
-
+// Eventos del navegador
 chrome.tabs.onActivated.addListener(() => {
   guardarTiempo();
   actualizarDominioActivo();
@@ -96,6 +108,10 @@ setInterval(() => {
   guardarTiempo(true);
 }, 20000);
 
+// ============================================
+// NOTIFICACIONES
+// ============================================
+
 function mostrarNotificacion(titulo, mensaje) {
   if (Notification.permission === 'granted') {
     new Notification(titulo, {
@@ -107,34 +123,43 @@ function mostrarNotificacion(titulo, mensaje) {
 
 async function verificarAlertas() {
   try {
-    const resCat = await fetch("http://localhost:5000/admin/api/alerta_dominio");
-    const categorias = await resCat.json();
+    const response = await fetch(`${API_URL}/api/categorias`, {
+      credentials: 'include'
+    });
+    const data = await response.json();
+    
+    if (data.categorias) {
+      for (const cat of data.categorias) {
+        const res = await fetch(`${API_URL}/api/alerta_dominio`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ categoria_id: cat.id })
+        });
 
-    for (const cat of categorias) {
-      const res = await fetch("http://localhost:5000/admin/api/alerta_dominio", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoria_id: cat.id })
-      });
+        const alertaData = await res.json();
 
-      const data = await res.json();
-
-      if (data.alerta && data.mensaje) {
-        mostrarNotificacion(` ${cat.nombre}`, data.mensaje);
+        if (alertaData.alerta && alertaData.mensaje) {
+          mostrarNotificacion(` ${cat.nombre}`, alertaData.mensaje);
+        }
       }
     }
   } catch (error) {
-    console.error("Error al verificar alertas:", error);
+    console.error("[ALERTAS] Error:", error);
   }
 }
 
 if (Notification.permission !== 'granted') {
   Notification.requestPermission();
 }
+
 chrome.runtime.onInstalled.addListener(verificarAlertas);
 setInterval(verificarAlertas, 2 * 60 * 1000);
 
-// Listener para mensajes INTERNOS (desde content_script.js, popup.js)
+// ============================================
+// MENSAJES INTERNOS
+// ============================================
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request === 'resetStorage') {
     chrome.storage.local.clear(() => {
@@ -147,13 +172,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'verificar_alerta') {
     console.log("🔎 Verificando dominio:", request.dominio);
 
-    fetch("http://localhost:5000/admin/api/alerta_dominio", {
+    fetch(`${API_URL}/api/alerta_dominio`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        dominio: request.dominio,
-        usuario_id: 18  
-      })
+      credentials: "include",
+      body: JSON.stringify({ dominio: request.dominio })
     })
     .then(res => res.json())
     .then(data => {
@@ -179,9 +202,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// ==================== FOCUS MODE - BLOQUEO DE SITIOS ====================
+// ============================================
+// FOCUS MODE
+// ============================================
 
-// Estado de Focus Mode
 let focusActive = false;
 let blockedCategories = [];
 let strictModeFocus = false;
@@ -189,12 +213,11 @@ let sessionIdFocus = null;
 let categoriasMapFocus = {};
 let dominiosOmitidos = [];
 
-// ==================== CARGAR CATEGORÍAS DESDE BD ====================
 async function cargarCategoriasMapFocus() {
   try {
     console.log('[FOCUS] Cargando categorías desde BD...');
     
-    const response = await fetch('http://localhost:5000/api/categorias/con-dominios', {
+    const response = await fetch(`${API_URL}/api/categorias/con-dominios`, {
       credentials: 'include'
     });
     
@@ -202,15 +225,11 @@ async function cargarCategoriasMapFocus() {
     
     if (data.success && data.mapeo) {
       categoriasMapFocus = data.mapeo;
-      
       console.log('[FOCUS] Categorías cargadas desde BD');
       console.log(`[FOCUS] Total dominios: ${data.total_dominios}`);
-      console.log('[FOCUS] Ejemplos:', Object.keys(categoriasMapFocus).slice(0, 5));
-      
       chrome.storage.local.set({ categoriasMapFocus: categoriasMapFocus });
     } else {
       console.error('[FOCUS] Error: respuesta sin mapeo');
-      
       chrome.storage.local.get(['categoriasMapFocus'], (stored) => {
         if (stored.categoriasMapFocus) {
           categoriasMapFocus = stored.categoriasMapFocus;
@@ -220,7 +239,6 @@ async function cargarCategoriasMapFocus() {
     }
   } catch (error) {
     console.error('[FOCUS] Error cargando categorías:', error);
-    
     chrome.storage.local.get(['categoriasMapFocus'], (stored) => {
       if (stored.categoriasMapFocus) {
         categoriasMapFocus = stored.categoriasMapFocus;
@@ -230,16 +248,12 @@ async function cargarCategoriasMapFocus() {
   }
 }
 
-// Cargar al inicio
 cargarCategoriasMapFocus();
-
-// Recargar cada 5 minutos
 setInterval(cargarCategoriasMapFocus, 5 * 60 * 1000);
 
-// Sincronizar estado con backend
 async function sincronizarEstadoFocus() {
   try {
-    const response = await fetch('http://localhost:5000/api/focus/status', {
+    const response = await fetch(`${API_URL}/api/focus/status`, {
       credentials: 'include'
     });
     const data = await response.json();
@@ -258,15 +272,11 @@ async function sincronizarEstadoFocus() {
       });
       
       console.log('[FOCUS] Sesión activa restaurada');
-      
-      // Actualizar reglas de bloqueo
       actualizarReglasBloqueoDNR();
     } else {
       focusActive = false;
       blockedCategories = [];
       chrome.storage.local.remove(['focusActive', 'blockedCategories', 'strictModeFocus', 'sessionIdFocus']);
-      
-      // Limpiar reglas
       actualizarReglasBloqueoDNR();
     }
   } catch (error) {
@@ -274,19 +284,13 @@ async function sincronizarEstadoFocus() {
   }
 }
 
-// Sincronizar al inicio
 sincronizarEstadoFocus();
-
-// Sincronizar cada 30 segundos
 setInterval(sincronizarEstadoFocus, 30000);
 
-// ==================== LISTENER ÚNICO PARA MENSAJES EXTERNOS ====================
-// Escuchar mensajes EXTERNOS (desde TiempoCheck webapp)
 chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
   console.log('[FOCUS] Mensaje externo recibido:', request);
   
   if (request.action === 'start') {
-    // Recargar categorías y activar
     cargarCategoriasMapFocus().then(() => {
       focusActive = true;
       blockedCategories = request.data.categorias || [];
@@ -301,20 +305,10 @@ chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => 
       });
       
       console.log('[FOCUS] Focus Mode ACTIVADO');
-      console.log('  - Categorías bloqueadas:', blockedCategories);
-      console.log('  - Dominios a bloquear:', 
-        Object.keys(categoriasMapFocus).filter(d => 
-          blockedCategories.includes(categoriasMapFocus[d])
-        ).length
-      );
-      
-      // Actualizar reglas de bloqueo
       actualizarReglasBloqueoDNR();
-      
       sendResponse({ success: true, message: 'Focus activado' });
     });
-    
-    return true; // Mantener canal abierto
+    return true;
   } 
   else if (request.action === 'end') {
     focusActive = false;
@@ -323,8 +317,6 @@ chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => 
     sessionIdFocus = null;
     
     chrome.storage.local.remove(['focusActive', 'blockedCategories', 'strictModeFocus', 'sessionIdFocus']);
-    
-    // Eliminar reglas
     actualizarReglasBloqueoDNR();
     
     console.log('[FOCUS] Focus Mode DESACTIVADO');
@@ -333,8 +325,6 @@ chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => 
   
   return true;
 });
-
-// ==================== BLOQUEO CON DECLARATIVE NET REQUEST ====================
 
 async function actualizarReglasBloqueoDNR() {
   if (!focusActive || blockedCategories.length === 0) {
@@ -350,28 +340,23 @@ async function actualizarReglasBloqueoDNR() {
     return;
   }
 
-const dominiosABloquear = Object.keys(categoriasMapFocus)
-  .filter(dominio => {
-    const categoria = categoriasMapFocus[dominio];
-    const estaBloqueado = blockedCategories.includes(categoria);
-    const estaOmitido = dominiosOmitidos.includes(dominio);
-    
-    return estaBloqueado && !estaOmitido; // ← Excluir omitidos
-  });
+  const dominiosABloquear = Object.keys(categoriasMapFocus)
+    .filter(dominio => {
+      const categoria = categoriasMapFocus[dominio];
+      const estaBloqueado = blockedCategories.includes(categoria);
+      const estaOmitido = dominiosOmitidos.includes(dominio);
+      return estaBloqueado && !estaOmitido;
+    });
 
-console.log('[FOCUS DNR] Dominios a bloquear:', dominiosABloquear.length);
-console.log('[FOCUS DNR] Dominios omitidos:', dominiosOmitidos.length);
+  console.log('[FOCUS DNR] Dominios a bloquear:', dominiosABloquear.length);
 
-  // Crear reglas con soporte para subdominios
   const reglas = [];
   let ruleId = 1;
 
   dominiosABloquear.forEach(dominio => {
     const categoria = categoriasMapFocus[dominio];
-    
     const dominioLimpio = dominio.replace(/^www\./, '');
     
-    // Crear regla para dominio base y todos sus subdominios
     reglas.push({
       id: ruleId++,
       priority: 1,
@@ -383,13 +368,12 @@ console.log('[FOCUS DNR] Dominios omitidos:', dominiosOmitidos.length);
         }
       },
       condition: {
-        urlFilter: `||${dominioLimpio}`,  // ← Esto bloquea dominio + subdominios
+        urlFilter: `||${dominioLimpio}`,
         resourceTypes: ["main_frame"]
       }
     });
   });
 
-  // Limitar a 5000 reglas
   const reglasLimitadas = reglas.slice(0, 5000);
 
   try {
@@ -402,15 +386,14 @@ console.log('[FOCUS DNR] Dominios omitidos:', dominiosOmitidos.length);
     });
 
     console.log('[FOCUS DNR] Reglas creadas:', reglasLimitadas.length);
-    
   } catch (error) {
     console.error('[FOCUS DNR] Error creando reglas:', error);
   }
 }
-// Helper: Registrar bloqueo en backend
+
 async function registrarIntentoBloqueadoFocus(domain, categoria) {
   try {
-    await fetch('http://localhost:5000/api/focus/block', {
+    await fetch(`${API_URL}/api/focus/block`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -420,15 +403,12 @@ async function registrarIntentoBloqueadoFocus(domain, categoria) {
       })
     });
     
-    console.log('[FOCUS]  Bloqueo registrado en BD');
+    console.log('[FOCUS] ✓ Bloqueo registrado en BD');
   } catch (error) {
     console.error('[FOCUS] Error registrando:', error);
   }
 }
 
-console.log('[FOCUS] Sistema de bloqueo inicializado');
-
-// Función para omitir un dominio
 async function omitirDominio(domain) {
   console.log('[FOCUS] Omitiendo dominio:', domain);
   
@@ -436,11 +416,10 @@ async function omitirDominio(domain) {
     dominiosOmitidos.push(domain);
     chrome.storage.local.set({ dominiosOmitidos: dominiosOmitidos });
     await actualizarReglasBloqueoDNR();
-    console.log('[FOCUS]  Dominio omitido');
+    console.log('[FOCUS] ✓ Dominio omitido');
   }
 }
 
-// Escuchar mensajes de blocked.html
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'omitir_dominio') {
     omitirDominio(request.domain).then(() => {
@@ -449,3 +428,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 });
+
+console.log('[FOCUS] Sistema de bloqueo inicializado');

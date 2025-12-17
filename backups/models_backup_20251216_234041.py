@@ -60,7 +60,6 @@ class Usuario(db.Model):
             'perfil_actualizado_en': self.perfil_actualizado_en.isoformat() if self.perfil_actualizado_en else None,
             'creado_en': self.creado_en.isoformat() if self.creado_en else None
         }
-
 class Registro(db.Model):
     __tablename__ = 'registro'
     id = db.Column(db.Integer, primary_key=True)
@@ -70,41 +69,20 @@ class Registro(db.Model):
     fecha_hora = db.Column(db.DateTime)  
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
 
-# ============================================================================
-# ✅ CAMBIO CRÍTICO 1: Categoria con restricción única compuesta
-# ============================================================================
 class Categoria(db.Model):
     __tablename__ = 'categorias'
     
-    id = db.Column('Id', db.Integer, primary_key=True)
-    nombre = db.Column(db.String(50), nullable=False)  # ✅ SIN unique=True
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)  # ✅ NOT NULL
-    
-    # ✅ Restricción única compuesta
-    __table_args__ = (
-        db.UniqueConstraint('nombre', 'usuario_id', name='unique_categoria_usuario'),
-    )
+    id = db.Column('Id', db.Integer, primary_key=True)  # Nota la 'I' mayúscula
+    nombre = db.Column(db.String(50), nullable=False, unique=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True) 
+    #fecha_hora = db.Column(db.DateTime, nullable=True, index=True)
 
-# ============================================================================
-# ✅ CAMBIO CRÍTICO 2: DominioCategoria con usuario_id y restricción única
-# ============================================================================
 class DominioCategoria(db.Model):
     __tablename__ = 'dominio_categoria'
-    
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True)
     dominio = db.Column(db.String(255), nullable=False)
-    categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'))
-    categoria = db.Column(db.String(120), nullable=False, default='Sin categoría')
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)  # ✅ NUEVO
-    
-    # Relaciones
-    categoria_obj = db.relationship('Categoria', backref='dominios')
-    usuario = db.relationship('Usuario', backref='dominios_categorizados')
-    
-    # ✅ Restricción única compuesta
-    __table_args__ = (
-        db.UniqueConstraint('dominio', 'usuario_id', name='uq_dominio_usuario'),
-    )
+    categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'), nullable=False)
+    categoria = db.relationship('Categoria')
 
 class MetaCategoria(db.Model):
     __tablename__ = 'metas_categoria'
@@ -146,6 +124,7 @@ class UsuarioLogro(db.Model):
             "logro_id": self.logro_id
         }
 
+
 class FeaturesCategoriaDiaria(db.Model):
     __tablename__ = "features_categoria_diaria"
 
@@ -163,7 +142,6 @@ class FeaturesCategoriaDiaria(db.Model):
 
     def __repr__(self):
         return f"<FCD {self.usuario_id} {self.fecha} {self.categoria}={self.minutos}>"
-    
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
@@ -171,7 +149,7 @@ class AggVentanaCategoria(db.Model):
     __tablename__ = 'agg_ventana_categoria'
     usuario_id = db.Column(db.Integer, primary_key=True)
     categoria  = db.Column(db.String(64), primary_key=True)
-    ventana    = db.Column(db.String(8),  primary_key=True)
+    ventana    = db.Column(db.String(8),  primary_key=True)  # '7d','14d','30d'
     fecha_fin  = db.Column(db.Date,       primary_key=True)
     minutos_sum      = db.Column(db.Float, nullable=False)
     minutos_promedio = db.Column(db.Float, nullable=False)
@@ -194,7 +172,7 @@ class AggEstadoDia(db.Model):
 class AggKpiRango(db.Model):
     __tablename__ = 'agg_kpi_rango'
     usuario_id = db.Column(db.Integer, primary_key=True)
-    rango      = db.Column(db.String(12), primary_key=True)
+    rango      = db.Column(db.String(12), primary_key=True)  # 'hoy','7dias','mes','total'
     fecha_ref  = db.Column(db.Date, primary_key=True)
     min_total         = db.Column(db.Float, nullable=False)
     min_productivo    = db.Column(db.Float, nullable=False)
@@ -217,20 +195,18 @@ class ContextoDia(db.Model):
     desviacion_pct = db.Column(db.Float)
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Relación
     usuario = db.relationship('Usuario', backref='contextos_dia')
     
     def __repr__(self):
         return f'<ContextoDia {self.fecha} U{self.usuario_id} atipico={self.es_atipico}>'
 
-# ============================================================================
-# ✅ CAMBIO CRÍTICO 3: PatronCategoria con restricción única compuesta
-# ============================================================================
 class PatronCategoria(db.Model):
     __tablename__ = 'patrones_categoria'
     
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    patron = db.Column(db.String(512), nullable=False)  # ✅ SIN unique=True
+    patron = db.Column(db.String(512), nullable=False, unique=True)  # ← varchar(512) y UNIQUE
     categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'), nullable=False)
     activo = db.Column(db.Boolean, nullable=False, default=True)  
     creado_en = db.Column(db.DateTime, nullable=False, server_default=db.func.current_timestamp())
@@ -244,20 +220,15 @@ class PatronCategoria(db.Model):
     usuario = db.relationship('Usuario')
     categoria = db.relationship('Categoria')
     
-    # ✅ Restricción única compuesta
-    __table_args__ = (
-        db.UniqueConstraint('patron', 'usuario_id', name='unique_patron_usuario'),
-    )
-    
     def __repr__(self):
         return f'<PatronCategoria {self.patron} -> Cat{self.categoria_id}>'
-
+    
 class RachaUsuario(db.Model):
     __tablename__ = 'rachas_usuario'
     
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'), nullable=True)
+    categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'), nullable=True)  # NULL = racha general
     tipo_racha = db.Column(db.Enum('metas', 'limites', 'uso_diario'), default='metas')
     racha_actual = db.Column(db.Integer, default=0)
     racha_maxima = db.Column(db.Integer, default=0)
@@ -270,20 +241,22 @@ class RachaUsuario(db.Model):
     
     def __repr__(self):
         return f'<RachaUsuario U{self.usuario_id} actual={self.racha_actual} max={self.racha_maxima}>'
+    
 
 class ConfiguracionLogro(db.Model):
     """Configuración de condiciones para desbloquear logros dinámicamente"""
     __tablename__ = 'logros_dinamicos'
     
     logro_id = db.Column(db.Integer, primary_key=True)
-    tipo_condicion = db.Column(db.String(50))
+    tipo_condicion = db.Column(db.String(50))  # 'racha_dias', 'tiempo_categoria', 'meta_cumplida', etc.
     categoria_id = db.Column(db.Integer, db.ForeignKey('categorias.Id'), nullable=True)
-    valor_referencia = db.Column(db.Integer)
+    valor_referencia = db.Column(db.Integer)  # Valor que se debe alcanzar para desbloquear
     
     categoria = db.relationship('Categoria')
     
     def __repr__(self):
         return f'<ConfiguracionLogro {self.logro_id} {self.tipo_condicion}={self.valor_referencia}>'
+    
 
 class SesionFocus(db.Model):
     __tablename__ = 'sesiones_focus'
@@ -314,6 +287,7 @@ class SesionFocus(db.Model):
             'modo_estricto': self.modo_estricto,
             'categorias_bloqueadas': self.categorias_bloqueadas
         }
+
 
 class IntentoBloqeuoFocus(db.Model):
     __tablename__ = 'intentos_bloqueo_focus'

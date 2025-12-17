@@ -1,0 +1,117 @@
+
+=== VERSIÓN MYSQL ===
+VERSION()
+8.0.44-0ubuntu0.22.04.1
+
+=== USUARIOS ACTUALES ===
+id	nombre	correo
+1	Ángel	angel@test.com
+12	María Estudiante	maria.estudiante@test.com
+13	Carlos Trabajador	carlos.trabajo@test.com
+14	Ana Freelancer	ana.freelance@test.com
+
+=== ESTRUCTURA: categorias ===
+*************************** 1. row ***************************
+       Table: categorias
+Create Table: CREATE TABLE `categorias` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(50) NOT NULL,
+  `usuario_id` int DEFAULT NULL,
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `unique` (`nombre`),
+  KEY `usuario_id` (`usuario_id`),
+  CONSTRAINT `categorias_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+=== ÍNDICES: categorias ===
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression
+categorias	0	PRIMARY	1	Id	A	9	NULL	NULL		BTREE			YES	NULL
+categorias	0	unique	1	nombre	A	9	NULL	NULL		BTREE			YES	NULL
+categorias	1	usuario_id	1	usuario_id	A	1	NULL	NULL	YES	BTREE			YES	NULL
+
+=== CONSTRAINTS: categorias ===
+CONSTRAINT_NAME	CONSTRAINT_TYPE
+PRIMARY	PRIMARY KEY
+unique	UNIQUE
+categorias_ibfk_1	FOREIGN KEY
+
+=== ESTRUCTURA: patrones_categoria ===
+*************************** 1. row ***************************
+       Table: patrones_categoria
+Create Table: CREATE TABLE `patrones_categoria` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `usuario_id` int NOT NULL,
+  `patron` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `categoria_id` int NOT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `creado_en` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_en` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ux_pc_patron` (`patron`(191)),
+  KEY `idx_pc_categoria_id` (`categoria_id`),
+  KEY `idx_usuario` (`usuario_id`),
+  CONSTRAINT `fk_pc_categoria` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`Id`) ON DELETE CASCADE,
+  CONSTRAINT `patrones_categoria_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `patrones_categoria_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+
+=== ÍNDICES: patrones_categoria ===
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression
+patrones_categoria	0	PRIMARY	1	id	A	0	NULL	NULL		BTREE			YES	NULL
+patrones_categoria	0	ux_pc_patron	1	patron	A	0	191	NULL		BTREE			YES	NULL
+patrones_categoria	1	idx_pc_categoria_id	1	categoria_id	A	0	NULL	NULL		BTREE			YES	NULL
+patrones_categoria	1	idx_usuario	1	usuario_id	A	0	NULL	NULL		BTREE			YES	NULL
+
+=== CONSTRAINTS: patrones_categoria ===
+CONSTRAINT_NAME	CONSTRAINT_TYPE
+PRIMARY	PRIMARY KEY
+ux_pc_patron	UNIQUE
+fk_pc_categoria	FOREIGN KEY
+patrones_categoria_ibfk_1	FOREIGN KEY
+patrones_categoria_ibfk_2	FOREIGN KEY
+
+=== ESTRUCTURA: dominio_categoria ===
+*************************** 1. row ***************************
+       Table: dominio_categoria
+Create Table: CREATE TABLE `dominio_categoria` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `dominio` varchar(255) NOT NULL,
+  `categoria_id` int DEFAULT NULL,
+  `categoria` varchar(120) NOT NULL DEFAULT 'Sin categoría',
+  `usuario_id` int NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_dominio_usuario` (`dominio`,`usuario_id`),
+  KEY `categoria_id` (`categoria_id`),
+  KEY `fk_dominio_usuario` (`usuario_id`),
+  CONSTRAINT `dominio_categoria_ibfk_1` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`Id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_dominio_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=396 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+=== ÍNDICES: dominio_categoria ===
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression
+dominio_categoria	0	PRIMARY	1	id	A	247	NULL	NULL		BTREE			YES	NULL
+dominio_categoria	0	idx_dominio_usuario	1	dominio	A	247	NULL	NULL		BTREE			YES	NULL
+dominio_categoria	0	idx_dominio_usuario	2	usuario_id	A	247	NULL	NULL		BTREE			YES	NULL
+dominio_categoria	1	categoria_id	1	categoria_id	A	9	NULL	NULL	YES	BTREE			YES	NULL
+dominio_categoria	1	fk_dominio_usuario	1	usuario_id	A	1	NULL	NULL		BTREE			YES	NULL
+
+=== CONSTRAINTS: dominio_categoria ===
+CONSTRAINT_NAME	CONSTRAINT_TYPE
+idx_dominio_usuario	UNIQUE
+PRIMARY	PRIMARY KEY
+dominio_categoria_ibfk_1	FOREIGN KEY
+fk_dominio_usuario	FOREIGN KEY
+
+=== CONTEO ACTUAL ===
+tabla	total
+categorias	9
+patrones_categoria	0
+dominio_categoria	247
+
+=== CATEGORÍAS CON usuario_id NULL ===
+huerfanas
+0
+
+=== DISTRIBUCIÓN POR USUARIO ===
+usuario_id	total
+1	9

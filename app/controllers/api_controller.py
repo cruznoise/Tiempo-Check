@@ -167,30 +167,6 @@ def obtener_categorias():
         print(f"[API][ERROR] /categorias: {e}")
         return jsonify({'error': str(e)}), 500
 
-
-@bp.route('/api/categorias/con-dominios', methods=['GET'])
-def obtener_categorias_con_dominios():
-    """Retorna categorías con sus dominios para la extensión"""    
-    try:
-        categorias = Categoria.query.all()
-        
-        resultado = {}
-        
-        for cat in categorias:
-            dominios = DominioCategoria.query.filter_by(categoria_id=cat.id).all()
-            
-            for dominio in dominios:
-                resultado[dominio.dominio] = cat.nombre
-        
-        return jsonify({
-            'success': True,
-            'mapeo': resultado,  
-            'total_dominios': len(resultado)
-        })
-        
-    except Exception as e:
-        print(f"[API][ERROR] /categorias/con-dominios: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
     
 
 @bp.route("/api/ml/predict_multi", methods=["GET"])
@@ -737,7 +713,34 @@ def matriz_confusion_clasificador():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     
-
+@bp.route('/api/categorias/con-dominios', methods=['GET'])
+def api_categorias_con_dominios():
+    """Devuelve categorías del usuario con mapeo de dominios para Focus Mode"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    
+    try:
+        usuario_id = session['usuario_id']
+        categorias = Categoria.query.filter_by(usuario_id=usuario_id).all()
+        dominios = DominioCategoria.query.filter_by(usuario_id=usuario_id).all()
+        
+        mapeo = {}
+        for dom in dominios:
+            mapeo[dom.dominio] = dom.categoria
+        
+        return jsonify({
+            'success': True,
+            'categorias': [{'id': c.id, 'nombre': c.nombre} for c in categorias],
+            'mapeo': mapeo,
+            'total_dominios': len(dominios)
+        })
+        
+    except Exception as e:
+        print(f"[ERROR] Error al obtener categorías: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+    
 @bp.route('/api/focus/start', methods=['POST'])
 def api_focus_start():
     """Iniciar sesión de Modo Focus"""

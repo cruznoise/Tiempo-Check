@@ -102,134 +102,150 @@ def get_clasificador():
     return _clasificador_ml
 
 
-def clasificar_dominio_automatico(dominio, usuario_id=1):
+def clasificar_dominio_automatico(dominio, usuario_id):
     """
-    Clasifica un dominio usando ML + Regex como fallback
+    Clasifica un dominio usando patrones del usuario + ML como fallback
     Si falla, crea notificación para clasificación manual
     
     Args:
         dominio: URL del dominio a clasificar (ej: 'facebook.com')
-        usuario_id: ID del usuario
+        usuario_id: ID del usuario (OBLIGATORIO)
     
     Returns:
         categoria_id (int) o None
     """
     # Imports dentro de función para evitar circular imports
     from app import db
-    from app.models.models import Categoria
+    from app.models.models import Categoria, PatronCategoria, DominioCategoria
     from app.models.models_coach import NotificacionClasificacion
-    from app.utils import get_mysql
+    import re
     
-    print(f"[CLASIFICACIÓN] 🔍 Procesando: {dominio}")
+    print(f"[CLASIFICACIÓN] Procesando: {dominio} (usuario {usuario_id})")
     
     categoria_id = None
     confianza = 0.0
     metodo = None
     necesita_clasificacion_manual = False
     
-    # ========================================================================
-    # PASO 1: Intentar clasificación con ML
-    # ========================================================================
-    clasificador = get_clasificador()
-    
-    if clasificador.entrenado:
-        categoria_nombre, confianza = clasificador.predecir(dominio)
+    try:
+        patrones_usuario = PatronCategoria.query.filter_by(
+            usuario_id=usuario_id,
+            activo=True
+        ).all()
         
-        if categoria_nombre and confianza >= 0.50:  # 50% confianza mínima
-            print(f"[ML]  {dominio} → {categoria_nombre} ({confianza:.0%})")
-            
-            # Buscar ID de categoría en BD
-            cat_obj = Categoria.query.filter_by(nombre=categoria_nombre).first()
-            
-            if cat_obj:
-                categoria_id = cat_obj.id
-                metodo = 'ml'
-            else:
-                print(f"[ML]   Categoría '{categoria_nombre}' no existe en BD")
-        else:
-            print(f"[ML]   Confianza muy baja ({confianza:.0%})")
-    else:
-        print("[ML]   Clasificador no entrenado")
+        for patron_obj in patrones_usuario:
+            if re.search(patron_obj.patron, dominio, re.IGNORECASE):
+                print(f"[PATRON] ✅ Match: '{patron_obj.patron}' → categoría {patron_obj.categoria_id}")
+                categoria_id = patron_obj.categoria_id
+                confianza = 0.85
+                metodo = 'patron'
+                break
+    except Exception as e:
+        print(f"[PATRON][ERROR] {e}")
     
-    # ========================================================================
-    # PASO 2: Fallback a Regex si ML no dio resultado confiable
-    # ========================================================================
     if not categoria_id:
-        print("[FALLBACK]  Intentando con Regex...")
+        print("[ML]  Intentando clasificación con ML...")
         
         try:
-            conexion = get_mysql()
+            clasificador = get_clasificador()
             
-            with conexion.cursor() as cursor:
-                cursor.execute("SELECT patron, categoria_id FROM patrones_categoria")
-                patrones = cursor.fetchall()
+            if clasificador and clasificador.entrenado:
+                categoria_nombre, confianza_ml = clasificador.predecir(dominio)
                 
-                for patron, cat_id in patrones:
-                    if re.search(patron, dominio, re.IGNORECASE):
-                        print(f"[REGEX]  Match: {patron} → categoría {cat_id}")
-                        categoria_id = cat_id
-                        confianza = 0.85  
-                        metodo = 'regex'
-                        break
+                if categoria_nombre and confianza_ml >= 0.50:
+                    print(f"[ML]  {dominio} → {categoria_nombre} ({confianza_ml:.0%})")
+                    
+                    cat_obj = Categoria.query.filter_by(
+                        nombre=categoria_nombre,
+                        usuario_id=usuario_id
+                    ).first()
+                    
+                    if cat_obj:
+                        categoria_id = cat_obj.id
+                        confianza = confianza_ml
+                        metodo = 'ml'
+                    else:
+                        print(f"[ML] Categoría '{categoria_nombre}' no existe para usuario {usuario_id}")
+                else:
+                    print(f"[ML] Confianza muy baja ({confianza_ml:.0%})")
+            else:
+                print("[ML] Clasificador no disponible")
         except Exception as e:
-            print(f"[REGEX][ERROR] {e}")
+            print(f"[ML][ERROR] {e}")
     
-    # ========================================================================
-    # PASO 3: Si nada funcionó → Marcar para clasificación manual
-    # ========================================================================
     if not categoria_id:
-        print(f"[CLASIFICACIÓN]  No se pudo clasificar: {dominio}")
+        print(f"[DEFAULT]  No se pudo clasificar: {dominio}")
         necesita_clasificacion_manual = True
         
-        # CRÍTICO: Asignar temporalmente a "Sin categoría" SIEMPRE
         try:
-            cat_default = Categoria.query.filter_by(nombre='Sin categoría').first()
+            cat_default = Categoria.query.filter_by(
+                nombre='Sin categoría',
+                usuario_id=usuario_id
+            ).first()
+            
             if cat_default:
                 categoria_id = cat_default.id
                 metodo = 'sin_clasificar'
-                print(f"[DEFAULT] Asignando temporalmente a 'Sin categoría' (ID: {categoria_id})")
+                print(f"[DEFAULT]  Asignando temporalmente a 'Sin categoría' (ID: {categoria_id})")
             else:
-                # FALLBACK: Si no existe "Sin categoría", buscar cualquier categoría
-                primera_cat = Categoria.query.first()
+                primera_cat = Categoria.query.filter_by(usuario_id=usuario_id).first()
+                
                 if primera_cat:
                     categoria_id = primera_cat.id
-                    print(f"[DEFAULT][FALLBACK] Usando primera categoría disponible (ID: {categoria_id})")
+                    print(f"[DEFAULT]  Usando primera categoría disponible (ID: {categoria_id})")
                 else:
-                    print(f"[DEFAULT][ERROR] No hay categorías en la BD!")
-                    # Crear categoría por defecto si no existe ninguna
-                    nueva_cat = Categoria(nombre='Sin categoría', usuario_id=usuario_id)
+                    print(f"[DEFAULT][ERROR]  Usuario {usuario_id} no tiene categorías!")
+                    nueva_cat = Categoria(
+                        nombre='Sin categoría',
+                        usuario_id=usuario_id
+                    )
                     db.session.add(nueva_cat)
                     db.session.commit()
                     categoria_id = nueva_cat.id
-                    print(f"[DEFAULT][CREATED] Categoría 'Sin categoría' creada (ID: {categoria_id})")
+                    print(f"[DEFAULT] Categoría 'Sin categoría' creada (ID: {categoria_id})")
         except Exception as e:
             print(f"[DEFAULT][ERROR] {e}")
-            # Último recurso: usar 1 (asumiendo que existe)
-            categoria_id = 1
-            print(f"[DEFAULT][EMERGENCY] Usando categoría ID=1")
+            import traceback
+            traceback.print_exc()
     
-    # ========================================================================
-    # PASO 4: Guardar en BD
-    # ========================================================================
     if categoria_id:
         try:
-            conexion = get_mysql()
-            with conexion.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO dominio_categoria (dominio, categoria_id) 
-                    VALUES (%s, %s)
-                    ON DUPLICATE KEY UPDATE categoria_id = %s
-                """, (dominio, categoria_id, categoria_id))
-                conexion.commit()
-                print(f"[BD]  Guardado: {dominio} → categoría {categoria_id}")
+            dominio_cat = DominioCategoria.query.filter_by(
+                dominio=dominio,
+                usuario_id=usuario_id
+            ).first()
+            
+            if dominio_cat:
+                # Actualizar categoría existente
+                dominio_cat.categoria_id = categoria_id
+                # Obtener nombre de categoría
+                cat = Categoria.query.get(categoria_id)
+                if cat:
+                    dominio_cat.categoria = cat.nombre
+                
+                print(f"[BD] Actualizado: {dominio} → categoría {categoria_id}")
+            else:
+                cat = Categoria.query.get(categoria_id)
+                cat_nombre = cat.nombre if cat else 'Sin categoría'
+                
+                nuevo_dominio = DominioCategoria(
+                    dominio=dominio,
+                    categoria_id=categoria_id,
+                    categoria=cat_nombre,
+                    usuario_id=usuario_id  
+                )
+                db.session.add(nuevo_dominio)
+                print(f"[BD] Creado: {dominio} → categoría {categoria_id} (usuario {usuario_id})")
+            
+            db.session.commit()
+            
         except Exception as e:
             print(f"[BD][ERROR] {e}")
+            import traceback
+            traceback.print_exc()
+            db.session.rollback()
     
-    # ========================================================================
-    # PASO 5: Crear notificación (confirmación O clasificación manual)
-    # ========================================================================
     try:
-        # Verificar si ya existe notificación pendiente
         notif_existente = NotificacionClasificacion.query.filter_by(
             dominio=dominio,
             usuario_id=usuario_id,
@@ -238,20 +254,18 @@ def clasificar_dominio_automatico(dominio, usuario_id=1):
         
         if not notif_existente:
             if necesita_clasificacion_manual:
-                # NOTIFICACIÓN DE CLASIFICACIÓN MANUAL
                 notif = NotificacionClasificacion(
                     usuario_id=usuario_id,
                     dominio=dominio,
-                    categoria_sugerida_id=categoria_id,  # Puede ser None si BD lo permite
+                    categoria_sugerida_id=categoria_id,
                     confianza=0.0,
                     metodo='manual_required'
                 )
                 db.session.add(notif)
                 db.session.commit()
-                print(f"[NOTIF] Clasificación MANUAL requerida: {dominio}")
+                print(f"[NOTIF]  Clasificación MANUAL requerida: {dominio}")
             else:
-                # NOTIFICACIÓN DE CONFIRMACIÓN
-                if categoria_id:  # Solo crear si hay categoría válida
+                if categoria_id and confianza > 0:
                     notif = NotificacionClasificacion(
                         usuario_id=usuario_id,
                         dominio=dominio,
@@ -261,20 +275,14 @@ def clasificar_dominio_automatico(dominio, usuario_id=1):
                     )
                     db.session.add(notif)
                     db.session.commit()
-                    print(f"[NOTIF] Confirmación creada: {dominio}")
-                else:
-                    print(f"[NOTIF]  No se creó notificación (sin categoría válida)")
+                    print(f"[NOTIF]  Confirmación creada: {dominio} ({metodo})")
         else:
-            print(f"[NOTIF]  Ya existe notificación pendiente")
+            print(f"[NOTIF] Ya existe notificación pendiente")
             
     except Exception as e:
         print(f"[NOTIF][ERROR] {e}")
         import traceback
         traceback.print_exc()
-        db.session.rollback()
-            
-    except Exception as e:
-        print(f"[NOTIF][ERROR] {e}")
         db.session.rollback()
     
     return categoria_id

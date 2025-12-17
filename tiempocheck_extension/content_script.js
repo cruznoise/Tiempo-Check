@@ -19,12 +19,15 @@ function verificarAlerta() {
       return;
     }
 
-    fetch("http://localhost:5000/admin/api/alerta_dominio", {
+fetch("http://localhost:5000/admin/api/alerta_dominio", {
   method: "POST",
   headers: {
     "Content-Type": "application/json"
   },
-  body: JSON.stringify({ dominio: dominioActual })
+  body: JSON.stringify({ 
+    dominio: dominioActual,
+    usuario_id: 18
+  })
 })
 
     .then(res => res.json())

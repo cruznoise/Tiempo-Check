@@ -177,21 +177,23 @@ async function cargarCategoriasEnModal() {
   console.log('[FOCUS] Cargando categorías en modal...');
   
   try {
-    const response = await fetch('/api/categorias');
+    const response = await fetch('/api/categorias/con-dominios', {
+      credentials: 'include'
+    });
     const data = await response.json();
     
-    console.log('[FOCUS] Respuesta de /api/categorias:', data);
+    console.log('[FOCUS] Respuesta de API:', data);
+    console.log('[FOCUS] Número de categorías recibidas:', (data.categorias || []).length);
     
-    if (data.categorias || data.success) {
+    if (data.success || data.categorias) {
       const container = document.getElementById('focus-categories-grid');
       if (!container) {
         console.error('[FOCUS] Container focus-categories-grid no encontrado');
         return;
       }
       
-      container.innerHTML = '';
+      container.innerHTML = ''; 
       
-      // Categorías sugeridas para bloquear
       const sugeridas = ['Redes Sociales', 'Ocio', 'Comercio', 'Sin categoría'];
       const categorias = data.categorias || [];
       
@@ -214,7 +216,7 @@ async function cargarCategoriasEnModal() {
         container.appendChild(label);
       });
       
-      console.log('[FOCUS] Categorías cargadas exitosamente');
+      console.log('[FOCUS]  Categorías cargadas en modal:', container.children.length);
     } else {
       console.error('[FOCUS] Respuesta sin categorías');
     }

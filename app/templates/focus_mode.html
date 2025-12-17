@@ -107,23 +107,6 @@
       <div class="form-group-focus">
         <label>Categorías a bloquear:</label>
         <div class="categories-checklist" id="focus-categories-list">
-          <!-- Se llenará dinámicamente desde el backend -->
-          <label class="category-checkbox">
-            <input type="checkbox" value="Redes Sociales" checked>
-            <span>📱 Redes Sociales</span>
-          </label>
-          <label class="category-checkbox">
-            <input type="checkbox" value="Ocio" checked>
-            <span>🎮 Ocio</span>
-          </label>
-          <label class="category-checkbox">
-            <input type="checkbox" value="Comercio">
-            <span>🛒 Comercio</span>
-          </label>
-          <label class="category-checkbox">
-            <input type="checkbox" value="Sin categoría">
-            <span>❓ Sin categoría</span>
-          </label>
         </div>
         <button class="btn-link" onclick="selectAllCategories()">Seleccionar todas</button>
       </div>
@@ -199,22 +182,7 @@
   <div class="focus-history">
     <h4>📊 Sesiones recientes</h4>
     <div class="history-list" id="focus-history-list">
-      <!-- Se llenará desde el backend -->
-      <div class="history-item">
-        <span class="history-date">Hoy, 10:30 AM</span>
-        <span class="history-duration">25 min</span>
-        <span class="history-status completed">✓ Completada</span>
-      </div>
-      <div class="history-item">
-        <span class="history-date">Ayer, 3:15 PM</span>
-        <span class="history-duration">45 min</span>
-        <span class="history-status completed">✓ Completada</span>
-      </div>
-      <div class="history-item">
-        <span class="history-date">Ayer, 9:00 AM</span>
-        <span class="history-duration">25 min</span>
-        <span class="history-status cancelled">✗ Cancelada</span>
-      </div>
+
     </div>
   </div>
 </div>
@@ -232,14 +200,18 @@
   <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
 
 
-  <script>
+<script>
 // Cargar categorías dinámicamente en /focus
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('[FOCUS PAGE] Cargando categorías...');
   
   try {
-    const response = await fetch('/api/categorias');
+    const response = await fetch('/api/categorias/con-dominios', {
+      credentials: 'include'
+    });
     const data = await response.json();
+    
+    console.log('[FOCUS PAGE] Respuesta completa:', data);
     
     if (data.success || data.categorias) {
       const container = document.getElementById('focus-categories-list');
@@ -247,8 +219,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         container.innerHTML = '';
         
         const sugeridas = ['Redes Sociales', 'Ocio', 'Comercio', 'Sin categoría'];
+        const categorias = data.categorias || [];
         
-        data.categorias.forEach(cat => {
+        console.log('[FOCUS PAGE] Procesando categorías:', categorias.length);
+        
+        categorias.forEach(cat => {
           const checked = sugeridas.includes(cat.nombre) ? 'checked' : '';
           const emoji = obtenerEmojiCategoria ? obtenerEmojiCategoria(cat.nombre) : '📁';
           
@@ -262,7 +237,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           container.appendChild(label);
         });
         
-        console.log('[FOCUS PAGE] Categorías cargadas:', data.categorias.length);
+        console.log('[FOCUS PAGE]  Categorías cargadas:', container.children.length);
       }
     }
   } catch (error) {

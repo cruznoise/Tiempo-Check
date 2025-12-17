@@ -122,3 +122,34 @@ def pendientes():
         } for c in pendientes],
         'total': len(pendientes)
     })
+
+@bp.route('/recientes', methods=['GET'])
+def recientes():
+    """Obtiene las anomalías recientes del usuario (últimos 30 días)"""
+    if 'usuario_id' not in session:
+        return jsonify({'anomalias': [], 'total': 0}), 401
+    
+    usuario_id = session['usuario_id']
+    
+    fecha_limite = date.today() - timedelta(days=30)
+    
+    anomalias = ContextoDia.query.filter(
+        ContextoDia.usuario_id == usuario_id,
+        ContextoDia.es_atipico == True,
+        ContextoDia.fecha >= fecha_limite,
+        ContextoDia.fecha < date.today()  
+    ).order_by(
+        ContextoDia.fecha.desc()
+    ).limit(10).all()
+    
+    return jsonify({
+        'anomalias': [{
+            'fecha': a.fecha.isoformat(),
+            'motivo': a.motivo or 'sin_motivo',
+            'motivo_detalle': a.motivo_detalle,
+            'uso_real': a.uso_real_min,
+            'uso_esperado': a.uso_esperado_min,
+            'desviacion_pct': round(a.desviacion_pct, 1)
+        } for a in anomalias],
+        'total': len(anomalias)
+    })

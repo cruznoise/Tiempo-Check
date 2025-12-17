@@ -38,19 +38,30 @@ def create_app(config_object=None):
     # ========================================================================
     # EXTENSIONES
     # ========================================================================
-    
+
     db.init_app(app)
-    
+
     cors.init_app(
         app,
         resources={
-            r"/api/*": {"origins": app.config.get("CORS_ORIGINS", "*")},
-            r"/admin/api/*": {"origins": app.config.get("CORS_ORIGINS", "*")},
+            r"/api/*": {"origins": "*"},
+            r"/admin/api/*": {"origins": "*"},
         },
         supports_credentials=True,
+        allow_headers=['Content-Type', 'Authorization'],
+        methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
     )
-    
+
     migrate.init_app(app, db)
+
+    @app.after_request
+    def after_request_cors_headers(response): 
+        """Agrega headers CORS adicionales para permitir Private Network Access"""
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Private-Network'] = 'true'
+        return response
 
     @app.teardown_appcontext
     def shutdown_session(exception=None):
