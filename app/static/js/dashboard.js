@@ -369,7 +369,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const currentDomain = window.location.hostname;
   try {
-    const resp = await fetch('/admin/api/alerta_dominio', {
+    const resp = await fetch('api/alerta_dominio', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dominio: currentDomain })
     });

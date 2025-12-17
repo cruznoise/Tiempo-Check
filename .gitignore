@@ -39,6 +39,9 @@ scripts/
 database/
 migrations/
 test_coach_job.py
+tiempocheck_extension_local/
+certs/
+*.pem
 
 # ML artifacts (solo mantener metadatos)
 ml/artifacts/*.joblib
@@ -52,7 +55,7 @@ tmp/
 __temp__/
 
 # Config local (sube un example en su lugar)
-config.py
+config_local.py
 mysql_conn.py
 .gitignore
 # Chrome extension builds

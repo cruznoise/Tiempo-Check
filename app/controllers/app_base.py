@@ -32,12 +32,19 @@ def login():
         return jsonify({'success': False, 'error': 'Faltan datos'}), 400
 
     usuario = Usuario.query.filter_by(correo=correo).first()
-
-    if usuario:
+    from werkzeug.security import check_password_hash
+    
+    if usuario and check_password_hash(usuario.contrasena, contrasena):
         session['usuario_id'] = usuario.id
-        return jsonify({'success': True})
+        session['nombre'] = usuario.nombre
+        
+        return jsonify({
+            'success': True,
+            'usuario_id': usuario.id,  
+            'nombre': usuario.nombre
+        })
     else:
-        return jsonify({'success': False})
+        return jsonify({'success': False}), 401
 
 @controlador.get('/logout')
 def logout():

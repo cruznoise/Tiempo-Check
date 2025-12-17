@@ -11,8 +11,32 @@ Características:
 - Logs limpios
 - Arranque rápido (<5 segundos)
 """
-
 import os
+
+# ============================================================================
+# DETECTAR SI ESTAMOS EN RAILWAY
+# ============================================================================
+IS_RAILWAY = os.getenv("RAILWAY_ENVIRONMENT") is not None
+
+# ============================================================================
+# CONFIGURACIÓN DE BASE DE DATOS
+# ============================================================================
+if IS_RAILWAY:
+    # En Railway: usar variables proporcionadas por Railway
+    MYSQL_HOST = os.environ.get('MYSQLHOST')
+    MYSQL_PORT = int(os.environ.get('MYSQLPORT', 3306))
+    MYSQL_USER = os.environ.get('MYSQLUSER')
+    MYSQL_PASSWORD = os.environ.get('MYSQLPASSWORD')
+    MYSQL_DATABASE = os.environ.get('MYSQLDATABASE', 'tiempocheck')
+    
+    DATABASE_URI = (
+        f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}"
+        f"@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
+    )
+else:
+    # Local: usar configuración de demo
+    DATABASE_URI = "mysql+pymysql://root:base@localhost/tiempocheck_demo"
+
 
 class DemoConfig:
     """

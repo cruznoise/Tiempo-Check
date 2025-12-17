@@ -136,3 +136,4 @@ zipp==3.23.0
 alembic==1.14.0
 email-validator==2.2.0
 gunicorn==21.2.0
+cryptography>=41.0.0

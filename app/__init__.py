@@ -1,13 +1,13 @@
 import os
 from pathlib import Path
-from flask import Flask, jsonify
+from flask import Flask, jsonify, session
 from app.extensions import db, cors, migrate
 from dotenv import load_dotenv 
 
 env_path = Path(__file__).parent.parent / '.env'
 if env_path.exists():
     load_dotenv(env_path)
-    print(f"✅ [ENV] Variables cargadas desde {env_path}")
+    print(f" [ENV] Variables cargadas desde {env_path}")
 
 def create_app(config_object=None):
     """
@@ -33,23 +33,36 @@ def create_app(config_object=None):
         app.config.from_object(cfg)
     
     # Verificar qué config se cargó realmente
-    print(f"✅ [CONFIG] Config final cargada: {app.config.get('SQLALCHEMY_DATABASE_URI', 'NO DEFINIDA')}")
+    print(f" [CONFIG] Config final cargada: {app.config.get('SQLALCHEMY_DATABASE_URI', 'NO DEFINIDA')}")
 
     # ========================================================================
     # EXTENSIONES
     # ========================================================================
 
     db.init_app(app)
-
+# CORS actualizado para permitir extensión + Private Network Access
     cors.init_app(
         app,
         resources={
-            r"/api/*": {"origins": "*"},
-            r"/admin/api/*": {"origins": "*"},
-        },
-        supports_credentials=True,
-        allow_headers=['Content-Type', 'Authorization'],
-        methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+            r"/api/*": {
+                "origins": [
+                    "https://tiempo-check-production.up.railway.app",
+                    "chrome-extension://*"
+                ],
+                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                "allow_headers": ["Content-Type", "Authorization", "X-Usuario-ID"],
+                "supports_credentials": True
+            },
+            r"/admin/*": {
+                "origins": [
+                    "https://tiempo-check-production.up.railway.app",
+                    "chrome-extension://*"
+                ],
+                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                "allow_headers": ["Content-Type", "Authorization", "X-Usuario-ID"],
+                "supports_credentials": True
+            }
+        }
     )
 
     migrate.init_app(app, db)
@@ -61,6 +74,9 @@ def create_app(config_object=None):
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         response.headers['Access-Control-Allow-Private-Network'] = 'true'
+        if 'usuario_id' in session:
+            response.headers['X-Usuario-ID'] = str(session['usuario_id'])
+    
         return response
 
     @app.teardown_appcontext

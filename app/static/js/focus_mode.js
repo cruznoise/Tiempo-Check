@@ -658,10 +658,13 @@ async function finalizarModoFocus(completed) {
 }
 
 // ==================== NOTIFICAR EXTENSIÓN ====================
+// Nota: habilitar o deshabilitar la extension segun se este trabajando. En caso de trabajar de manera local comentar linea 664, en caso contrario
+// comentar linea 665
+
 function notificarExtensionFocus(action, data) {
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-    const EXTENSION_ID = 'hcghpalkgapkbklfnhkfoialdcneafod'
-    
+    const EXTENSION_ID = 'hcghpalkgapkbklfnhkfoialdcneafod' // == Extension del server ===
+    //const EXTENSION_ID = 'danhjjndhhckkkhdpfgeaccpkbdlbmha' // == Extension local ==
     chrome.runtime.sendMessage(
       EXTENSION_ID,
       { action: action, data: data },

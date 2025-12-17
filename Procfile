@@ -1,0 +1,1 @@
+web: cp config_example.py config.py && python3 -m app.app

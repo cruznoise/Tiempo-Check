@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.43, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.19, for Win64 (x86_64)
 --
--- Host: localhost    Database: tiempocheck_db
+-- Host: 172.25.51.223    Database: tiempocheck_db
 -- ------------------------------------------------------
--- Server version	8.0.43-0ubuntu0.22.04.2
+-- Server version	8.0.44-0ubuntu0.22.04.1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -108,9 +108,12 @@ DROP TABLE IF EXISTS `categorias`;
 CREATE TABLE `categorias` (
   `Id` int NOT NULL AUTO_INCREMENT,
   `nombre` varchar(50) NOT NULL,
+  `usuario_id` int DEFAULT NULL,
   PRIMARY KEY (`Id`),
-  UNIQUE KEY `unique` (`nombre`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  UNIQUE KEY `unique` (`nombre`),
+  KEY `usuario_id` (`usuario_id`),
+  CONSTRAINT `categorias_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -123,14 +126,15 @@ DROP TABLE IF EXISTS `coach_accion_log`;
 CREATE TABLE `coach_accion_log` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `usuario_id` int NOT NULL,
-  `origen` enum('alerta','sugerencia') NOT NULL,
-  `origen_id` bigint NOT NULL,
+  `origen` enum('alerta','sugerencia','dashboard','dashboard_predicciones','metas','coach') NOT NULL,
+  `origen_id` bigint DEFAULT NULL,
   `accion` varchar(64) NOT NULL,
   `payload` json DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_accion_user` (`usuario_id`,`created_at` DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY `idx_accion_user` (`usuario_id`,`created_at` DESC),
+  KEY `idx_accion_fecha` (`accion`,`created_at` DESC)
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -157,7 +161,7 @@ CREATE TABLE `coach_alerta` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_alerta_dedupe` (`dedupe_key`),
   KEY `idx_alerta_user_fecha` (`usuario_id`,`fecha_hasta` DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -190,16 +194,43 @@ CREATE TABLE `coach_sugerencia` (
   `usuario_id` int NOT NULL,
   `tipo` varchar(64) NOT NULL,
   `categoria` varchar(64) DEFAULT NULL,
-  `titulo` varchar(160) NOT NULL,
+  `titulo` varchar(180) NOT NULL,
   `cuerpo` text NOT NULL,
   `action_type` varchar(64) DEFAULT NULL,
   `action_payload` json DEFAULT NULL,
   `expires_at` datetime DEFAULT NULL,
-  `status` enum('new','acted','dismissed') NOT NULL DEFAULT 'new',
+  `status` enum('new','pending','acted','dismissed','expired') NOT NULL DEFAULT 'new',
   `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_sug_user_status` (`usuario_id`,`status`,`creado_en` DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY `idx_sug_user_status` (`usuario_id`,`status`,`creado_en` DESC),
+  KEY `idx_sug_estado` (`status`,`creado_en` DESC)
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `contexto_dia`
+--
+
+DROP TABLE IF EXISTS `contexto_dia`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `contexto_dia` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `usuario_id` int NOT NULL,
+  `fecha` date NOT NULL,
+  `es_atipico` tinyint(1) DEFAULT '0',
+  `motivo` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `motivo_detalle` text COLLATE utf8mb4_unicode_ci,
+  `uso_esperado_min` float DEFAULT NULL,
+  `uso_real_min` float DEFAULT NULL,
+  `desviacion_pct` float DEFAULT NULL,
+  `fecha_registro` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_usuario_fecha` (`usuario_id`,`fecha`),
+  KEY `idx_usuario_fecha` (`usuario_id`,`fecha`),
+  KEY `idx_es_atipico` (`es_atipico`),
+  CONSTRAINT `contexto_dia_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -218,7 +249,7 @@ CREATE TABLE `dominio_categoria` (
   UNIQUE KEY `uq_dominio` (`dominio`),
   KEY `categoria_id` (`categoria_id`),
   CONSTRAINT `dominio_categoria_ibfk_1` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=199 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=391 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -267,7 +298,7 @@ CREATE TABLE `features_diarias` (
   KEY `ix_fdiarias_usuario_id` (`usuario_id`),
   KEY `ix_fdiarias_fecha` (`fecha`),
   KEY `ix_fdiarias_categoria` (`categoria`)
-) ENGINE=InnoDB AUTO_INCREMENT=248 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4855 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -295,7 +326,7 @@ CREATE TABLE `features_horarias` (
   KEY `ix_fchorarias_usuario_id` (`usuario_id`),
   KEY `ix_fchorarias_fecha` (`fecha`),
   KEY `ix_fchorarias_categoria` (`categoria`)
-) ENGINE=InnoDB AUTO_INCREMENT=814 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4944 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -339,6 +370,26 @@ CREATE TABLE `features_uso_hora` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `intentos_bloqueo_focus`
+--
+
+DROP TABLE IF EXISTS `intentos_bloqueo_focus`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `intentos_bloqueo_focus` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `sesion_id` int NOT NULL,
+  `momento` datetime NOT NULL,
+  `url_bloqueada` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `categoria` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_sesion` (`sesion_id`),
+  KEY `idx_momento` (`momento`),
+  CONSTRAINT `intentos_bloqueo_focus_ibfk_1` FOREIGN KEY (`sesion_id`) REFERENCES `sesiones_focus` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `limite_categoria`
 --
 
@@ -355,7 +406,7 @@ CREATE TABLE `limite_categoria` (
   KEY `categoria_id` (`categoria_id`),
   CONSTRAINT `limite_categoria_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
   CONSTRAINT `limite_categoria_ibfk_2` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -405,15 +456,18 @@ CREATE TABLE `metas_categoria` (
   `id` int NOT NULL AUTO_INCREMENT,
   `usuario_id` int NOT NULL,
   `categoria_id` int NOT NULL,
-  `limite_minutos` int NOT NULL,
-  `fecha` datetime DEFAULT NULL,
+  `minutos_meta` int NOT NULL,
+  `origen` enum('manual','coach','sistema') NOT NULL DEFAULT 'manual',
+  `fecha` date DEFAULT NULL,
   `cumplida` tinyint(1) DEFAULT NULL,
+  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_meta_usuario_cat_fecha` (`usuario_id`,`categoria_id`,`fecha`),
   KEY `usuario_id` (`usuario_id`),
   KEY `categoria_id` (`categoria_id`),
   CONSTRAINT `metas_categoria_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
   CONSTRAINT `metas_categoria_ibfk_2` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -440,7 +494,88 @@ CREATE TABLE `ml_metrics` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `ix_ml_metrics_user_date_cat` (`usuario_id`,`fecha`,`categoria`)
-) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=204 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `ml_modelos`
+--
+
+DROP TABLE IF EXISTS `ml_modelos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ml_modelos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `usuario_id` int NOT NULL,
+  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tipo` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `version` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `fecha_entrenamiento` datetime NOT NULL,
+  `accuracy` float DEFAULT NULL,
+  `precision_score` float DEFAULT NULL,
+  `recall` float DEFAULT NULL,
+  `f1_score` float DEFAULT NULL,
+  `num_ejemplos` int DEFAULT NULL,
+  `parametros` text COLLATE utf8mb4_unicode_ci,
+  `ruta_archivo` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `activo` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`id`),
+  KEY `idx_usuario_fecha` (`usuario_id`,`fecha_entrenamiento`),
+  KEY `idx_activo` (`activo`),
+  CONSTRAINT `ml_modelos_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `ml_predicciones_future`
+--
+
+DROP TABLE IF EXISTS `ml_predicciones_future`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ml_predicciones_future` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `usuario_id` int NOT NULL,
+  `fecha_pred` date NOT NULL,
+  `categoria` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `yhat_minutos` float NOT NULL,
+  `modelo` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `version_modelo` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `fecha_creacion` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=506 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `notificaciones_clasificacion`
+--
+
+DROP TABLE IF EXISTS `notificaciones_clasificacion`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `notificaciones_clasificacion` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `usuario_id` int NOT NULL,
+  `dominio` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `categoria_sugerida_id` int DEFAULT NULL,
+  `confianza` float DEFAULT NULL,
+  `metodo` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT 'pendiente',
+  `categoria_correcta_id` int DEFAULT NULL,
+  `creado_en` datetime DEFAULT CURRENT_TIMESTAMP,
+  `respondido_en` datetime DEFAULT NULL,
+  `usado_en_entrenamiento` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `categoria_sugerida_id` (`categoria_sugerida_id`),
+  KEY `categoria_correcta_id` (`categoria_correcta_id`),
+  KEY `idx_usuario_status` (`usuario_id`,`status`),
+  KEY `idx_dominio` (`dominio`),
+  KEY `idx_creado` (`creado_en`),
+  KEY `idx_usado_entrenamiento` (`usado_en_entrenamiento`,`respondido_en`),
+  CONSTRAINT `notificaciones_clasificacion_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `notificaciones_clasificacion_ibfk_2` FOREIGN KEY (`categoria_sugerida_id`) REFERENCES `categorias` (`Id`),
+  CONSTRAINT `notificaciones_clasificacion_ibfk_3` FOREIGN KEY (`categoria_correcta_id`) REFERENCES `categorias` (`Id`)
+) ENGINE=InnoDB AUTO_INCREMENT=179 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -452,6 +587,7 @@ DROP TABLE IF EXISTS `patrones_categoria`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `patrones_categoria` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `usuario_id` int NOT NULL,
   `patron` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `categoria_id` int NOT NULL,
   `activo` tinyint(1) NOT NULL DEFAULT '1',
@@ -460,8 +596,11 @@ CREATE TABLE `patrones_categoria` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `ux_pc_patron` (`patron`(191)),
   KEY `idx_pc_categoria_id` (`categoria_id`),
-  CONSTRAINT `fk_pc_categoria` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`Id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  KEY `idx_usuario` (`usuario_id`),
+  CONSTRAINT `fk_pc_categoria` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`Id`) ON DELETE CASCADE,
+  CONSTRAINT `patrones_categoria_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `patrones_categoria_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -487,7 +626,7 @@ CREATE TABLE `rachas_usuario` (
   KEY `categoria_id` (`categoria_id`),
   CONSTRAINT `rachas_usuario_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`),
   CONSTRAINT `rachas_usuario_ibfk_2` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -507,7 +646,33 @@ CREATE TABLE `registro` (
   PRIMARY KEY (`id`),
   KEY `usuario_id` (`usuario_id`),
   CONSTRAINT `fk_registro_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=36840 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=263621 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `sesiones_focus`
+--
+
+DROP TABLE IF EXISTS `sesiones_focus`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `sesiones_focus` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `usuario_id` int NOT NULL,
+  `inicio` datetime NOT NULL,
+  `fin_programado` datetime NOT NULL,
+  `fin_real` datetime DEFAULT NULL,
+  `duracion_minutos` int NOT NULL,
+  `tiempo_real_minutos` int DEFAULT NULL,
+  `completada` tinyint(1) DEFAULT '0',
+  `modo_estricto` tinyint(1) DEFAULT '0',
+  `categorias_bloqueadas` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'JSON array de categorías',
+  PRIMARY KEY (`id`),
+  KEY `idx_usuario` (`usuario_id`),
+  KEY `idx_inicio` (`inicio`),
+  KEY `idx_completada` (`completada`),
+  CONSTRAINT `sesiones_focus_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -527,7 +692,7 @@ CREATE TABLE `usuario_logro` (
   KEY `logro_id` (`logro_id`),
   CONSTRAINT `usuario_logro_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`),
   CONSTRAINT `usuario_logro_ibfk_2` FOREIGN KEY (`logro_id`) REFERENCES `logros` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=117 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -541,10 +706,22 @@ CREATE TABLE `usuarios` (
   `id` int NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `correo` varchar(100) NOT NULL,
-  `contraseña` varchar(100) NOT NULL,
+  `contrasena` varchar(255) DEFAULT NULL,
+  `dedicacion` varchar(50) DEFAULT NULL,
+  `horario_preferido` varchar(50) DEFAULT NULL,
+  `dias_trabajo` varchar(50) DEFAULT NULL,
+  `tipo_inferido` varchar(50) DEFAULT NULL,
+  `confianza_inferencia` float DEFAULT '0',
+  `hora_pico_inicio` int DEFAULT NULL,
+  `hora_pico_fin` int DEFAULT NULL,
+  `dias_activos_patron` varchar(50) DEFAULT NULL,
+  `perfil_actualizado_en` datetime DEFAULT NULL,
+  `creado_en` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `correo` (`correo`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  UNIQUE KEY `correo` (`correo`),
+  KEY `idx_usuario_tipo_inferido` (`tipo_inferido`),
+  KEY `idx_usuario_dedicacion` (`dedicacion`)
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -579,6 +756,10 @@ SET @saved_cs_client     = @@character_set_client;
  1 AS `total_categorias`,
  1 AS `promedio_general_diario`*/;
 SET character_set_client = @saved_cs_client;
+
+--
+-- Dumping routines for database 'tiempocheck_db'
+--
 
 --
 -- Final view structure for view `v_estado_actual_usuario`
@@ -625,4 +806,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-09-27 20:53:30
+-- Dump completed on 2025-11-28 23:11:05
