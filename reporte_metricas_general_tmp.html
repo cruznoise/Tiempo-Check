@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>reporte_metricas_general.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="desglose-matem%C3%A1tico-completo-de-m%C3%A9tricas">Desglose Matemático Completo de Métricas</h1>
+<h2 id="evaluaci%C3%B3n-del-usuario-12">Evaluación del Usuario 12</h2>
+<h3 id="usuario-12--categor%C3%ADa-comercio">Usuario: 12 | Categoría: Comercio</h3>
+<p><strong>$n=90$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/90)\times534.23$ minutos</li>
+<li>$MAE=5.94$ minutos</li>
+<li>$MAE=5.94/60$ horas
+<strong>Resultado: $MAE=0.10$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=4460.53~minutos^2$</li>
+<li>$RMSE=\sqrt{[4460.53/90]}$</li>
+<li>$RMSE=\sqrt{[49.56]}$</li>
+<li>$RMSE=7.04~minutos$</li>
+<li>$RMSE=7.04/60~horas$
+<strong>Resultado: $RMSE=0.12$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=6.43$ minutos</li>
+<li>$SS_{res}=4460.53~minutos^2$</li>
+<li>$SS_{tot}=2906.10~minutos^2$</li>
+<li>$R^2=1-(4460.53/2906.10)$</li>
+<li>$R^2=1-1.5349$
+<strong>Resultado: $R^2=-0.53$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 53% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 56$ (de 90 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=22.17$</li>
+<li>MAPE = (100 / 56) $\times$ 22.17</li>
+<li>$MAPE=39.59%$
+<strong>Resultado: MAPE = 39.6%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-12--categor%C3%ADa-entretenimiento">Usuario: 12 | Categoría: Entretenimiento</h3>
+<p><strong>$n=90$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/90)\times2357.08$ minutos</li>
+<li>$MAE=26.19$ minutos</li>
+<li>$MAE=26.19/60$ horas
+<strong>Resultado: $MAE=0.44$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=81510.77~minutos^2$</li>
+<li>$RMSE=\sqrt{[81510.77/90]}$</li>
+<li>$RMSE=\sqrt{[905.68]}$</li>
+<li>$RMSE=30.09~minutos$</li>
+<li>$RMSE=30.09/60~horas$
+<strong>Resultado: $RMSE=0.50$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=15.58$ minutos</li>
+<li>$SS_{res}=81510.77~minutos^2$</li>
+<li>$SS_{tot}=34839.96~minutos^2$</li>
+<li>$R^2=1-(81510.77/34839.96)$</li>
+<li>$R^2=1-2.3396$
+<strong>Resultado: $R^2=-1.34$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 134% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 41$ (de 90 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=22.04$</li>
+<li>MAPE = (100 / 41) $\times$ 22.04</li>
+<li>$MAPE=53.76%$
+<strong>Resultado: MAPE = 53.8%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-12--categor%C3%ADa-estudio">Usuario: 12 | Categoría: Estudio</h3>
+<p><strong>$n=91$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/91)\times3401.23$ minutos</li>
+<li>$MAE=37.38$ minutos</li>
+<li>$MAE=37.38/60$ horas
+<strong>Resultado: $MAE=0.62$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=172524.24~minutos^2$</li>
+<li>$RMSE=\sqrt{[172524.24/91]}$</li>
+<li>$RMSE=\sqrt{[1895.87]}$</li>
+<li>$RMSE=43.54~minutos$</li>
+<li>$RMSE=43.54/60~horas$
+<strong>Resultado: $RMSE=0.73$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=22.97$ minutos</li>
+<li>$SS_{res}=172524.24~minutos^2$</li>
+<li>$SS_{tot}=76984.90~minutos^2$</li>
+<li>$R^2=1-(172524.24/76984.90)$</li>
+<li>$R^2=1-2.2410$
+<strong>Resultado: $R^2=-1.24$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 124% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 46$ (de 91 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=29.50$</li>
+<li>MAPE = (100 / 46) $\times$ 29.50</li>
+<li>$MAPE=64.12%$
+<strong>Resultado: MAPE = 64.1%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-12--categor%C3%ADa-herramientas">Usuario: 12 | Categoría: Herramientas</h3>
+<p><strong>$n=89$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/89)\times1095.99$ minutos</li>
+<li>$MAE=12.31$ minutos</li>
+<li>$MAE=12.31/60$ horas
+<strong>Resultado: $MAE=0.21$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=19540.98~minutos^2$</li>
+<li>$RMSE=\sqrt{[19540.98/89]}$</li>
+<li>$RMSE=\sqrt{[219.56]}$</li>
+<li>$RMSE=14.82~minutos$</li>
+<li>$RMSE=14.82/60~horas$
+<strong>Resultado: $RMSE=0.25$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=11.76$ minutos</li>
+<li>$SS_{res}=19540.98~minutos^2$</li>
+<li>$SS_{tot}=10450.04~minutos^2$</li>
+<li>$R^2=1-(19540.98/10450.04)$</li>
+<li>$R^2=1-1.8699$
+<strong>Resultado: $R^2=-0.87$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 87% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 55$ (de 89 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=27.59$</li>
+<li>MAPE = (100 / 55) $\times$ 27.59</li>
+<li>$MAPE=50.17%$
+<strong>Resultado: MAPE = 50.2%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-12--categor%C3%ADa-productividad">Usuario: 12 | Categoría: Productividad</h3>
+<p><strong>$n=90$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/90)\times2524.32$ minutos</li>
+<li>$MAE=28.05$ minutos</li>
+<li>$MAE=28.05/60$ horas
+<strong>Resultado: $MAE=0.47$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=92889.07~minutos^2$</li>
+<li>$RMSE=\sqrt{[92889.07/90]}$</li>
+<li>$RMSE=\sqrt{[1032.10]}$</li>
+<li>$RMSE=32.13~minutos$</li>
+<li>$RMSE=32.13/60~horas$
+<strong>Resultado: $RMSE=0.54$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=21.41$ minutos</li>
+<li>$SS_{res}=92889.07~minutos^2$</li>
+<li>$SS_{tot}=48733.79~minutos^2$</li>
+<li>$R^2=1-(92889.07/48733.79)$</li>
+<li>$R^2=1-1.9061$
+<strong>Resultado: $R^2=-0.91$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 91% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 49$ (de 90 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=30.62$</li>
+<li>MAPE = (100 / 49) $\times$ 30.62</li>
+<li>$MAPE=62.48%$
+<strong>Resultado: MAPE = 62.5%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-12--categor%C3%ADa-redes-sociales">Usuario: 12 | Categoría: Redes Sociales</h3>
+<p><strong>$n=91$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/91)\times1793.54$ minutos</li>
+<li>$MAE=19.71$ minutos</li>
+<li>$MAE=19.71/60$ horas
+<strong>Resultado: $MAE=0.33$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=48172.44~minutos^2$</li>
+<li>$RMSE=\sqrt{[48172.44/91]}$</li>
+<li>$RMSE=\sqrt{[529.37]}$</li>
+<li>$RMSE=23.01~minutos$</li>
+<li>$RMSE=23.01/60~horas$
+<strong>Resultado: $RMSE=0.38$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=17.79$ minutos</li>
+<li>$SS_{res}=48172.44~minutos^2$</li>
+<li>$SS_{tot}=34107.03~minutos^2$</li>
+<li>$R^2=1-(48172.44/34107.03)$</li>
+<li>$R^2=1-1.4124$
+<strong>Resultado: $R^2=-0.41$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 41% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 47$ (de 91 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=15.93$</li>
+<li>MAPE = (100 / 47) $\times$ 15.93</li>
+<li>$MAPE=33.89%$
+<strong>Resultado: MAPE = 33.9%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-12--categor%C3%ADa-sin-categor%C3%ADa">Usuario: 12 | Categoría: Sin categoría</h3>
+<p><strong>$n=87$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/87)\times798.68$ minutos</li>
+<li>$MAE=9.18$ minutos</li>
+<li>$MAE=9.18/60$ horas
+<strong>Resultado: $MAE=0.15$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=11243.72~minutos^2$</li>
+<li>$RMSE=\sqrt{[11243.72/87]}$</li>
+<li>$RMSE=\sqrt{[129.24]}$</li>
+<li>$RMSE=11.37~minutos$</li>
+<li>$RMSE=11.37/60~horas$
+<strong>Resultado: $RMSE=0.19$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=9.03$ minutos</li>
+<li>$SS_{res}=11243.72~minutos^2$</li>
+<li>$SS_{tot}=6458.90~minutos^2$</li>
+<li>$R^2=1-(11243.72/6458.90)$</li>
+<li>$R^2=1-1.7408$
+<strong>Resultado: $R^2=-0.74$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 74% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 49$ (de 87 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=11.95$</li>
+<li>MAPE = (100 / 49) $\times$ 11.95</li>
+<li>$MAPE=24.39%$
+<strong>Resultado: MAPE = 24.4%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-12--categor%C3%ADa-trabajo">Usuario: 12 | Categoría: Trabajo</h3>
+<p><strong>$n=91$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/91)\times1427.87$ minutos</li>
+<li>$MAE=15.69$ minutos</li>
+<li>$MAE=15.69/60$ horas
+<strong>Resultado: $MAE=0.26$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=30052.01~minutos^2$</li>
+<li>$RMSE=\sqrt{[30052.01/91]}$</li>
+<li>$RMSE=\sqrt{[330.24]}$</li>
+<li>$RMSE=18.17~minutos$</li>
+<li>$RMSE=18.17/60~horas$
+<strong>Resultado: $RMSE=0.30$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=8.97$ minutos</li>
+<li>$SS_{res}=30052.01~minutos^2$</li>
+<li>$SS_{tot}=13508.90~minutos^2$</li>
+<li>$R^2=1-(30052.01/13508.90)$</li>
+<li>$R^2=1-2.2246$
+<strong>Resultado: $R^2=-1.22$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 122% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 38$ (de 91 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=20.44$</li>
+<li>MAPE = (100 / 38) $\times$ 20.44</li>
+<li>$MAPE=53.80%$
+<strong>Resultado: MAPE = 53.8%</strong></li>
+</ul>
+<hr>
+<h2 id="evaluaci%C3%B3n-del-usuario-13">Evaluación del Usuario 13</h2>
+<h3 id="usuario-13--categor%C3%ADa-comercio">Usuario: 13 | Categoría: Comercio</h3>
+<p><strong>$n=90$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/90)\times815.87$ minutos</li>
+<li>$MAE=9.07$ minutos</li>
+<li>$MAE=9.07/60$ horas
+<strong>Resultado: $MAE=0.15$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=10272.37~minutos^2$</li>
+<li>$RMSE=\sqrt{[10272.37/90]}$</li>
+<li>$RMSE=\sqrt{[114.14]}$</li>
+<li>$RMSE=10.68~minutos$</li>
+<li>$RMSE=10.68/60~horas$
+<strong>Resultado: $RMSE=0.18$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=7.77$ minutos</li>
+<li>$SS_{res}=10272.37~minutos^2$</li>
+<li>$SS_{tot}=5596.10~minutos^2$</li>
+<li>$R^2=1-(10272.37/5596.10)$</li>
+<li>$R^2=1-1.8356$
+<strong>Resultado: $R^2=-0.84$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 84% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 51$ (de 90 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=25.58$</li>
+<li>MAPE = (100 / 51) $\times$ 25.58</li>
+<li>$MAPE=50.16%$
+<strong>Resultado: MAPE = 50.2%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-13--categor%C3%ADa-entretenimiento">Usuario: 13 | Categoría: Entretenimiento</h3>
+<p><strong>$n=86$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/86)\times2069.69$ minutos</li>
+<li>$MAE=24.07$ minutos</li>
+<li>$MAE=24.07/60$ horas
+<strong>Resultado: $MAE=0.40$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=72229.98~minutos^2$</li>
+<li>$RMSE=\sqrt{[72229.98/86]}$</li>
+<li>$RMSE=\sqrt{[839.88]}$</li>
+<li>$RMSE=28.98~minutos$</li>
+<li>$RMSE=28.98/60~horas$
+<strong>Resultado: $RMSE=0.48$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=24.20$ minutos</li>
+<li>$SS_{res}=72229.98~minutos^2$</li>
+<li>$SS_{tot}=45761.64~minutos^2$</li>
+<li>$R^2=1-(72229.98/45761.64)$</li>
+<li>$R^2=1-1.5784$
+<strong>Resultado: $R^2=-0.58$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 58% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 53$ (de 86 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=22.79$</li>
+<li>MAPE = (100 / 53) $\times$ 22.79</li>
+<li>$MAPE=43.01%$
+<strong>Resultado: MAPE = 43.0%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-13--categor%C3%ADa-estudio">Usuario: 13 | Categoría: Estudio</h3>
+<p><strong>$n=89$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/89)\times521.37$ minutos</li>
+<li>$MAE=5.86$ minutos</li>
+<li>$MAE=5.86/60$ horas
+<strong>Resultado: $MAE=0.10$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=4466.74~minutos^2$</li>
+<li>$RMSE=\sqrt{[4466.74/89]}$</li>
+<li>$RMSE=\sqrt{[50.19]}$</li>
+<li>$RMSE=7.08~minutos$</li>
+<li>$RMSE=7.08/60~horas$
+<strong>Resultado: $RMSE=0.12$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=5.85$ minutos</li>
+<li>$SS_{res}=4466.74~minutos^2$</li>
+<li>$SS_{tot}=2665.10~minutos^2$</li>
+<li>$R^2=1-(4466.74/2665.10)$</li>
+<li>$R^2=1-1.6760$
+<strong>Resultado: $R^2=-0.68$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 68% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 52$ (de 89 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=16.27$</li>
+<li>MAPE = (100 / 52) $\times$ 16.27</li>
+<li>$MAPE=31.29%$
+<strong>Resultado: MAPE = 31.3%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-13--categor%C3%ADa-herramientas">Usuario: 13 | Categoría: Herramientas</h3>
+<p><strong>$n=89$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/89)\times1390.89$ minutos</li>
+<li>$MAE=15.63$ minutos</li>
+<li>$MAE=15.63/60$ horas
+<strong>Resultado: $MAE=0.26$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=31841.29~minutos^2$</li>
+<li>$RMSE=\sqrt{[31841.29/89]}$</li>
+<li>$RMSE=\sqrt{[357.77]}$</li>
+<li>$RMSE=18.91~minutos$</li>
+<li>$RMSE=18.91/60~horas$
+<strong>Resultado: $RMSE=0.32$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=14.33$ minutos</li>
+<li>$SS_{res}=31841.29~minutos^2$</li>
+<li>$SS_{tot}=15747.55~minutos^2$</li>
+<li>$R^2=1-(31841.29/15747.55)$</li>
+<li>$R^2=1-2.0220$
+<strong>Resultado: $R^2=-1.02$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 102% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 57$ (de 89 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=45.65$</li>
+<li>MAPE = (100 / 57) $\times$ 45.65</li>
+<li>$MAPE=80.08%$
+<strong>Resultado: MAPE = 80.1%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-13--categor%C3%ADa-productividad">Usuario: 13 | Categoría: Productividad</h3>
+<p><strong>$n=90$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/90)\times2434.99$ minutos</li>
+<li>$MAE=27.06$ minutos</li>
+<li>$MAE=27.06/60$ horas
+<strong>Resultado: $MAE=0.45$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=95467.97~minutos^2$</li>
+<li>$RMSE=\sqrt{[95467.97/90]}$</li>
+<li>$RMSE=\sqrt{[1060.76]}$</li>
+<li>$RMSE=32.57~minutos$</li>
+<li>$RMSE=32.57/60~horas$
+<strong>Resultado: $RMSE=0.54$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=24.70$ minutos</li>
+<li>$SS_{res}=95467.97~minutos^2$</li>
+<li>$SS_{tot}=54386.90~minutos^2$</li>
+<li>$R^2=1-(95467.97/54386.90)$</li>
+<li>$R^2=1-1.7553$
+<strong>Resultado: $R^2=-0.76$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 76% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 58$ (de 90 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=56.04$</li>
+<li>MAPE = (100 / 58) $\times$ 56.04</li>
+<li>$MAPE=96.63%$
+<strong>Resultado: MAPE = 96.6%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-13--categor%C3%ADa-redes-sociales">Usuario: 13 | Categoría: Redes Sociales</h3>
+<p><strong>$n=91$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/91)\times1490.10$ minutos</li>
+<li>$MAE=16.37$ minutos</li>
+<li>$MAE=16.37/60$ horas
+<strong>Resultado: $MAE=0.27$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=38829.72~minutos^2$</li>
+<li>$RMSE=\sqrt{[38829.72/91]}$</li>
+<li>$RMSE=\sqrt{[426.70]}$</li>
+<li>$RMSE=20.66~minutos$</li>
+<li>$RMSE=20.66/60~horas$
+<strong>Resultado: $RMSE=0.34$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=20.45$ minutos</li>
+<li>$SS_{res}=38829.72~minutos^2$</li>
+<li>$SS_{tot}=25824.53~minutos^2$</li>
+<li>$R^2=1-(38829.72/25824.53)$</li>
+<li>$R^2=1-1.5036$
+<strong>Resultado: $R^2=-0.50$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 50% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 57$ (de 91 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=13.36$</li>
+<li>MAPE = (100 / 57) $\times$ 13.36</li>
+<li>$MAPE=23.43%$
+<strong>Resultado: MAPE = 23.4%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-13--categor%C3%ADa-sin-categor%C3%ADa">Usuario: 13 | Categoría: Sin categoría</h3>
+<p><strong>$n=91$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/91)\times770.86$ minutos</li>
+<li>$MAE=8.47$ minutos</li>
+<li>$MAE=8.47/60$ horas
+<strong>Resultado: $MAE=0.14$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=9712.56~minutos^2$</li>
+<li>$RMSE=\sqrt{[9712.56/91]}$</li>
+<li>$RMSE=\sqrt{[106.73]}$</li>
+<li>$RMSE=10.33~minutos$</li>
+<li>$RMSE=10.33/60~horas$
+<strong>Resultado: $RMSE=0.17$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=7.74$ minutos</li>
+<li>$SS_{res}=9712.56~minutos^2$</li>
+<li>$SS_{tot}=5401.67~minutos^2$</li>
+<li>$R^2=1-(9712.56/5401.67)$</li>
+<li>$R^2=1-1.7981$
+<strong>Resultado: $R^2=-0.80$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 80% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 49$ (de 91 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=14.02$</li>
+<li>MAPE = (100 / 49) $\times$ 14.02</li>
+<li>$MAPE=28.61%$
+<strong>Resultado: MAPE = 28.6%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-13--categor%C3%ADa-trabajo">Usuario: 13 | Categoría: Trabajo</h3>
+<p><strong>$n=91$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/91)\times4951.70$ minutos</li>
+<li>$MAE=54.41$ minutos</li>
+<li>$MAE=54.41/60$ horas
+<strong>Resultado: $MAE=0.91$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=398606.58~minutos^2$</li>
+<li>$RMSE=\sqrt{[398606.58/91]}$</li>
+<li>$RMSE=\sqrt{[4380.29]}$</li>
+<li>$RMSE=66.18~minutos$</li>
+<li>$RMSE=66.18/60~horas$
+<strong>Resultado: $RMSE=1.10$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=34.60$ minutos</li>
+<li>$SS_{res}=398606.58~minutos^2$</li>
+<li>$SS_{tot}=171765.76~minutos^2$</li>
+<li>$R^2=1-(398606.58/171765.76)$</li>
+<li>$R^2=1-2.3206$
+<strong>Resultado: $R^2=-1.32$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 132% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 53$ (de 91 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=82.87$</li>
+<li>MAPE = (100 / 53) $\times$ 82.87</li>
+<li>$MAPE=156.37%$
+<strong>Resultado: MAPE = 156.4%</strong></li>
+</ul>
+<hr>
+<h2 id="evaluaci%C3%B3n-del-usuario-14">Evaluación del Usuario 14</h2>
+<h3 id="usuario-14--categor%C3%ADa-comercio">Usuario: 14 | Categoría: Comercio</h3>
+<p><strong>$n=88$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/88)\times676.23$ minutos</li>
+<li>$MAE=7.68$ minutos</li>
+<li>$MAE=7.68/60$ horas
+<strong>Resultado: $MAE=0.13$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=7593.02~minutos^2$</li>
+<li>$RMSE=\sqrt{[7593.02/88]}$</li>
+<li>$RMSE=\sqrt{[86.28]}$</li>
+<li>$RMSE=9.29~minutos$</li>
+<li>$RMSE=9.29/60~horas$
+<strong>Resultado: $RMSE=0.15$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=7.83$ minutos</li>
+<li>$SS_{res}=7593.02~minutos^2$</li>
+<li>$SS_{tot}=5260.44~minutos^2$</li>
+<li>$R^2=1-(7593.02/5260.44)$</li>
+<li>$R^2=1-1.4434$
+<strong>Resultado: $R^2=-0.44$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 44% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 55$ (de 88 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=26.13$</li>
+<li>MAPE = (100 / 55) $\times$ 26.13</li>
+<li>$MAPE=47.51%$
+<strong>Resultado: MAPE = 47.5%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-14--categor%C3%ADa-entretenimiento">Usuario: 14 | Categoría: Entretenimiento</h3>
+<p><strong>$n=88$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/88)\times2879.48$ minutos</li>
+<li>$MAE=32.72$ minutos</li>
+<li>$MAE=32.72/60$ horas
+<strong>Resultado: $MAE=0.55$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=165794.12~minutos^2$</li>
+<li>$RMSE=\sqrt{[165794.12/88]}$</li>
+<li>$RMSE=\sqrt{[1884.02]}$</li>
+<li>$RMSE=43.41~minutos$</li>
+<li>$RMSE=43.41/60~horas$
+<strong>Resultado: $RMSE=0.72$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=30.10$ minutos</li>
+<li>$SS_{res}=165794.12~minutos^2$</li>
+<li>$SS_{tot}=95048.08~minutos^2$</li>
+<li>$R^2=1-(165794.12/95048.08)$</li>
+<li>$R^2=1-1.7443$
+<strong>Resultado: $R^2=-0.74$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 74% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 60$ (de 88 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=40.50$</li>
+<li>MAPE = (100 / 60) $\times$ 40.50</li>
+<li>$MAPE=67.50%$
+<strong>Resultado: MAPE = 67.5%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-14--categor%C3%ADa-estudio">Usuario: 14 | Categoría: Estudio</h3>
+<p><strong>$n=90$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/90)\times1436.01$ minutos</li>
+<li>$MAE=15.96$ minutos</li>
+<li>$MAE=15.96/60$ horas
+<strong>Resultado: $MAE=0.27$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=32280.54~minutos^2$</li>
+<li>$RMSE=\sqrt{[32280.54/90]}$</li>
+<li>$RMSE=\sqrt{[358.67]}$</li>
+<li>$RMSE=18.94~minutos$</li>
+<li>$RMSE=18.94/60~horas$
+<strong>Resultado: $RMSE=0.32$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=15.12$ minutos</li>
+<li>$SS_{res}=32280.54~minutos^2$</li>
+<li>$SS_{tot}=20911.66~minutos^2$</li>
+<li>$R^2=1-(32280.54/20911.66)$</li>
+<li>$R^2=1-1.5437$
+<strong>Resultado: $R^2=-0.54$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 54% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 48$ (de 90 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=15.58$</li>
+<li>MAPE = (100 / 48) $\times$ 15.58</li>
+<li>$MAPE=32.46%$
+<strong>Resultado: MAPE = 32.5%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-14--categor%C3%ADa-herramientas">Usuario: 14 | Categoría: Herramientas</h3>
+<p><strong>$n=89$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/89)\times1702.79$ minutos</li>
+<li>$MAE=19.13$ minutos</li>
+<li>$MAE=19.13/60$ horas
+<strong>Resultado: $MAE=0.32$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=47144.87~minutos^2$</li>
+<li>$RMSE=\sqrt{[47144.87/89]}$</li>
+<li>$RMSE=\sqrt{[529.72]}$</li>
+<li>$RMSE=23.02~minutos$</li>
+<li>$RMSE=23.02/60~horas$
+<strong>Resultado: $RMSE=0.38$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=20.31$ minutos</li>
+<li>$SS_{res}=47144.87~minutos^2$</li>
+<li>$SS_{tot}=36919.19~minutos^2$</li>
+<li>$R^2=1-(47144.87/36919.19)$</li>
+<li>$R^2=1-1.2770$
+<strong>Resultado: $R^2=-0.28$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 28% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 55$ (de 89 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=38.51$</li>
+<li>MAPE = (100 / 55) $\times$ 38.51</li>
+<li>$MAPE=70.02%$
+<strong>Resultado: MAPE = 70.0%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-14--categor%C3%ADa-productividad">Usuario: 14 | Categoría: Productividad</h3>
+<p><strong>$n=88$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/88)\times3711.11$ minutos</li>
+<li>$MAE=42.17$ minutos</li>
+<li>$MAE=42.17/60$ horas
+<strong>Resultado: $MAE=0.70$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=235860.86~minutos^2$</li>
+<li>$RMSE=\sqrt{[235860.86/88]}$</li>
+<li>$RMSE=\sqrt{[2680.24]}$</li>
+<li>$RMSE=51.77~minutos$</li>
+<li>$RMSE=51.77/60~horas$
+<strong>Resultado: $RMSE=0.86$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=39.09$ minutos</li>
+<li>$SS_{res}=235860.86~minutos^2$</li>
+<li>$SS_{tot}=134151.27~minutos^2$</li>
+<li>$R^2=1-(235860.86/134151.27)$</li>
+<li>$R^2=1-1.7582$
+<strong>Resultado: $R^2=-0.76$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 76% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 55$ (de 88 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=34.29$</li>
+<li>MAPE = (100 / 55) $\times$ 34.29</li>
+<li>$MAPE=62.35%$
+<strong>Resultado: MAPE = 62.3%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-14--categor%C3%ADa-redes-sociales">Usuario: 14 | Categoría: Redes Sociales</h3>
+<p><strong>$n=90$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/90)\times1867.28$ minutos</li>
+<li>$MAE=20.75$ minutos</li>
+<li>$MAE=20.75/60$ horas
+<strong>Resultado: $MAE=0.35$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=58588.62~minutos^2$</li>
+<li>$RMSE=\sqrt{[58588.62/90]}$</li>
+<li>$RMSE=\sqrt{[650.98]}$</li>
+<li>$RMSE=25.51~minutos$</li>
+<li>$RMSE=25.51/60~horas$
+<strong>Resultado: $RMSE=0.43$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=18.38$ minutos</li>
+<li>$SS_{res}=58588.62~minutos^2$</li>
+<li>$SS_{tot}=40999.16~minutos^2$</li>
+<li>$R^2=1-(58588.62/40999.16)$</li>
+<li>$R^2=1-1.4290$
+<strong>Resultado: $R^2=-0.43$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 43% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 52$ (de 90 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=24.81$</li>
+<li>MAPE = (100 / 52) $\times$ 24.81</li>
+<li>$MAPE=47.72%$
+<strong>Resultado: MAPE = 47.7%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-14--categor%C3%ADa-sin-categor%C3%ADa">Usuario: 14 | Categoría: Sin categoría</h3>
+<p><strong>$n=91$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/91)\times710.31$ minutos</li>
+<li>$MAE=7.81$ minutos</li>
+<li>$MAE=7.81/60$ horas
+<strong>Resultado: $MAE=0.13$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=9037.44~minutos^2$</li>
+<li>$RMSE=\sqrt{[9037.44/91]}$</li>
+<li>$RMSE=\sqrt{[99.31]}$</li>
+<li>$RMSE=9.97~minutos$</li>
+<li>$RMSE=9.97/60~horas$
+<strong>Resultado: $RMSE=0.17$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=8.86$ minutos</li>
+<li>$SS_{res}=9037.44~minutos^2$</li>
+<li>$SS_{tot}=5535.14~minutos^2$</li>
+<li>$R^2=1-(9037.44/5535.14)$</li>
+<li>$R^2=1-1.6327$
+<strong>Resultado: $R^2=-0.63$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 63% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 54$ (de 91 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=13.44$</li>
+<li>MAPE = (100 / 54) $\times$ 13.44</li>
+<li>$MAPE=24.88%$
+<strong>Resultado: MAPE = 24.9%</strong></li>
+</ul>
+<hr>
+<h3 id="usuario-14--categor%C3%ADa-trabajo">Usuario: 14 | Categoría: Trabajo</h3>
+<p><strong>$n=89$ predicciones evaluadas</strong></p>
+<h4 id="1-mae-mean-absolute-error">1. MAE (Mean Absolute Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAE=(1/n)\times\Sigma|y_{i}-\hat{y}_{i}|$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$MAE=(1/89)\times3753.99$ minutos</li>
+<li>$MAE=42.18$ minutos</li>
+<li>$MAE=42.18/60$ horas
+<strong>Resultado: $MAE=0.70$ horas</strong></li>
+</ul>
+<h4 id="2-rmse-root-mean-squared-error">2. RMSE (Root Mean Squared Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$RMSE=\sqrt{[(1/n)\times\Sigma(y_{i}-\hat{y}_{i})^{2}]}$</p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\Sigma(y_{i}-\hat{y}_{i})^2=226895.55~minutos^2$</li>
+<li>$RMSE=\sqrt{[226895.55/89]}$</li>
+<li>$RMSE=\sqrt{[2549.39]}$</li>
+<li>$RMSE=50.49~minutos$</li>
+<li>$RMSE=50.49/60~horas$
+<strong>Resultado: $RMSE=0.84$ horas</strong></li>
+</ul>
+<h4 id="3-r2-coeficiente-de-determinaci%C3%B3n">3. $R^{2}$ (Coeficiente de Determinación)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$R^{2}=1-(SS_{res}/SS_{tot})$</p>
+<p><strong>Donde:</strong></p>
+<ul>
+<li>$SS_{res}=\Sigma(y_{i}-\hat{y}_{i})^{2}$ (Suma de cuadrados residuales)</li>
+<li>$SS_{tot}=\Sigma(y_{i}-\bar{y})^{2}$ (Suma de cuadrados totales)</li>
+<li>$\bar{y}$ = media de valores reales</li>
+</ul>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>$\bar{y}=34.11$ minutos</li>
+<li>$SS_{res}=226895.55~minutos^2$</li>
+<li>$SS_{tot}=146690.88~minutos^2$</li>
+<li>$R^2=1-(226895.55/146690.88)$</li>
+<li>$R^2=1-1.5468$
+<strong>Resultado: $R^2=-0.55$</strong></li>
+</ul>
+<p><em>Interpretación: Modelo es 55% peor que predecir la media</em></p>
+<h4 id="4-mape-mean-absolute-percentage-error">4. MAPE (Mean Absolute Percentage Error)</h4>
+<p><strong>Fórmula:</strong></p>
+<p>$MAPE=(100/n)\times\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|$</p>
+<p><em>(Excluyendo casos donde $y_{i}=0$)</em></p>
+<p><strong>Sustitución de valores:</strong></p>
+<ul>
+<li>n válidos $= 52$ (de 89 predicciones)</li>
+<li>$\Sigma|[ (y_{i}-\hat{y}<em>{i})/y</em>{i} ]|=71.62$</li>
+<li>MAPE = (100 / 52) $\times$ 71.62</li>
+<li>$MAPE=137.73%$
+<strong>Resultado: MAPE = 137.7%</strong></li>
+</ul>
+<hr>
+
+</body>
+</html>

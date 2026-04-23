@@ -185,6 +185,17 @@ def train(usuario_id: int, hist_days: int = 180, holdout_days: int = 7):
 
     # rf
     rf = RFReg()
+
+    if hasattr(rf, 'model'):
+            rf.model.set_params(
+                n_estimators=30,
+                max_depth=3,
+                min_samples_split=15,
+                min_samples_leaf=8,
+                max_features='sqrt',
+                random_state=42
+            )
+        
     rf.fit(Xtr, ytr)
     yhat_rf = rf.predict(Xte)
     m_rf = {"MAE": mae(yte, yhat_rf), "RMSE": rmse(yte, yhat_rf), "sMAPE": smape_safe(yte, yhat_rf)}
@@ -280,6 +291,17 @@ def train_por_categoria(usuario_id, hist_days=180):
         ytr = train_df["minutos"].astype(float)
 
         rf = RFReg()
+
+        if hasattr(rf, 'model'):
+                rf.model.set_params(
+                    n_estimators=30,
+                    max_depth=3,
+                    min_samples_split=15,
+                    min_samples_leaf=8,
+                    max_features='sqrt',
+                    random_state=42
+                )
+            
         rf.fit(Xtr, ytr)
         rf.feature_names_in_ = list(Xtr.columns)
 
