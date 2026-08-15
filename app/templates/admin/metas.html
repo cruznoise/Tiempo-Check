@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Metas y Límites - ProcrastiGuard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/metas-modern.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos1.css') }}"> 
+</head>
+<body> 
+<div class="dashboard-container">
+  
+  <aside class="sidebar">
+    <h2>¡Hola,<br>{{ nombre or 'Usuario' }}!</h2> 
+    <p>Este es tu resumen personal</p> 
+    <nav>
+      <ul>
+        <li><a href="{{ url_for('controlador.dashboard') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="Home"></a></li>
+        <li><a href="{{ url_for('admin_controller.vista_metas') }}"><img src="{{ url_for('static', filename='icons/trophy.png') }}" alt="Logros"></a></li>
+        <li>            <a href="#" id="btnConfiguracion">
+              <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración">
+            </a></li>
+      </ul>
+    </nav>
+    
+    <div class="alerta-coach-container" id="alerta-coach-sidebar">
+        <div class="alerta-coach-titulo">
+            <p>Alertas del Coach</p>
+        </div>
+        
+        <div class="loading-box" id="coach-loading-state">
+            <p>Cargando</p>
+            <p style="font-size: 0.8em; color: var(--accent-light);">Esperando datos del coach...</p>
+        </div>
+        
+        <div id="coach-alerts-list">
+        </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    
+    <!-- Header Moderno -->
+    <header class="metas-header-modern">
+      <h1>🎯 METAS Y LÍMITES</h1>
+      <p>Establece objetivos y controla tu tiempo de manera inteligente</p>
+    </header>
+
+    <div class="metas-container-modern">
+
+      <!-- SECCIÓN DE LOGROS MODERNIZADA -->
+      <section class="logros-panel-modern"> 
+          <h3>Metas y logros</h3> 
+          <h4>Logros desbloqueables</h4>
+          <div class="logros-grid-modern" id="contenedor-logros">
+          </div>
+      </section>
+
+      <!-- SECCIÓN DE SUGERENCIAS CON PREDICCIONES ML MODERNIZADA -->
+      <div class="sug-limits-panel-modern">        
+        <div class="coach-header">
+            <i class="fas fa-robot"></i>
+            <h4 class="info-coach-tooltip">Sugerencias de metas del Coach
+                <span class="coach-tooltip-text">
+                    <b>Mecanismo de Sugerencia:</b>
+                    <br>
+                    El Coach utiliza un modelo de Machine Learning (ML) que predice tu uso futuro en minutos por categoría.
+                    <br>
+                    <b>Meta Sugerida:</b><br>
+                    Se basa en estas predicciones para ayudarte a establecer objetivos realistas y productivos.
+                </span>
+            </h4>
+        </div>
+
+        <div class="prediction-container">
+          <div class="prediction-controls">
+            <div style="flex: 1;">
+              <label for="categoriaSelect">Categoría</label>
+              <select id="categoriaSelect">
+                <option value="">Selecciona una categoría</option>
+              </select>
+            </div>
+            <small id="estadoPred" class="prediction-status">Cargando predicciones...</small>
+          </div>
+
+          <div style="margin: 15px 0;">
+            <canvas id="chartPredicciones" height="130"></canvas>
+          </div>
+
+          <div class="prediction-actions">
+            <button id="btnRevision" class="btn-secondary-modern">
+              <i class="fas fa-sync"></i> Revisión de carga
+            </button>
+            <button id="btnMeta" class="btn-primary-modern">
+              <i class="fas fa-flag-checkered"></i> Establecer meta para este día
+            </button>
+          </div>
+        </div>
+
+        <div id="coachMetaFeedback" style="margin-top: 15px; text-align: center; color: var(--accent-light); display: none;"></div>
+      </div>
+
+      <!-- FORMULARIO AGREGAR META MODERNIZADO -->
+      <section class="form-box-modern">
+        <h3><i class="fas fa-plus-circle"></i> AGREGAR UNA NUEVA META DIARIA</h3>
+        <form class="tile-form-modern" action="{{ url_for('admin_controller.agregar_meta') }}" method="POST">
+
+          <select name="categoria_id" required>
+            <option value="">Selecciona una categoría</option>
+            {% for c in categorias %}
+            <option value="{{ c.id }}">{{ c.nombre }}</option>
+            {% endfor %}
+          </select>
+          <input type="number" name="limite_minutos" placeholder="Límite (min)" required min="1">
+          <button type="submit"><i class="fas fa-check"></i> Aceptar</button>
+        </form>
+      </section>
+
+      <!-- LISTA METAS ESTABLECIDAS MODERNIZADA -->
+      <section class="list-box-modern">
+          <h3>METAS ESTABLECIDAS</h3>
+          <div class="table-container-modern">
+            <table class="table-modern">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Usuario</th>
+                  <th>Categoría</th>
+                  <th>Límite</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in metas %}
+                <tr>
+                  <td>{{ m.id }}</td>
+                  <td>{{ m.usuario.nombre }}</td>
+                  <td>{{ m.categoria.nombre }}</td>
+                  <td>
+                    <form action="{{ url_for('admin_controller.editar_meta', id=m.id) }}" method="POST" style="display:inline-flex; gap: 5px;">
+                      <input type="number" name="limite_minutos" value="{{ m.limite_minutos }}" required min="1">
+                      <button type="submit">💾</button>
+                    </form>
+                  </td>
+                  <td>
+                    <form action="{{ url_for('admin_controller.eliminar_meta', id=m.id) }}" method="POST" style="display:inline;">
+                      <button type="submit" onclick="return confirm('¿Eliminar meta?')">🗑️</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+      </section>
+      
+      <!-- ESTADO DE METAS HOY MODERNIZADO -->
+      <section class="status-box-modern">
+          <h3>ESTADO DE METAS HOY</h3>
+          <div class="table-container-modern">
+            <table class="table-modern">
+              <thead>
+                <tr>
+                  <th>Categoría</th>
+                  <th>Meta</th>
+                  <th>Usado hoy</th>
+                  <th>Estado</th>
+                  <th>Origen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for meta in estado_metas %}
+                <tr>
+                  <td>{{ meta.categoria }}</td>
+                  <td>{{ meta.meta }}</td>
+                  <td>{{ meta.usado }}</td>
+                  <td>
+                    {% if meta.cumplida %}
+                    <span class="estado-verde">✓ Cumplida</span>
+                    {% else %}
+                    <span class="estado-naranja">⏳ Pendiente</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if meta.origen == 'coach' %}
+                      <span class="estado-azul"><i class="fas fa-robot"></i> Coach</span>
+                    {% elif meta.origen == 'manual' %}
+                      <span class="estado-gris"><i class="fas fa-user"></i> Manual</span>
+                    {% elif meta.origen == 'sistema' %}
+                      <span class="estado-celeste"><i class="fas fa-cog"></i> Sistema</span>
+                    {% else %}
+                      <span class="estado-gris-claro">{{ meta.origen or '—' }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+      </section>
+
+      <!-- FORMULARIO AGREGAR LÍMITE MODERNIZADO -->
+      <section class="form-box-modern">
+        <h3><i class="fas fa-exclamation-triangle"></i> AGREGAR UN LÍMITE NUEVO DIARIO</h3>
+        <form class="tile-form-modern" action="{{ url_for('admin_controller.agregar_limite') }}" method="POST">
+
+          <select name="categoria_id" required>
+            <option value="">Selecciona una categoría</option>
+            {% for c in categorias %}
+            <option value="{{ c.id }}">{{ c.nombre }}</option>
+            {% endfor %}
+          </select>
+          <input type="number" name="limite_minutos" placeholder="Límite (min)" required min="1">
+          <button type="submit"><i class="fas fa-check"></i> Aceptar</button>
+        </form>
+      </section>
+
+      <!-- LISTA LÍMITES ESTABLECIDOS MODERNIZADA -->
+      <section class="list-box-modern">
+          <h3>LÍMITES ESTABLECIDOS</h3>
+          <div class="table-container-modern">
+            <table class="table-modern">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Usuario</th>
+                  <th>Categoría</th>
+                  <th>Límite</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for l in limites %}
+                <tr>
+                  <td>{{ l.id }}</td>
+                  <td>{{ l.usuario.nombre }}</td>
+                  <td>{{ l.categoria.nombre }}</td>
+                  <td>
+                    <form action="{{ url_for('admin_controller.editar_limite', id=l.id) }}" method="POST" style="display:inline-flex; gap: 5px;">
+                      <input type="number" name="limite_minutos" value="{{ l.limite_minutos }}" required min="1">
+                      <button type="submit">💾</button>
+                    </form>
+                  </td>
+                  <td>
+                    <form action="{{ url_for('admin_controller.eliminar_limite', id=l.id) }}" method="POST" style="display:inline;">
+                      <button type="submit" onclick="return confirm('¿Eliminar límite?')">🗑️</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+      </section>
+
+      <!-- ESTADO DE LÍMITES HOY MODERNIZADO -->
+      <section class="status-box-modern">
+          <h3>ESTADO DE LÍMITES HOY</h3>
+          <div class="table-container-modern">
+            <table class="table-modern">
+              <thead>
+                <tr>
+                  <th>Categoría</th>
+                  <th>Límite</th>
+                  <th>Usado hoy</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for limite in estado_limites %}
+                <tr>
+                  <td>{{ limite.categoria }}</td>
+                  <td>{{ limite.limite }}</td>
+                  <td>{{ limite.usado }}</td>
+                  <td>
+                    {% if limite.excedido %}
+                    <span class="estado-rojo">⚠️ Excedido</span>
+                    {% else %}
+                    <span class="estado-verde">✓ En rango</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+  <!-- Menú flotante de configuración (IDÉNTICO AL DASHBOARD) -->
+  <div id="menuFlotanteConfig" class="config-dropdown hidden">
+    <div class="tile-box menu-box">
+      <h2 class="menu-title">Configuración de la cuenta</h2>
+
+      <button onclick="window.location.href='/admin/categorias'" class="menu-button">
+        🗂️ Administrar dominios y categorías
+      </button>
+
+      <hr class="menu-separator">
+
+      <div class="menu-section">
+        <label for="rango-exportar">Rango de tiempo para exportar:</label> 
+        <select id="rango-exportar" class="menu-select"> 
+          <option value="3dias">Últimos 3 días</option>
+          <option value="15dias">Últimos 15 días</option>
+          <option value="mes">Último mes</option>
+          <option value="3meses">Últimos 3 meses</option>
+          <option value="todo" selected>Todo el tiempo</option>
+        </select>
+
+        <div class="menu-buttons-group">
+          <button id="bck_btn" class="menu-button-small">Descargar Backup Completo</button>
+          <button id="exportarCSV" class="menu-button-small">📄 Exportar CSV</button>
+          <button id="exportarJSON" class="menu-button-small">🧾 Exportar JSON</button>
+        </div>
+      </div>
+
+      <hr class="menu-separator">
+
+      <div class="menu-section">
+        <label>Restaurar cuenta (.JSON)</label>
+        <form id="form-restaurar" enctype="multipart/form-data" class="restore-form">
+          <input type="file" id="archivo-backup" name="backup" accept=".json" required>
+          <button type="submit" class="menu-button-small btn-restore">🔓 Restaurar Backup</button>
+        </form>
+      </div>
+
+      <hr class="menu-separator">
+
+      <div class="menu-section">
+        <label>Reiniciar cuenta</label>
+        <button id="btn-reseteo-total" class="menu-button btn-danger">Reiniciar Cuenta desde Cero</button>
+      </div>
+    </div>
+  </div>
+
+<div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/coach_toast.js') }}"></script>
+<script>
+  if (!window.__coachPollingStarted) {
+    window.__coachPollingStarted = true;
+    checkCoachAlertas();
+    window.__coachPolling = setInterval(checkCoachAlertas, 5 * 60 * 1000);
+  }
+
+  // ===== MENÚ FLOTANTE DE CONFIGURACIÓN - FUNCIONA EN METAS =====
+  const btnConfig = document.getElementById('btnConfiguracion');
+  const menuConfig = document.getElementById('menuFlotanteConfig');
+
+  if (btnConfig && menuConfig) {
+    btnConfig.addEventListener('click', (e) => {
+      e.preventDefault(); 
+      e.stopPropagation(); 
+      menuConfig.classList.toggle('hidden');
+    });
+
+    // Cierra el menú si se hace clic fuera de él
+    document.addEventListener('click', (e) => {
+      if (!menuConfig.contains(e.target) && !btnConfig.contains(e.target) && !menuConfig.classList.contains('hidden')) {
+        menuConfig.classList.add('hidden');
+      }
+    });
+  }
+</script>
+<script src="{{ url_for('static', filename='js/metas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/temas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reset_back.js') }}"></script>
+</body>
+</html>

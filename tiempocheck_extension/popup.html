@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Timer Check</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+
+  <div class="popup-container">
+    <h1>TIEMPO CHECK</h1>
+    <div class="stats">
+      <p><strong>Sitio actual:</strong> <span id="current-site">---</span></p>
+      <p><strong>Tiempo total:</strong> <span id="time-spent">0 min</span></p>
+    </div>
+  </div>
+  
+  <div class="streak-widget-container">
+    <div class="streak-header">
+      <div class="streak-icon">
+        <img src="prendida.PNG" alt="Racha" id="main-streak-icon">
+      </div>
+      <div class="streak-info">
+        <span class="streak-days" id="total-streak-days">0</span>
+        <span class="streak-label">DÍAS CONSECUTIVOS</span>
+      </div>
+    </div>
+
+    <div class="focus-status-widget" id="focus-status-widget" style="display: none;">
+      <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 15px; border-radius: 10px; color: white; text-align: center;">
+        <h3>🎯 Modo Focus Activo</h3>
+        <p style="margin: 10px 0; font-size: 0.9em;">
+          Bloqueando: <span id="focus-categories-count">0</span> categorías
+        </p>
+        <p style="font-size: 1.5em; font-weight: bold;" id="focus-time-remaining">--:--</p>
+      </div>
+    </div>
+
+
+    <div class="streak-calendar" id="streak-calendar-visual">
+    </div>
+
+    <div class="streak-details">
+        <p>Racha Metas: <strong id="contador-racha-metas">0</strong> días</p>
+        <p>Racha Límites: <strong id="contador-racha-limites">0</strong> días</p>
+    </div>
+  </div>
+  
+  <div class="historial-container">
+      <div class="historial-texto">Historial de sitios</div>
+      <div class="historial-popup" id="popup-historial">
+        <h2>Historial de sitios</h2> 
+        <ul id="site-list"></ul>
+      </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

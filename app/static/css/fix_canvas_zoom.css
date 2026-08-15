@@ -1,0 +1,91 @@
+/* ===============================================
+ * FIX CANVAS ZOOM - Arreglar gráficas enormes
+ * IMPORTANTE: Cargar DESPUÉS de cleanup.css
+ * =============================================== */
+
+/* SOLUCIÓN PARA CANVAS CON ZOOM */
+
+/* Chart.js crea un <canvas> interno que puede tener zoom */
+.chart-canvas-wrapper {
+    max-height: 280px !important;
+    overflow: hidden !important;
+}
+
+/* Resetear propiedades de canvas */
+.chart-canvas-wrapper canvas {
+    width: 100% !important;
+    height: 280px !important;
+    max-width: 100% !important;
+    max-height: 280px !important;
+    display: block !important;
+}
+
+/* Contenedor padre también */
+.chart-box-modern {
+    max-height: 400px !important;
+}
+
+/* Para pie chart específicamente */
+#graficaPastel {
+    width: 100% !important;
+    height: 280px !important;
+    max-width: 100% !important;
+}
+
+/* Para gráfica de barras */
+#grafica {
+    width: 100% !important;
+    height: 280px !important;
+    max-width: 100% !important;
+}
+
+/* Para gráficas de línea */
+#graficaHorario,
+#graficaLinea {
+    width: 100% !important;
+    height: 280px !important;
+    max-width: 100% !important;
+}
+
+/* Asegurar que el contexto del canvas respeta tamaño */
+canvas[id^="grafica"] {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+}
+
+/* Remover cualquier escala de zoom en Chart.js */
+.chart-box-modern .chartjs-render-monitor {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Para casos especiales donde hay margin/padding extra */
+.box-categoria canvas,
+.box-tiempo-sitio canvas,
+.box-horario canvas,
+.box-tiempo-dia canvas,
+.box-prediccion canvas {
+    width: 100% !important;
+    height: 280px !important;
+    max-width: 100% !important;
+}
+
+/* Resetear transformaciones que puedan causar zoom */
+.chart-canvas-wrapper > * {
+    transform: none !important;
+    scale: 1 !important;
+    zoom: 1 !important;
+}
+
+/* Asegurar que el wrapper respeta tamaño máximo */
+.chart-box-modern .chart-canvas-wrapper {
+    height: 280px !important;
+    max-height: 280px !important;
+}
+
+/* Panel boxes (predicción) */
+#ml-predict-card canvas {
+    width: 100% !important;
+    height: 280px !important;
+}

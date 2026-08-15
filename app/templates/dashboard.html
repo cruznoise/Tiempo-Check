@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard - TiempoCheck</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard-modern.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cleanup.css') }}">
+  <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/fix-canvas-zoom.css') }}">-->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/focus-mode.css') }}">
+</head>
+<body
+  data-datos='{{ datos | tojson | safe }}'
+  data-categorias='{{ categorias | tojson | safe }}'
+  data-uso-horario='{{ uso_horario | tojson | safe }}'
+  data-uso-diario='{{ uso_diario | tojson | safe }}'>
+
+  <div class="dashboard-container">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2>¡Hola,<br>{{ nombre }}!</h2>
+      <p>Este es tu resumen personal</p>
+
+      <nav>
+        <ul>
+          <li>
+            <a href="{{ url_for('controlador.dashboard') }}">
+              <img src="{{ url_for('static', filename='icons/home.svg') }}" alt="Home">
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('admin_controller.vista_metas') }}">
+              <img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros">
+            </a>
+          </li>
+          <li>
+            <a href="#" id="btnConfiguracion">
+              <img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración">
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="alerta-coach-container" id="alerta-coach-sidebar">
+        <div class="alerta-coach-titulo">
+          <p>Alertas del Coach</p>
+        </div>
+
+        <div class="loading-box" id="coach-loading-state">
+          <p>Cargando</p>
+          <p style="font-size: 0.8em; color: var(--accent-light);">Esperando datos del coach...</p>
+        </div>
+
+        <div id="coach-alerts-list"></div>
+      </div>
+    </aside>
+
+    <!-- Contenido principal -->
+    <main class="content">
+
+      <!-- Header Moderno -->
+      <header class="main-header-modern">
+        <h1>📊 DASHBOARD</h1>
+        <p class="intro-text">Este es un resumen personalizado de tu actividad digital.</p>
+      </header>
+
+      <!-- Barra de controles moderna -->
+      <section class="controls-bar-modern">
+        <div class="control-group-modern">
+          <label for="rango-dashboard"><i class="fas fa-calendar-alt"></i> Rango de tiempo:</label>
+          <select id="rango-dashboard">
+            <option value="total">Total</option>
+            <option value="hoy">Hoy</option>
+            <option value="7dias">Últimos 7 días</option>
+            <option value="mes">Último mes</option>
+            <option value="entre">Entre fechas...</option>
+          </select>
+          <div id="fechas" style="display:none;">
+            <input type="date" id="desde">
+            <input type="date" id="hasta">
+            <button id="filtrar">Aplicar</button>
+          </div>
+        </div>
+
+        <div class="control-group-modern">
+          <div class="panel-temas-modern">
+            <h3>🎨 Tema</h3>
+            <select id="selector-tema">
+              <option value="dark-minimal">🕶️ Dark Minimal</option>
+              <option value="claro-profesionald">🌞 Claro Profesional</option>
+              <option value="color-vivid">🌈 Color Vivid</option>
+              <option value="soft-pastel">🍃 Soft Pastel</option>
+              <option value="retro-terminal">🧃 Retro Terminal</option>
+            </select>
+            <label class="toggle-container">
+              <input type="checkbox" id="modoNocheToggle"> 
+              <span class="slider"></span>
+            </label>
+            <label for="modoNocheToggle" class="toggle-label">🌙 Modo noche</label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Grid moderno: Perfil + Focus Mode lado a lado -->
+      <div class="top-widgets-grid">
+        <!-- Widget de Perfil Adaptativo -->
+        <div class="perfil-grid-container">
+          {% include 'widget_perfil.html' %}
+        </div>
+
+        <!-- Widget de Modo Focus -->
+        <div class="focus-mode-container" id="focus-mode-widget">
+          <div class="focus-mode-header">
+            <h3>🎯 Modo concentración</h3>
+            <span class="focus-status-badge" id="focus-status-badge">Inactivo</span>
+          </div>
+
+          <!-- Estado cuando NO está activo -->
+          <div id="focus-inactive-state" class="focus-state-content">
+            <p class="focus-description">
+              Bloquea temporalmente categorías distractoras para mantener tu concentración.
+            </p>
+
+            <div class="focus-quick-start">
+              <h4>🚀 Inicio rápido:</h4>
+              <div class="quick-start-buttons">
+                <button class="quick-btn pomodoro-btn" onclick="iniciarFocusRapido(25, ['Redes Sociales', 'Ocio'])">
+                  <i class="fas fa-clock"></i>
+                  <span>Pomodoro</span>
+                  <small>25 min</small>
+                </button>
+                <button class="quick-btn deep-btn" onclick="iniciarFocusRapido(90, ['Redes Sociales', 'Ocio', 'Comercio'])">
+                  <i class="fas fa-brain"></i>
+                  <span>Deep Work</span>
+                  <small>90 min</small>
+                </button>
+              </div>
+            </div>
+
+            <button class="btn-focus-config" onclick="window.location.href='admin/focus'">
+              <i class="fas fa-cog"></i> Configuración avanzada
+            </button>
+          </div>
+
+          <!-- Estado cuando ESTÁ activo -->
+          <div id="focus-active-state" class="focus-state-content" style="display: none;">
+            <div class="focus-timer-display">
+              <div class="focus-countdown" id="focus-countdown">25:00</div>
+              <p class="focus-subtitle">Tiempo restante</p>
+            </div>
+
+            <div class="focus-mini-stats">
+              <div class="mini-stat">
+                <span class="mini-stat-value" id="focus-blocks-count">0</span>
+                <span class="mini-stat-label">Bloqueos</span>
+              </div>
+              <div class="mini-stat">
+                <span class="mini-stat-value" id="focus-categories-count">2</span>
+                <span class="mini-stat-label">Categorías</span>
+              </div>
+            </div>
+
+            <div class="focus-blocked-tags-mini" id="focus-blocked-tags-mini"></div>
+
+            <div class="focus-actions-compact">
+              <button class="btn-focus-pause-mini" onclick="pausarModoFocus()">
+                <i class="fas fa-pause"></i>
+              </button>
+              <button class="btn-focus-end-mini" onclick="finalizarModoFocus(false)">
+                <i class="fas fa-stop"></i> Finalizar
+              </button>
+            </div>
+
+            <div class="focus-progress-bar-mini">
+              <div class="progress-fill-mini" id="focus-progress-fill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+              
+      <!-- Barra resumen moderna -->
+      <section class="summary-bar-modern">
+        <div class="summary-card-modern">
+          <div class="card-icon"><i class="fas fa-clock"></i></div>
+          <h4>Tiempo total</h4>
+          <p id="resumen-tiempo">...</p>
+        </div>
+        <div class="summary-card-modern">
+          <div class="card-icon"><i class="fas fa-calendar-day"></i></div>
+          <h4>Día más activo</h4>
+          <p id="resumen-dia">...</p>
+        </div>
+        <div class="summary-card-modern">
+          <div class="card-icon"><i class="fas fa-globe"></i></div>
+          <h4>Sitio más visitado</h4>
+          <p id="resumen-sitio">...</p>
+        </div>
+        <div class="summary-card-modern">
+          <div class="card-icon"><i class="fas fa-folder"></i></div>
+          <h4>Categoría dominante</h4>
+          <p id="resumen-categoria">...</p>
+        </div>
+        <div class="summary-card-modern">
+          <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+          <h4>Promedio diario</h4>
+          <p id="resumen-promedio">...</p>
+        </div>
+      </section>
+
+      <!-- Sección principal de gráficos modernos -->
+      <section class="dashboard-grid-modern">
+          
+          <!-- Fila 1: Gráficas mejoradas -->
+          <div class="chart-box-modern box-categoria">
+            <h3><i class="fas fa-chart-pie"></i> Distribución por categoría</h3>
+            <div class="chart-legend-container">
+              <canvas id="graficaPastel"></canvas>
+              <div id="custom-legend" class="custom-legend"></div>
+            </div>
+          </div>
+
+          <div class="chart-box-modern box-tiempo-sitio">
+            <h3><i class="fas fa-chart-bar"></i> Tiempo por sitio web</h3>
+
+            <div class="chart-filter-inside-modern">
+              <label for="filtro-minutos">Filtrar por tiempo:</label>
+              <select id="filtro-minutos">
+                <option value="0">Todos</option>
+                <option value="50">+ 50 min</option>
+                <option value="100">+ 100 min</option>
+                <option value="200">+ 200 min</option>
+                <option value="500">+ 500 min</option>
+                <option value="1000">+ 1000 min</option>
+              </select>
+              
+              <label for="slider-top-sites" style="margin-left: 15px;">Top:</label>
+              <input type="range" id="slider-top-sites" min="5" max="20" value="10" step="1">
+              <span id="slider-value">10</span>
+            </div>
+
+            <div class="chart-canvas-wrapper">
+              <canvas id="grafica"></canvas>
+            </div>
+          </div>
+
+          <div id="ml-predict-card" class="panel-box-modern box-prediccion">
+            <h3><i class="fas fa-crystal-ball"></i> Predicción de mañana</h3>
+            <ul id="ml-predict-list" class="prediction-list"></ul>
+          </div>
+
+          <!-- Fila 2 -->
+          <div class="chart-box-modern box-horario">
+            <h3><i class="fas fa-clock"></i> Distribución de uso por hora</h3>
+            <canvas id="graficaHorario"></canvas>
+          </div>
+
+          <div class="chart-box-modern box-tiempo-dia">
+            <h3><i class="fas fa-chart-line"></i> Tiempo total por día</h3>
+            <canvas id="graficaLinea"></canvas>
+          </div>
+
+          <div id="nueva-tabla-panel" class="panel-box-modern box-nueva-tabla">
+          </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal de configuración de Focus Mode -->
+  <div id="modal-focus-config" class="modal-overlay-focus hidden">
+    <div class="modal-content-focus">
+      <div class="modal-header-focus">
+        <h2>🎯 Configurar Modo Focus</h2>
+        <button class="btn-close-modal" onclick="cerrarConfigFocus()">✕</button>
+      </div>
+
+      <div class="modal-body-focus">
+        <!-- Duración -->
+        <div class="form-group-focus">
+          <label>⏱️ Duración de la sesión:</label>
+          <select id="focus-duration-modal">
+            <option value="15">15 minutos (Quick Focus)</option>
+            <option value="25" selected>25 minutos (Pomodoro)</option>
+            <option value="45">45 minutos (Deep Work)</option>
+            <option value="60">1 hora</option>
+            <option value="90">1.5 horas</option>
+            <option value="120">2 horas</option>
+            <option value="custom">⚙️ Personalizado...</option>
+          </select>
+          <input type="number" id="focus-duration-custom-modal" 
+                 placeholder="Minutos (1-480)" min="1" max="480" 
+                 class="custom-duration-input hidden">
+        </div>
+
+        <!-- Categorías a bloquear -->
+        <div class="form-group-focus">
+          <label>🚫 Categorías a bloquear:</label>
+          <div class="categories-grid" id="focus-categories-grid">
+            <!-- Se llenará dinámicamente -->
+          </div>
+          <button class="btn-select-all" onclick="toggleTodasCategorias()">
+            <i class="fas fa-check-double"></i> Seleccionar todas
+          </button>
+        </div>
+
+        <!-- Opciones avanzadas -->
+        <div class="form-group-focus">
+          <label>⚙️ Opciones:</label>
+          <div class="options-list">
+            <label class="option-checkbox">
+              <input type="checkbox" id="focus-strict-mode-modal">
+              <span>🔒 Modo estricto (sin cancelación)</span>
+            </label>
+            <label class="option-checkbox">
+              <input type="checkbox" id="focus-notify-end-modal" checked>
+              <span>🔔 Notificar al finalizar</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer-focus">
+        <button class="btn-cancel-focus" onclick="cerrarConfigFocus()">Cancelar</button>
+        <button class="btn-start-focus" onclick="iniciarModoFocusDesdeModal()">
+          <i class="fas fa-rocket"></i> Iniciar Sesión Focus
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menú flotante de configuración -->
+  <div id="menuFlotanteConfig" class="config-dropdown hidden">
+    <div class="tile-box menu-box">
+      <h2 class="menu-title">Configuración de la cuenta</h2>
+
+      <button onclick="window.location.href='/admin/categorias'" class="menu-button">
+        🗂️ Administrar dominios y categorías
+      </button>
+
+      <button onclick="window.location.href='/admin/configuracion'" class="menu-boton">
+        Información de la cuenta
+      </button>
+
+      <hr class="menu-separator">
+
+      <div class="menu-section">
+        <label for="rango-exportar">Rango de tiempo para exportar:</label> 
+        <select id="rango-exportar" class="menu-select"> 
+          <option value="3dias">Últimos 3 días</option>
+          <option value="15dias">Últimos 15 días</option>
+          <option value="mes">Último mes</option>
+          <option value="3meses">Últimos 3 meses</option>
+          <option value="todo" selected>Todo el tiempo</option>
+        </select>
+
+        <div class="menu-buttons-group">
+          <button id="bck_btn" class="menu-button-small">Descargar Backup Completo</button>
+          <button id="exportarCSV" class="menu-button-small">📄 Exportar CSV</button>
+          <button id="exportarJSON" class="menu-button-small">🧾 Exportar JSON</button>
+        </div>
+      </div>
+
+      <hr class="menu-separator">
+
+      <div class="menu-section">
+        <label>Restaurar cuenta (.JSON)</label>
+        <form id="form-restaurar" enctype="multipart/form-data" class="restore-form">
+          <input type="file" id="archivo-backup" name="backup" accept=".json" required>
+          <button type="submit" class="menu-button-small btn-restore">🔓 Restaurar Backup</button>
+        </form>
+      </div>
+
+      <hr class="menu-separator">
+
+      <div class="menu-section">
+        <label>Reiniciar cuenta</label>
+        <button id="btn-reseteo-total" class="menu-button btn-danger">Reiniciar Cuenta desde Cero</button>
+      </div>
+
+      <button id="logout-btn" class="btn btn-outline-danger mt-3">
+        <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de alerta -->
+  <div id="alertaModal" class="modal-overlay hidden">
+    <div class="modal-contenido">
+      <h2>"TiempoCheck"</h2>
+      <p><span id="categoriaModal"></span> ¿Deseas continuar?</p>
+      <div class="botones">
+        <button onclick="cerrarModal()">Aceptar y cerrar</button>
+        <button onclick="ignorarAlerta()">Ignorar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
+  
+  {% include 'modal_anomalia.html' %}
+  
+  <!-- Sistema de Alertas en Tiempo Real -->
+  <div id="alertas-container"></div>
+     
+  {% include 'modal_clasificacion.html' %}
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/clasificacion.css') }}">
+  <script src="{{ url_for('static', filename='js/clasificacion_feedback.js') }}"></script>
+
+  <!-- JSON de categorías -->
+  <script type="application/json" id="categorias-json">
+    {{ categorias | tojson | safe }}
+  </script>
+
+  <script>
+    window.categorias = {};
+    try {
+      const el = document.getElementById('categorias-json');
+      if (el && el.textContent) {
+        window.categorias = JSON.parse(el.textContent);
+      }
+    } catch (e) {
+      console.error('Error parseando categorias JSON:', e);
+    }
+  </script>
+
+  <!-- Scripts -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/anomalias.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/alertas.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/perfil.css') }}">
+  <script src="{{ url_for('static', filename='js/perfil_widget.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/anomalias.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/alertas_tiempo_real.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/focus_mode.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/temas.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/coach_toast.js')}}"></script>
+  <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/reset_back.js') }}"></script>
+</body>
+</html>

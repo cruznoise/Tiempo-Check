@@ -1,0 +1,10 @@
+{
+  "version": "0.6.0",
+  "raw_required": ["usuario_id", "fecha_hora", "dominio", "categoria", "tiempo_segundos"],
+  "processed_diarias_required": ["usuario_id", "fecha", "categoria", "tiempo_segundos", "schema_ver", "generated_at"],
+  "processed_horarias_required": ["usuario_id", "fecha", "hora", "categoria", "tiempo_segundos", "schema_ver", "generated_at"],
+  "constraints": {
+    "tiempo_segundos_min": 0,
+    "tiempo_segundos_max": 86400
+  }
+}

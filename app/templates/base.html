@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TiempoCheck{% endblock %}</title>
+    
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/anomalias.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/alertas.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Contenido de la página -->
+    {% block content %}{% endblock %}
+    
+    <!-- Modales Globales (aparecen en todas las páginas) -->
+    {% include 'modal_anomalia.html' %}
+    
+    <!-- Container para alertas en tiempo real -->
+    <div id="alertas-container"></div>
+    
+    <!-- Scripts Base -->
+    <script>
+        // Variable global para usuario actual
+        window.USUARIO_ID = {{ session.get('usuario_id', 'null') }};
+    </script>
+    
+    <script src="{{ url_for('static', filename='js/anomalias.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/alertas_tiempo_real.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

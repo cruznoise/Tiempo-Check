@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Administrar Categorías</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/categorias-modern.css') }}">
+</head>
+<body>
+<div class="dashboard-container">
+
+  <aside class="sidebar">
+    <h2>¡Hola,<br>{{ nombre or 'Usuario' }}!</h2>
+    <p>Configuración de categorias y dominios</p>
+    <nav>
+      <ul>
+        <li><a href="{{ url_for('controlador.dashboard') }}"><img src="{{ url_for('static', filename='icons/home.png') }}" alt="Home"></a></li>
+        <li><a href="{{ url_for('admin_controller.vista_metas') }}"><img src="{{ url_for('static', filename='icons/trophy.svg') }}" alt="Logros"></a></li>
+        <li><a href="#" id="btnConfiguracion"><img src="{{ url_for('static', filename='icons/settings.svg') }}" alt="Configuración"></a></li>
+      </ul>
+    </nav>
+    
+    <div class="alerta-coach-container" id="alerta-coach-sidebar">
+        <div class="alerta-coach-titulo">
+            <p>Alertas del Coach</p>
+        </div>
+        
+        <div class="loading-box" id="coach-loading-state">
+            <p>Cargando</p>
+            <p style="font-size: 0.8em; color: var(--accent-light);">Esperando datos del coach...</p>
+        </div>
+        
+        <div id="coach-alerts-list">
+        </div>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <!-- Header Moderno -->
+    <header class="admin-header-modern">
+      <h1>🗂️ ADMINISTRAR DOMINIOS Y CATEGORÍAS</h1>
+      <p class="intro-text">Organiza tus sitios web en categorías personalizadas</p>
+    </header>
+
+    <div class="admin-container-modern">
+
+      <!-- FORMULARIO: Agregar nueva categoría MODERNIZADO -->
+      <div class="admin-form-box-modern">
+        <h3>Agregar nueva categoría</h3>
+        <form action="{{ url_for('admin_controller.agregar_categoria') }}" method="POST" class="admin-form-modern">
+          <input type="text" name="nombre" placeholder="Nombre de la categoría" required>
+          <button type="submit"><i class="fas fa-plus"></i> Agregar Categoría</button>
+        </form>
+      </div>
+
+      <!-- FORMULARIO: Asociar dominio a categoría MODERNIZADO -->
+      <div class="admin-form-box-modern">
+        <h3>Asociar dominio a categoría</h3>
+        <form action="{{ url_for('admin_controller.agregar_dominio') }}" method="POST" class="admin-form-modern">
+          <input type="text" name="dominio" placeholder="ej. youtube.com" required>
+          <select name="categoria_id" required>
+            <option value="">Selecciona una categoría</option>
+            {% for cat in categorias %}
+              <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit"><i class="fas fa-link"></i> Asociar Dominio</button>
+        </form>
+      </div>
+
+      <!-- LISTA: Categorías registradas MODERNIZADA -->
+      <div class="admin-list-box-modern">
+        <h3>Categorías registradas</h3>
+        <div class="scrollable-list-modern">
+          {% if categorias %}
+            {% for cat in categorias %}
+              <div class="list-item-modern">
+                <span class="item-id-badge">{{ cat.id }}</span>
+                <span class="item-label">{{ cat.nombre }}</span>
+                
+                <form action="{{ url_for('admin_controller.editar_categoria', id=cat.id) }}" method="POST">
+                  <input type="text" name="nuevo_nombre" value="{{ cat.nombre }}" required>
+                  <button type="submit" title="Guardar">💾</button>
+                </form>
+
+                <form action="{{ url_for('admin_controller.eliminar_categoria', id=cat.id) }}" method="POST">
+                  <button type="submit" onclick="return confirm('¿Eliminar esta categoría?')" title="Eliminar">🗑️</button>
+                </form>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-state-modern">
+              <i class="fas fa-folder-open"></i>
+              <p>No hay categorías registradas aún</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- LISTA: Dominios registrados MODERNIZADA -->
+      <div class="admin-list-box-modern">
+        <h3>Dominios registrados</h3>
+        <div class="scrollable-list-modern">
+          {% if dominios %}
+            {% for d in dominios %}
+              <div class="list-item-modern">
+                <span class="item-label"><strong>{{ d.dominio }}</strong></span>
+                
+                <form action="{{ url_for('admin_controller.editar_dominio', id=d.id) }}" method="POST">
+                  <!-- Campo para editar el dominio -->
+                  <input type="text" name="nuevo_dominio" value="{{ d.dominio }}" required>
+                  
+                  <!-- Select para cambiar la categoría -->
+                  <select name="nueva_categoria_id" required>
+                    {% for cat in categorias %}
+                      <option value="{{ cat.id }}" {% if cat.id == d.categoria_id %}selected{% endif %}>{{ cat.nombre }}</option>
+                    {% endfor %}
+                  </select>
+                  
+                  <button type="submit" title="Guardar">💾</button>
+                </form>
+                
+                <form action="{{ url_for('admin_controller.eliminar_dominio', id=d.id) }}" method="POST">
+                  <button type="submit" onclick="return confirm('¿Eliminar este dominio?')" title="Eliminar">🗑️</button>
+                </form>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-state-modern">
+              <i class="fas fa-globe"></i>
+              <p>No hay dominios registrados aún</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+
+<!-- Menú flotante de configuración (opcional, si lo usas en otras vistas) -->
+<div id="menuFlotanteConfig" class="config-dropdown hidden">
+  <div class="tile-box menu-box">
+      <h2 class="menu-title">Configuración de la cuenta</h2>
+      <button onclick="window.location.href='/admin/categorias'" class="menu-button">
+          🗂️ Administrar dominios y categorías
+      </button>
+      <hr class="menu-separator">
+      <div class="menu-section">
+          <button onclick="window.location.href='/dashboard'" class="menu-button">
+              🏠 Volver al Dashboard
+          </button>
+      </div>
+  </div>
+</div>
+
+<div id="toast-container" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
+
+<script src="{{ url_for('static', filename='js/coach_toast.js') }}"></script>
+<script>
+  if (!window.__coachPollingStarted) {
+    window.__coachPollingStarted = true;
+    checkCoachAlertas();
+    window.__coachPolling = setInterval(checkCoachAlertas, 5 * 60 * 1000);
+  }
+  
+  // Lógica del menú desplegable de configuración
+  const btnConfig = document.getElementById('btnConfiguracion');
+  const menuConfig = document.getElementById('menuFlotanteConfig');
+
+  if (btnConfig && menuConfig) {
+    btnConfig.addEventListener('click', (e) => {
+      e.preventDefault(); 
+      e.stopPropagation(); 
+      menuConfig.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!menuConfig.contains(e.target) && !btnConfig.contains(e.target) && !menuConfig.classList.contains('hidden')) {
+        menuConfig.classList.add('hidden');
+      }
+    });
+  }
+</script>
+<script src="{{ url_for('static', filename='js/temas.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+/* ===============================================
+ * ESTILOS DE LIMPIEZA - Resolver conflictos CSS
+ * AGREGAR ESTA HOJA AL FINAL EN EL HTML
+ * =============================================== */
+
+/* 
+ * IMPORTANTE: Incluir este archivo DESPUÉS de todos los demás CSS
+ * en el HTML para que tenga prioridad
+ */
+
+/* ========== SOLUCIONES PARA GRÁFICAS DEL DASHBOARD ========== */
+
+/* Asegurar que .chart-box no tenga conflictos con .chart-box-modern */
+.chart-box {
+    display: none !important; /* Ocultar si existe */
+}
+
+/* Remover propiedades que causen overflow */
+.chart-box-modern canvas,
+.panel-box-modern canvas {
+    width: 100% !important;
+    height: auto !important;
+}
+
+/* Asegurar que los contenedores de canvas respeten límites */
+.chart-canvas-wrapper {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Canvas debe ser flexible pero controlado */
+canvas {
+    max-width: 100% !important;
+}
+
+/* ========== AJUSTES PARA GRID ========== */
+
+/* El grid del dashboard debe mantener su estructura */
+.dashboard-grid-modern {
+    grid-auto-rows: minmax(350px, auto) !important;
+}
+
+/* Las cajas no deben exceder su espacio */
+.box-categoria,
+.box-tiempo-sitio,
+.box-prediccion,
+.box-horario,
+.box-tiempo-dia {
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* ========== REMOVER DUPLICADOS DE ESTILOS ========== */
+
+/* Si hay conflicto con .controls-bar, usar .controls-bar-modern */
+.controls-bar:not(.controls-bar-modern) {
+    display: none !important;
+}
+
+.control-group:not(.control-group-modern) {
+    display: none !important;
+}
+
+.summary-bar:not(.summary-bar-modern) {
+    display: none !important;
+}
+
+.summary-card:not(.summary-card-modern) {
+    display: none !important;
+}
+
+/* ========== AJUSTES PARA FORMULARIOS Y TABLAS ========== */
+
+/* Tablas deben ser scrollables correctamente */
+.table-container-modern {
+    overflow: visible !important;
+    max-height: none !important;
+}
+
+.table-modern {
+    width: 100% !important;
+    border-collapse: collapse !important;
+}
+
+/* ========== PALIAR CONFLICTOS CON STYLES.CSS ========== */
+
+/* Si hay estilos genéricos que afecten, estos los anulan */
+.content canvas {
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    margin: 0 auto !important;
+}
+
+/* ========== RESPONSIVE - ASEGURAR FUNCIONAMIENTO ========== */
+
+@media (max-width: 1200px) {
+    .dashboard-grid-modern {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .box-categoria,
+    .box-tiempo-sitio,
+    .box-prediccion,
+    .box-horario,
+    .box-tiempo-dia,
+    .box-nueva-tabla {
+        grid-column: span 1 !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .controls-bar-modern {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    
+    .panel-temas-modern {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    
+    .control-group-modern {
+        flex-direction: column !important;
+    }
+    
+    .chart-filter-inside-modern {
+        flex-direction: column !important;
+    }
+    
+    .chart-filter-inside-modern select {
+        width: 100% !important;
+        min-width: auto !important;
+    }
+}
