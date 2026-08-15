@@ -157,96 +157,6 @@ TiempoCheck es un **sistema integral de análisis y optimización del tiempo** q
 
 ---
 
-## 📦 Instalación Rápida
-
-### Requisitos Previos
-```bash
-Python 3.10+
-MySQL 8.0+
-Node.js 16+ (opcional, para extensión)
-```
-
-### Paso 1: Clonar Repositorio
-```bash
-git clone https://github.com/tu-usuario/TiempoCheck.git
-cd TiempoCheck
-```
-
-### Paso 2: Entorno Virtual
-```bash
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate   # Windows
-```
-
-### Paso 3: Dependencias
-```bash
-pip install -r requirements.txt
-```
-
-### Paso 4: Base de Datos
-```bash
-# Crear BD
-mysql -u root -p -e "CREATE DATABASE tiempocheck_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-
-# Importar esquema
-mysql -u root -p tiempocheck_db < database/schema.sql
-
-# Datos iniciales
-mysql -u root -p tiempocheck_db < database/seed_data.sql
-```
-
-### Paso 5: Configuración
-```bash
-cp .env.example .env
-nano .env
-```
-```bash
-DATABASE_URL=mysql+pymysql://root:TU_PASSWORD@localhost/tiempocheck_db
-SECRET_KEY=tu-secret-key-cambiar-en-produccion
-ENABLE_SCHEDULER=true
-ENABLE_ML=true
-TZ=America/Mexico_City
-```
-
-### Paso 6: Iniciar
-```bash
-python3 -m app.app
-# Servidor en: http://localhost:5000
-```
-
-### Paso 7: Extensión
-```bash
-# Chrome: chrome://extensions/
-# Activar "Modo desarrollador"
-# Cargar extension/ como "extensión sin empaquetar"
-```
-
----
-
-## 🚀 Uso
-
-### Primera Ejecución
-```bash
-# Crear usuario
-python3 scripts/crear_usuario.py
-
-# Entrenar modelos
-python3 scripts/setup_ml_completo.py
-
-# (Opcional) Datos de demo
-python3 scripts/generar_datos_demo.py
-```
-
-### Acceso
-```
-URL: http://localhost:5000
-Email: demo@tiempocheck.com
-Password: demo123
-```
-
----
-
 ## 🤖 Machine Learning
 
 ### Modelos Implementados
@@ -337,41 +247,6 @@ Sin categoría    15.3   22.1   0.70       615
 - **[API.md](API.md)** - Documentación de endpoints
 - **[ML.md](ML.md)** - Detalles de modelos ML
 
----
-
-## 🗺️ Roadmap
-
-### ✅ Completado (v3.2.1)
-- [x] Sistema de tracking
-- [x] ML predictivo
-- [x] Contexto humano
-- [x] Clasificación automática
-- [x] Perfil adaptativo
-
-### 🔄 En Progreso (v3.3.0)
-- [ ] Dashboard responsive
-- [ ] Tour guiado
-- [ ] PWA
-
-### 📅 Planificado (v4.0.0)
-- [ ] App móvil
-- [ ] Integraciones (Calendar, Notion)
-- [ ] API pública
-- [ ] Multi-tenant
-
----
-
-## 🧪 Testing
-```bash
-# Tests unitarios
-pytest tests/ -v
-
-# Test de integración
-python3 scripts/test_integracion_ml_contexto.py
-
-# Análisis ML
-python3 scripts/analizar_clasificaciones_ml.py
-```
 
 ---
 
@@ -394,7 +269,9 @@ TiempoCheck/
 ├── database/               # SQL schemas
 └── tests/                  # Tests
 ```
-
+---
+## USO
+TiempoCheck es un prototipo de aplicacion el cual fue desarrollado como parte de proyecyo terminal para obtener el grado de Ingeniero en Comunicaciones y Electrónica, su uso esta establecido para probarse en entornos controlados, si deseas hacer uso de "TiempoCheck" puedes ponerte en contacto para indicarte los pasos a seguir para la instalacion en tu ordenador.
 ---
 
 ## 📄 Licencia
