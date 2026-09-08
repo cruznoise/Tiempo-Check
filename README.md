@@ -9,13 +9,13 @@
 **Versión actual:** `v3.2.1 Cambios en V 3.2`  
 **Fecha de lanzamiento:** 2025-11-05  
 **Autores:** 
-Luis Ángel Cruz Tenorio (`@cruznoise`)
-Ana Maria Ambriz Gonzalez
+- Luis Ángel Cruz Tenorio (`@cruznoise`).
+- Ana Maria Ambriz Gonzalez.
 **Licencia:** MIT  
 **Stack:** Python · Flask · MySQL · APScheduler · scikit-learn · Chart.js
 
 > *"Optimiza tu tiempo, potencia tu productividad"*
-
+**Visualización de uso:** https://youtu.be/0mvdcTOqtyY
 ---
 
 ## 📖 Descripción
